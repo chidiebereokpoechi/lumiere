@@ -92,4 +92,103 @@ export const analyticsRoutes = new Elysia()
       favoritesByPhoto: favoritesByPhoto.map((r) => ({ photoId: r.photoId, count: Number(r.count) })),
       deviceSplit: deviceCounts,
     };
+  })
+
+  // GET /api/analytics/overview — dashboard home summary for the current
+  // photographer: totals across all their galleries plus a recent activity feed.
+  .get('/api/analytics/overview', async (ctx) => {
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const myGalleries = await db.query.galleries.findMany({
+      where: eq(galleries.photographerId, me.id),
+      columns: { id: true, status: true, viewCount: true, title: true, slug: true },
+    });
+    const galleryIds = myGalleries.map((g) => g.id);
+
+    const statusCounts: Record<string, number> = { active: 0, archived: 0, draft: 0 };
+    let totalViews = 0;
+    for (const g of myGalleries) {
+      const status = g.status ?? 'active';
+      statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+      totalViews += g.viewCount ?? 0;
+    }
+
+    // Photo count + storage estimate (originals only — derivatives are <10%).
+    const photoStats = galleryIds.length === 0
+      ? { count: 0, bytes: 0 }
+      : (await db
+          .select({
+            count: sql<number>`COUNT(*)`.as('count'),
+            bytes: sql<number>`COALESCE(SUM(${photos.fileSize}), 0)`.as('bytes'),
+          })
+          .from(photos)
+          .where(inArray(photos.galleryId, galleryIds)))[0] ?? { count: 0, bytes: 0 };
+
+    // Recent activity: three event sources, three queries, merged in app code.
+    // Cheaper than a UNION + JOIN here since each query is well-indexed and
+    // the limit is tiny.
+    const FEED_LIMIT = 20;
+    const recentViews = galleryIds.length === 0 ? [] : await db
+      .select({
+        type: sql<'view'>`'view'`.as('type'),
+        galleryId: galleryViews.galleryId,
+        photoId: sql<string | null>`NULL`.as('photo_id'),
+        createdAt: galleryViews.createdAt,
+      })
+      .from(galleryViews)
+      .where(inArray(galleryViews.galleryId, galleryIds))
+      .orderBy(desc(galleryViews.createdAt))
+      .limit(FEED_LIMIT);
+
+    const recentDownloads = galleryIds.length === 0 ? [] : await db
+      .select({
+        type: sql<'download'>`'download'`.as('type'),
+        galleryId: downloads.galleryId,
+        photoId: downloads.photoId,
+        createdAt: downloads.createdAt,
+      })
+      .from(downloads)
+      .where(inArray(downloads.galleryId, galleryIds))
+      .orderBy(desc(downloads.createdAt))
+      .limit(FEED_LIMIT);
+
+    const recentFavorites = galleryIds.length === 0 ? [] : await db
+      .select({
+        type: sql<'favorite'>`'favorite'`.as('type'),
+        galleryId: favorites.galleryId,
+        photoId: favorites.photoId,
+        createdAt: favorites.createdAt,
+      })
+      .from(favorites)
+      .where(inArray(favorites.galleryId, galleryIds))
+      .orderBy(desc(favorites.createdAt))
+      .limit(FEED_LIMIT);
+
+    const titleById = new Map(myGalleries.map((g) => [g.id, { title: g.title, slug: g.slug }]));
+    const activity = [...recentViews, ...recentDownloads, ...recentFavorites]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, FEED_LIMIT)
+      .map((e) => ({
+        type: e.type,
+        galleryId: e.galleryId,
+        gallerySlug: titleById.get(e.galleryId)?.slug ?? null,
+        galleryTitle: titleById.get(e.galleryId)?.title ?? null,
+        photoId: e.photoId,
+        at: e.createdAt,
+      }));
+
+    return {
+      galleries: {
+        total: myGalleries.length,
+        byStatus: statusCounts,
+      },
+      photos: {
+        count: Number(photoStats.count),
+        originalsBytes: Number(photoStats.bytes),
+      },
+      views: { total: totalViews },
+      activity,
+    };
   });
