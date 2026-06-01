@@ -61,5 +61,7 @@ export const env = {
   SMTP_PASS: optional('SMTP_PASS', ''),
   FROM_EMAIL: optional('FROM_EMAIL', 'noreply@example.com'),
 
+  MAX_ATTACHMENT_SIZE_MB: int('MAX_ATTACHMENT_SIZE_MB', 500),
+
   IS_PROD: optional('NODE_ENV', 'development') === 'production',
 } as const;
