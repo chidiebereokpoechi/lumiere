@@ -132,6 +132,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
       deletePrefix(`previews/${ctx.params.galleryId}/`),
       deletePrefix(`thumbnails/${ctx.params.galleryId}/`),
       deletePrefix(`watermarked/${ctx.params.galleryId}/`),
+      deletePrefix(`attachments/${ctx.params.galleryId}/`),
     ]);
     return { ok: true };
   });
