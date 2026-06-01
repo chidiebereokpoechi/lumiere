@@ -56,7 +56,7 @@ litestream.yml                # off-host SQLite replication target
 - Self-hosted Satoshi (Fontshare, variable axis 300–900 in two ~42KB WOFF2s under [apps/web/public/fonts/](apps/web/public/fonts/))
 - Design system is **Apple-soft**: cool off-white surfaces with a subtle blue undertone, generous rounded corners (16–28px), soft layered shadows, **no borders** — separation comes from bg tone + shadow. B/W monotone chrome with a peach accent (#FFB088 light / #FFC2A0 dark; dark ink reads on top of peach in both modes).
 - Theme: auto via `prefers-color-scheme` + manual override via `data-theme` attribute + localStorage. Pre-paint init script in [lib/theme.ts](apps/web/lib/theme.ts) prevents the flash. `ThemeToggle` cycles system → light → dark.
-- Dev: Next at `:3300`, Bun API at `:3200`. Next rewrites `/api/* /events/* /img/* /health` → `:3200` so the browser sees one origin (cookies/CSRF work without CORS).
+- Dev: Next at `:3400`, Bun API at `:3200`. Next rewrites `/api/* /events/* /img/* /health` → `:3200` so the browser sees one origin (cookies/CSRF work without CORS).
 - Custom `next/image` loader in [lib/image-loader.ts](apps/web/lib/image-loader.ts) — passthrough; Elysia already serves presigned 302s, never let Next re-encode.
 - Admin gate: [proxy.ts](apps/web/proxy.ts) (Next 16 renamed `middleware.ts` to `proxy.ts`) — bounces missing JWT to `/admin/login`. First gate, not the security boundary.
 
@@ -73,15 +73,15 @@ bun run apps/api/src/index.ts
 # OR via workspace filter
 bun run --filter @lumiere/api start
 
-# Frontend (port 3300, separate terminal)
+# Frontend (port 3400, separate terminal)
 bun run --filter @lumiere/web dev
 ```
 
 The repo-root `.env` is gitignored. Required envs are in [.env.example](.env.example).
 
 - Health: `curl localhost:3200/health` → `{ status, db, s3 }`
-- Frontend root: `http://localhost:3300/` (smoke test page — Satoshi typography, theme toggle, /health card, color swatches)
-- Anything under `/api`, `/events`, `/img`, `/health` on `:3300` proxies to `:3200` via Next rewrites.
+- Frontend root: `http://localhost:3400/` (smoke test page — Satoshi typography, theme toggle, /health card, color swatches)
+- Anything under `/api`, `/events`, `/img`, `/health` on `:3400` proxies to `:3200` via Next rewrites.
 
 ## Conventions
 
