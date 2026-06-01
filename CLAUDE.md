@@ -70,19 +70,22 @@ Health: `curl localhost:$PORT/health` → `{ status, db, s3 }`.
 
 Built so far (v1.2 Phase 1 backend core):
 - Monorepo scaffold, Docker + Litestream, full DB schema + migration runner + bootstrap seed
-- Two-client S3 storage abstraction
+- Two-client S3 storage abstraction (Put/Delete/List on internal + presign on public; `presignDownload` adds Content-Disposition; `getObjectStream` for the ZIP builder)
 - Auth: login/logout/me/refresh/csrf, Argon2id, rotating refresh tokens, double-submit CSRF, trusted-proxy IP parsing, sliding-window rate limit
 - Job queue + worker + reaper, Sharp image-processing pipeline (auto-rotate, EXIF strip, palette, 600px thumb + 2400px preview WebP)
-- Gallery CRUD admin routes
+- **Validation:** Zod schemas in `@lumiere/types` + `parseBody(ctx, schema)` helper that reads from Elysia's pre-parsed `ctx.body` (don't call `ctx.request.json()` — Elysia has already consumed the stream)
+- Gallery CRUD admin routes (Zod-validated, strict on unknown keys)
 - Photo upload (multipart → magic-byte MIME check → S3 → enqueue job)
 - SSE `/events?batch=…` with replay buffer
-- `/img/:gid/:pid/:size` presigned redirect (admin-only for now)
+- Client gallery surface: `/api/gallery/:slug/access|unlock|photos|track-view`, 72h `lumiere_gs` session cookie (HttpOnly, SameSite=Lax)
+- Favorites: `GET/POST/DELETE /api/gallery/:slug/favorite[s]`, idempotent, auto-issues a guest session on first POST for public galleries
+- Downloads: `GET /api/gallery/:slug/download/:photoId` (302 → presigned w/ Content-Disposition), `GET /api/gallery/:slug/download?scope=all|favorites` (streaming ZIP via archiver, store=level 0, filename dedupe). Rate-limit 3/hour/IP/gallery; admin bypasses.
+- `/img/:gid/:pid/:size` presigned redirect — accepts admin JWT, gallery_session, or public-gallery anonymous (thumb/preview); original is admin-only
 - `/health` reports `{ db, s3 }`
 
 Not built (next):
-- Client-facing gallery routes (`/api/gallery/:slug/*`), password unlock + `gallery_sessions` cookies
-- Frontend-plan §14 additions: `GET /api/gallery/:slug/access`; richer `/photos` payload (palette, dims, theme, customCss)
-- Image proxy to also accept gallery_session for thumb/preview (currently admin-only)
-- Streaming ZIP download, favorites, downloads, analytics
-- Email notifications, watermarks
+- Analytics admin routes (timeline, downloads log, per-photo favorites — data is already collected in `gallery_views` / `downloads` / `favorites`)
+- Email notifications (Nodemailer SMTP, templates for gallery_viewed / download / favorites_received)
+- Watermark presets + watermark composition step in the image processor
+- Comments + moderation queue
 - The whole Next.js frontend tier
