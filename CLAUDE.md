@@ -1,6 +1,6 @@
 # Lumière — repo guide for Claude
 
-Self-hosted gallery delivery platform (Pixieset alternative). Bun + Elysia API serving private galleries to photography clients, with S3-compatible object storage.
+Self-hosted gallery delivery platform (Pixieset alternative). Bun + Elysia API serving private galleries to photography clients, with S3-compatible object storage. Next.js 16 + React 19 frontend on top.
 
 ## Authoritative planning docs
 
@@ -10,16 +10,30 @@ Self-hosted gallery delivery platform (Pixieset alternative). Bun + Elysia API s
 ## Layout (monorepo, Bun workspaces)
 
 ```
-apps/api/                     # Bun + Elysia backend (only app for now)
+apps/api/                     # Bun + Elysia backend
   src/
     db/         schema.ts, migrations/, migrate.ts (raw SQL runner), seed.ts
-    lib/        config.ts, logger.ts, ids.ts, mime.ts
-    middleware/ auth.ts, csrf.ts, client-ip.ts, rate-limit.ts
-    services/   storage.ts, auth.ts, csrf.ts, slug.ts, queue.ts,
-                image-processor.ts, events.ts
-    routes/     health.ts, images.ts, events.ts, api/{auth,galleries,photos}.ts
+    lib/        config.ts, logger.ts, ids.ts, mime.ts, user-agent.ts, validation.ts
+    middleware/ auth.ts, csrf.ts, client-ip.ts, rate-limit.ts, gallery-session.ts
+    services/   storage.ts, auth.ts, csrf.ts, slug.ts, queue.ts, events.ts,
+                image-processor.ts, watermark.ts, watermark-job.ts,
+                gallery-session.ts, zip-builder.ts, email.ts, email-job.ts,
+                notify.ts
+    routes/     health.ts, images.ts, events.ts, api/{auth,galleries,photos,
+                gallery,favorites,downloads,analytics,watermark-presets,
+                comments,attachments}.ts
     index.ts    entrypoint: runs migrations, starts worker + reaper, mounts routes
-packages/types/               # shared Zod schemas (for the future Next.js app)
+  emails/       Handlebars templates (gallery_viewed, download, favorites_received)
+apps/web/                     # Next.js 16 frontend (foundation only so far)
+  app/          layout.tsx, page.tsx (smoke test), globals.css
+  components/   theme-toggle.tsx
+  lib/          api-client.ts (apiServer + apiClient + apiClientMutation),
+                image-loader.ts (passthrough — Elysia handles), theme.ts
+  proxy.ts      Next 16 proxy (renamed from middleware) — /admin gate
+  public/fonts/ satoshi-variable[-italic].woff2 (self-hosted, ~85KB)
+  next.config.ts dev rewrites /api/* /events/* /img/* /health → :3200 (Bun API)
+packages/types/               # shared Zod schemas (auth, gallery, favorite,
+                              # comment, attachment, watermark, health)
 docker-compose.yml            # app + litestream
 apps/api/Dockerfile           # Bun multi-stage build
 litestream.yml                # off-host SQLite replication target
@@ -27,25 +41,47 @@ litestream.yml                # off-host SQLite replication target
 
 ## Stack
 
+**Backend** ([apps/api/](apps/api/))
 - Bun 1.3 (runtime), TypeScript strict, Elysia for HTTP
 - SQLite via `bun:sqlite` + Drizzle for typed queries
 - Migrations are **hand-written SQL** under `src/db/migrations/` (drizzle-kit not used for generation — too brittle around the photos/galleries circular FK)
 - Sharp for image processing, jose for JWT, @node-rs/argon2 for passwords
 - @aws-sdk/client-s3 + s3-request-presigner (two clients: internal LAN endpoint for put/delete/list, public endpoint for presign — SigV4 binds to Host)
+- @aws-sdk/lib-storage for streaming multipart attachment uploads
+- Nodemailer + Handlebars for email (jsonTransport fallback when SMTP isn't set)
+
+**Frontend** ([apps/web/](apps/web/))
+- Next.js 16 (App Router, Turbopack dev), React 19
+- Tailwind CSS v4 with `@theme inline` tokens that alias CSS vars in [app/globals.css](apps/web/app/globals.css)
+- Self-hosted Satoshi (Fontshare, variable axis 300–900 in two ~42KB WOFF2s under [apps/web/public/fonts/](apps/web/public/fonts/))
+- Design system is **Apple-soft**: warm off-white surfaces, generous rounded corners (16–28px), soft layered shadows, **no borders** — separation comes from bg tone + shadow. Monochrome chrome with a warm ochre accent (#B0532A light / #D67946 dark).
+- Theme: auto via `prefers-color-scheme` + manual override via `data-theme` attribute + localStorage. Pre-paint init script in [lib/theme.ts](apps/web/lib/theme.ts) prevents the flash. `ThemeToggle` cycles system → light → dark.
+- Dev: Next at `:3300`, Bun API at `:3200`. Next rewrites `/api/* /events/* /img/* /health` → `:3200` so the browser sees one origin (cookies/CSRF work without CORS).
+- Custom `next/image` loader in [lib/image-loader.ts](apps/web/lib/image-loader.ts) — passthrough; Elysia already serves presigned 302s, never let Next re-encode.
+- Admin gate: [proxy.ts](apps/web/proxy.ts) (Next 16 renamed `middleware.ts` to `proxy.ts`) — bounces missing JWT to `/admin/login`. First gate, not the security boundary.
 
 ## Running locally
 
 ```sh
 bun install
 set -a && source .env && set +a
-bun run apps/api/src/db/migrate.ts     # idempotent
-bun run apps/api/src/db/seed.ts        # creates admin from ADMIN_EMAIL/PASSWORD
-bun run apps/api/src/index.ts          # listens on $PORT (default 3000; the user's box has node on 3000, so .env uses 3200)
+bun run apps/api/src/db/migrate.ts                     # idempotent
+bun run apps/api/src/db/seed.ts                        # creates admin from ADMIN_EMAIL/PASSWORD
+
+# Backend (port 3200 per .env)
+bun run apps/api/src/index.ts
+# OR via workspace filter
+bun run --filter @lumiere/api start
+
+# Frontend (port 3300, separate terminal)
+bun run --filter @lumiere/web dev
 ```
 
 The repo-root `.env` is gitignored. Required envs are in [.env.example](.env.example).
 
-Health: `curl localhost:$PORT/health` → `{ status, db, s3 }`.
+- Health: `curl localhost:3200/health` → `{ status, db, s3 }`
+- Frontend root: `http://localhost:3300/` (smoke test page — Satoshi typography, theme toggle, /health card, color swatches)
+- Anything under `/api`, `/events`, `/img`, `/health` on `:3300` proxies to `:3200` via Next rewrites.
 
 ## Conventions
 
@@ -89,4 +125,4 @@ Built so far (v1.2 Phase 1 backend core):
 - `/health` reports `{ db, s3 }`
 
 Not built (next):
-- The whole Next.js frontend tier
+- Real frontend pages on top of the foundation: admin login, dashboard home, gallery editor, photo manager, analytics, watermark preset UI, comments moderation; client gallery (cover/grid/lightbox, password gate, favorites drawer, download modal, attachments section). Currently only the foundation + smoke test page exists.
