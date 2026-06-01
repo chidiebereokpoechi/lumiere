@@ -153,6 +153,26 @@ export const comments = sqliteTable('comments', {
   createdAt: integer('created_at').notNull(),
 });
 
+// Generic file attachments — PDFs, contracts, ZIPs of raws, anything non-image
+// the photographer wants to deliver alongside the photo set. Separate from
+// `photos` so the image pipeline stays single-purpose. Added after v1.2 §5.
+export const attachments = sqliteTable('attachments', {
+  id: text('id').primaryKey(),
+  galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
+  folderId: text('folder_id').references(() => galleryFolders.id, { onDelete: 'set null' }),
+  filenameOriginal: text('filename_original').notNull(),
+  displayName: text('display_name'),
+  s3Key: text('s3_key').notNull(),
+  mimeType: text('mime_type'),
+  fileSize: integer('file_size'),
+  description: text('description'),
+  position: integer('position').default(0),
+  createdAt: integer('created_at').notNull(),
+}, (t) => ({
+  byGallery: index('idx_attachments_gallery').on(t.galleryId),
+  byFolder: index('idx_attachments_folder').on(t.folderId),
+}));
+
 // Extension to v1.2 §5: rotating refresh tokens, stored hashed.
 export const refreshTokens = sqliteTable('refresh_tokens', {
   id: text('id').primaryKey(),
