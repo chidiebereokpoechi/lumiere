@@ -6,8 +6,21 @@ import { migrate } from './db/migrate';
 import { clientIp } from './middleware/client-ip';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/api/auth';
+import { galleryRoutes } from './routes/api/galleries';
+import { photoRoutes } from './routes/api/photos';
+import { eventsRoutes } from './routes/events';
+import { imageRoutes } from './routes/images';
+import { registerHandler, startWorker, startReaper } from './services/queue';
+import { handleProcessPhoto } from './services/image-processor';
 
 migrate();
+
+// Worker setup — concurrency from env (v1.2 §9: bounded for memory safety).
+const concurrency = Number(process.env.IMAGE_CONCURRENCY ?? 3);
+registerHandler('process_photo', handleProcessPhoto);
+startWorker({ concurrency });
+startReaper({ intervalMs: 60_000, staleAfterMs: 5 * 60_000 });
+log.info('worker.started', { concurrency });
 
 const app = new Elysia()
   .use(cors({
@@ -30,6 +43,10 @@ const app = new Elysia()
   })
   .use(healthRoutes)
   .use(authRoutes)
+  .use(galleryRoutes)
+  .use(photoRoutes)
+  .use(eventsRoutes)
+  .use(imageRoutes)
   .listen({ port: env.PORT, hostname: '0.0.0.0' });
 
 log.info('lumiere.api.listening', { port: env.PORT, env: env.NODE_ENV });
