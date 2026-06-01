@@ -54,7 +54,7 @@ litestream.yml                # off-host SQLite replication target
 - Next.js 16 (App Router, Turbopack dev), React 19
 - Tailwind CSS v4 with `@theme inline` tokens that alias CSS vars in [app/globals.css](apps/web/app/globals.css)
 - Self-hosted Satoshi (Fontshare, variable axis 300–900 in two ~42KB WOFF2s under [apps/web/public/fonts/](apps/web/public/fonts/))
-- Design system is **Apple-soft**: warm off-white surfaces, generous rounded corners (16–28px), soft layered shadows, **no borders** — separation comes from bg tone + shadow. Monochrome chrome with a warm ochre accent (#B0532A light / #D67946 dark).
+- Design system is **Apple-soft**: cool off-white surfaces with a subtle blue undertone, generous rounded corners (16–28px), soft layered shadows, **no borders** — separation comes from bg tone + shadow. B/W monotone chrome with a peach accent (#FFB088 light / #FFC2A0 dark; dark ink reads on top of peach in both modes).
 - Theme: auto via `prefers-color-scheme` + manual override via `data-theme` attribute + localStorage. Pre-paint init script in [lib/theme.ts](apps/web/lib/theme.ts) prevents the flash. `ThemeToggle` cycles system → light → dark.
 - Dev: Next at `:3300`, Bun API at `:3200`. Next rewrites `/api/* /events/* /img/* /health` → `:3200` so the browser sees one origin (cookies/CSRF work without CORS).
 - Custom `next/image` loader in [lib/image-loader.ts](apps/web/lib/image-loader.ts) — passthrough; Elysia already serves presigned 302s, never let Next re-encode.
