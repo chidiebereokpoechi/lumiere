@@ -2,9 +2,11 @@
 
 import type React from 'react';
 
-// Shared form primitives. No borders; inputs sit on bg-surface-sunken so they
-// read as recessed fields against the white card surface. Focus is the global
-// peach outline from globals.css.
+// Spenny-language form primitives.
+// - 2px borders are the primary separator.
+// - text-xs by default (12px); labels are xs/slate-500.
+// - Inputs sit on surface-2, get a peach border + ring on focus.
+// - Buttons are compact: py-2 px-3, text-xs font-bold.
 
 interface FieldProps {
   id: string;
@@ -16,12 +18,19 @@ interface FieldProps {
 export function Field({ id, label, hint, required, children }: FieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="flex items-baseline justify-between gap-3 text-sm font-medium text-ink mb-2">
+      <label
+        htmlFor={id}
+        className="flex items-baseline justify-between gap-3 text-xs font-bold text-ink-muted mb-1.5 uppercase tracking-wider"
+      >
         <span>
           {label}
-          {required && <span className="text-accent ml-1">*</span>}
+          {required && <span className="text-accent-dark ml-1">*</span>}
         </span>
-        {hint && <span className="text-xs text-ink-subtle font-normal">{hint}</span>}
+        {hint && (
+          <span className="text-[0.65rem] text-ink-subtle font-normal normal-case tracking-normal">
+            {hint}
+          </span>
+        )}
       </label>
       {children}
     </div>
@@ -38,7 +47,9 @@ interface TextInputProps {
   value: string;
   onChange: (next: string) => void;
 }
-export function TextInput({ id, name, type = 'text', required, placeholder, autoComplete, value, onChange }: TextInputProps) {
+export function TextInput({
+  id, name, type = 'text', required, placeholder, autoComplete, value, onChange,
+}: TextInputProps) {
   return (
     <input
       id={id}
@@ -49,7 +60,7 @@ export function TextInput({ id, name, type = 'text', required, placeholder, auto
       autoComplete={autoComplete}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md bg-surface-sunken px-4 py-3 text-sm text-ink placeholder:text-ink-subtle focus:bg-surface-2 transition-colors"
+      className="w-full rounded-md bg-surface-2 border-2 border-border px-3 py-2 text-xs text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
     />
   );
 }
@@ -62,7 +73,9 @@ interface TextareaProps {
   value: string;
   onChange: (next: string) => void;
 }
-export function Textarea({ id, name, rows = 3, placeholder, value, onChange }: TextareaProps) {
+export function Textarea({
+  id, name, rows = 3, placeholder, value, onChange,
+}: TextareaProps) {
   return (
     <textarea
       id={id}
@@ -71,7 +84,7 @@ export function Textarea({ id, name, rows = 3, placeholder, value, onChange }: T
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md bg-surface-sunken px-4 py-3 text-sm text-ink placeholder:text-ink-subtle focus:bg-surface-2 transition-colors resize-y"
+      className="w-full rounded-md bg-surface-2 border-2 border-border px-3 py-2 text-xs text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors resize-y"
     />
   );
 }
@@ -83,19 +96,25 @@ interface ButtonProps {
   onClick?: () => void;
   children: React.ReactNode;
 }
-export function Button({ type = 'button', variant = 'primary', disabled, onClick, children }: ButtonProps) {
+export function Button({
+  type = 'button', variant = 'primary', disabled, onClick, children,
+}: ButtonProps) {
   const cls = {
-    primary: 'bg-accent text-accent-ink hover:bg-accent-hover',
-    secondary: 'bg-surface-sunken text-ink hover:bg-surface-2',
-    ghost: 'bg-transparent text-ink-muted hover:bg-surface-sunken hover:text-ink',
-    danger: 'bg-negative text-white hover:opacity-90',
+    primary:
+      'bg-accent text-accent-ink border-accent hover:bg-accent-dark hover:border-accent-dark hover:text-white',
+    secondary:
+      'bg-surface text-ink-strong border-border hover:bg-surface-2 hover:border-border-strong',
+    ghost:
+      'bg-transparent text-ink-muted border-transparent hover:bg-surface-2 hover:text-ink-strong',
+    danger:
+      'bg-negative text-white border-negative hover:opacity-90',
   }[variant];
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition-colors active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-md border-2 px-3 py-2 text-xs font-bold transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {children}
     </button>
@@ -114,11 +133,18 @@ export function Select<T extends string>({ id, value, onChange, options }: Selec
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className="w-full rounded-md bg-surface-sunken px-4 py-3 text-sm text-ink focus:bg-surface-2 transition-colors appearance-none cursor-pointer"
-      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238e95a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '40px' }}
+      className="w-full rounded-md bg-surface-2 border-2 border-border px-3 py-2 text-xs text-ink-strong hover:border-border-strong focus:border-accent transition-colors appearance-none cursor-pointer"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 10px center',
+        paddingRight: '32px',
+      }}
     >
       {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
       ))}
     </select>
   );
@@ -133,10 +159,17 @@ interface ToggleProps {
 }
 export function Toggle({ id, checked, onChange, label, description }: ToggleProps) {
   return (
-    <label htmlFor={id} className="flex items-start justify-between gap-4 py-2 cursor-pointer">
+    <label
+      htmlFor={id}
+      className="flex items-start justify-between gap-4 py-2 cursor-pointer"
+    >
       <div className="flex-1">
-        <span className="block text-sm font-medium text-ink">{label}</span>
-        {description && <span className="block mt-0.5 text-xs text-ink-muted">{description}</span>}
+        <span className="block text-xs font-bold text-ink-strong">{label}</span>
+        {description && (
+          <span className="block mt-0.5 text-[0.65rem] text-ink-muted leading-relaxed">
+            {description}
+          </span>
+        )}
       </div>
       <button
         id={id}
@@ -144,12 +177,14 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-pill transition-colors ${
-          checked ? 'bg-accent' : 'bg-surface-sunken'
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-pill border-2 transition-colors ${
+          checked
+            ? 'bg-accent border-accent'
+            : 'bg-surface-sunken border-border'
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 rounded-pill bg-surface transition-transform ${
+          className={`inline-block h-3 w-3 rounded-pill bg-surface transition-transform ${
             checked ? 'translate-x-[18px]' : 'translate-x-0.5'
           }`}
         />
@@ -161,7 +196,10 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div role="alert" className="rounded-md bg-accent-soft px-4 py-3 text-sm text-ink">
+    <div
+      role="alert"
+      className="rounded-md bg-accent-soft border-2 border-accent/40 px-3 py-2 text-xs font-bold text-ink-strong"
+    >
       {message}
     </div>
   );
