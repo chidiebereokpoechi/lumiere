@@ -107,19 +107,16 @@ function PlaceholderCover() {
 }
 
 function NewGalleryButton() {
-  // TODO: wire to /admin/galleries/new once the create form lands.
   return (
-    <button
-      type="button"
-      disabled
-      className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover transition-colors active:scale-[0.99] disabled:opacity-50"
-      title="Coming next pass"
+    <Link
+      href="/admin/galleries/new"
+      className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover transition-colors active:scale-[0.99]"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
         <path d="M12 5v14M5 12h14" />
       </svg>
       New gallery
-    </button>
+    </Link>
   );
 }
 
