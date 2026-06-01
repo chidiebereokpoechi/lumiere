@@ -27,26 +27,26 @@
  * ---------------------------------------------------------------- */
 
 :root {
-  /* Surfaces */
-  --bg: #fafaf7;          /* warm off-white */
-  --surface: #f2f1ed;     /* card / panel */
+  /* Surfaces — monochrome with a subtle cool blue undertone. */
+  --bg: #f6f8fb;          /* cool off-white */
+  --surface: #eceff4;     /* card / panel */
   --surface-2: #ffffff;   /* elevated (popovers, modals) */
-  --surface-sunken: #ebeae5;
+  --surface-sunken: #e0e4eb;
 
-  /* Ink */
-  --ink: #0f0f0e;
-  --ink-muted: #6b6b66;
-  --ink-subtle: #a09f98;
+  /* Ink — same cool-neutral family. */
+  --ink: #0e1014;
+  --ink-muted: #5f6671;
+  --ink-subtle: #9aa0a9;
 
-  /* Accent (warm ochre) */
-  --accent: #b0532a;
-  --accent-hover: #9a4923;
-  --accent-soft: #f3e2d2;
-  --accent-ink: #ffffff;
+  /* Accent (peach). Light enough that dark ink reads on top. */
+  --accent: #ffb088;
+  --accent-hover: #f89d71;
+  --accent-soft: #fcede2;
+  --accent-ink: #0e1014;
 
-  /* Semantic */
-  --positive: #2d7a4a;
-  --negative: #a8341e;
+  /* Semantic — kept neutral-leaning so they don't clash with peach. */
+  --positive: #2f8055;
+  --negative: #b34a36;
 
   /* Radius scale (Apple-soft is generous) */
   --radius-sm: 8px;
@@ -72,19 +72,19 @@
 }
 
 [data-theme='dark'] {
-  --bg: #0e0e0c;
-  --surface: #1a1a17;
-  --surface-2: #232320;
-  --surface-sunken: #080807;
+  --bg: #0a0c10;
+  --surface: #14171c;
+  --surface-2: #1c2026;
+  --surface-sunken: #05070a;
 
-  --ink: #fafaf7;
-  --ink-muted: #a09f98;
-  --ink-subtle: #6b6b66;
+  --ink: #f6f8fb;
+  --ink-muted: #9aa0a9;
+  --ink-subtle: #5f6671;
 
-  --accent: #d67946;
-  --accent-hover: #e58a55;
-  --accent-soft: #3a2418;
-  --accent-ink: #181814;
+  --accent: #ffc2a0;        /* brighter peach so it pops against dark bg */
+  --accent-hover: #ffd4b8;
+  --accent-soft: #2a1f18;   /* warm-toned dark surface for accent regions */
+  --accent-ink: #0e1014;    /* peach is light; dark ink reads on it */
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
@@ -95,17 +95,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0e0e0c;
-    --surface: #1a1a17;
-    --surface-2: #232320;
-    --surface-sunken: #080807;
-    --ink: #fafaf7;
-    --ink-muted: #a09f98;
-    --ink-subtle: #6b6b66;
-    --accent: #d67946;
-    --accent-hover: #e58a55;
-    --accent-soft: #3a2418;
-    --accent-ink: #181814;
+    --bg: #0a0c10;
+    --surface: #14171c;
+    --surface-2: #1c2026;
+    --surface-sunken: #05070a;
+    --ink: #f6f8fb;
+    --ink-muted: #9aa0a9;
+    --ink-subtle: #5f6671;
+    --accent: #ffc2a0;
+    --accent-hover: #ffd4b8;
+    --accent-soft: #2a1f18;
+    --accent-ink: #0e1014;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3);
