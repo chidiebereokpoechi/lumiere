@@ -1,10 +1,15 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { galleries } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
+import { checkRateLimit } from '../../middleware/rate-limit';
+import { verifyPassword, hashPassword } from '../../services/auth';
+import { createGallerySession, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
+import { env } from '../../lib/config';
 import { now } from '../../lib/ids';
+import { log } from '../../lib/logger';
 
 type AccessState = 'ok' | 'locked' | 'expired';
 
@@ -73,4 +78,51 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     }
 
     return { state: 'ok' as AccessState, gallery: toMinimal(gallery) };
+  })
+
+  // POST /api/gallery/:slug/unlock — verify password, issue gallery_session cookie
+  .post('/:slug/unlock', async ({ params, body, cookie, set, clientIp }) => {
+    const ip = clientIp ?? 'unknown';
+    // v1.2 §14: 5 password attempts per IP per gallery per 15min.
+    if (!checkRateLimit(`gallery_unlock:${params.slug}`, ip, 5, 15 * 60)) {
+      set.status = 429;
+      return { error: 'too_many_attempts' };
+    }
+
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) {
+      // Decoy hash so 404 timing matches a wrong-password 401.
+      await hashPassword('decoy');
+      set.status = 404;
+      return { error: 'not_found' };
+    }
+    if (!gallery.passwordHash) {
+      set.status = 400;
+      return { error: 'no_password_set' };
+    }
+    if (isExpired(gallery)) {
+      set.status = 410;
+      return { error: 'expired' };
+    }
+
+    const ok = await verifyPassword(body.password, gallery.passwordHash);
+    if (!ok) {
+      set.status = 401;
+      return { error: 'invalid_password' };
+    }
+
+    const session = createGallerySession(gallery.id, ip);
+    cookie[GALLERY_SESSION_COOKIE]!.set({
+      value: session.token,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: env.IS_PROD,
+      path: '/',
+      maxAge: session.expiresAt - now(),
+    });
+
+    log.info('gallery.unlock', { galleryId: gallery.id, ip });
+    return { ok: true, gallery: toMinimal(gallery) };
+  }, {
+    body: t.Object({ password: t.String({ minLength: 1 }) }),
   });
