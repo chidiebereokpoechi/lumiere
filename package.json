@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "typecheck": "bun run --filter '*' typecheck",
-    "dev": "bun run --filter @lumiere/api dev"
+    "api": "bun run --filter @lumiere/api dev",
+    "web": "bun run --filter @lumiere/web dev"
   }
 }
