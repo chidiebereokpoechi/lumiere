@@ -65,6 +65,35 @@ export function presignGet(key: string, expiresIn = env.PRESIGN_TTL_SECONDS): Pr
   );
 }
 
+/**
+ * Like presignGet, but sets ResponseContentDisposition so the browser saves the
+ * file with the requested filename. SigV4 covers the response-header params
+ * since they're part of the signed query string.
+ */
+export function presignDownload(
+  key: string,
+  filename: string,
+  expiresIn = env.PRESIGN_TTL_SECONDS,
+): Promise<string> {
+  const safe = filename.replace(/["\\\r\n]/g, '_');
+  return getSignedUrl(
+    s3Public,
+    new GetObjectCommand({
+      Bucket: env.S3_BUCKET,
+      Key: key,
+      ResponseContentDisposition: `attachment; filename="${safe}"`,
+    }),
+    { expiresIn },
+  );
+}
+
+/** Fetch an object's body as a Node Readable — used by the ZIP builder. */
+export async function getObjectStream(key: string): Promise<NodeJS.ReadableStream> {
+  const res = await s3.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+  if (!res.Body) throw new Error(`empty body for ${key}`);
+  return res.Body as NodeJS.ReadableStream;
+}
+
 export async function checkS3(): Promise<boolean> {
   try {
     await s3.send(new ListObjectsV2Command({ Bucket: env.S3_BUCKET, MaxKeys: 1 }));
