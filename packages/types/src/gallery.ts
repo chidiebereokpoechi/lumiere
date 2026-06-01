@@ -36,6 +36,7 @@ export const GalleryPatchInput = z.object({
   customCss: z.string().nullable(),
   sortOrder: z.string(),
   coverPhotoId: z.string().nullable(),
+  watermarkPresetId: z.string().nullable(),
   password: z.string().nullable(),
 }).partial().strict();
 export type GalleryPatchInput = z.infer<typeof GalleryPatchInput>;
