@@ -1,0 +1,37 @@
+import { Elysia } from 'elysia';
+import { eq } from 'drizzle-orm';
+import { db } from '../db';
+import { photographers } from '../db/schema';
+import { verifyAccessToken } from '../services/auth';
+
+export const ACCESS_COOKIE = 'lumiere_jwt';
+export const REFRESH_COOKIE = 'lumiere_refresh';
+
+export const authContext = new Elysia({ name: 'auth-context' }).derive({ as: 'global' }, async ({ cookie }) => {
+  const raw = cookie[ACCESS_COOKIE]?.value;
+  const token = typeof raw === 'string' ? raw : undefined;
+  if (!token) return { currentPhotographer: null };
+
+  const claims = await verifyAccessToken(token);
+  if (!claims) return { currentPhotographer: null };
+
+  const row = await db.query.photographers.findFirst({ where: eq(photographers.id, claims.sub) });
+  if (!row) return { currentPhotographer: null };
+  return {
+    currentPhotographer: {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      brandName: row.brandName,
+    },
+  };
+});
+
+export const requireAuth = new Elysia({ name: 'require-auth' })
+  .use(authContext)
+  .onBeforeHandle(({ currentPhotographer, set }) => {
+    if (!currentPhotographer) {
+      set.status = 401;
+      return { error: 'unauthenticated' };
+    }
+  });

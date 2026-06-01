@@ -1,0 +1,13 @@
+{
+  "name": "lumiere",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "bun run --filter '*' typecheck",
+    "dev": "bun run --filter @lumiere/api dev"
+  }
+}

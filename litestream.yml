@@ -1,0 +1,9 @@
+dbs:
+  - path: /app/data/lumiere.db
+    replicas:
+      - type: s3
+        endpoint: ${LITESTREAM_S3_ENDPOINT}
+        bucket: ${LITESTREAM_S3_BUCKET}
+        path: db
+        access-key-id: ${LITESTREAM_S3_ACCESS_KEY}
+        secret-access-key: ${LITESTREAM_S3_SECRET_KEY}

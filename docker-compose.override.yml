@@ -1,0 +1,9 @@
+services:
+  app:
+    command: bun run --hot apps/api/src/index.ts
+    volumes:
+      - ./apps:/app/apps
+      - ./packages:/app/packages
+      - db-data:/app/data
+    ports:
+      - "3000:3000"
