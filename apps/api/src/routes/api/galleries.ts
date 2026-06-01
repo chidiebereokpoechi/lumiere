@@ -8,6 +8,7 @@ import { checkCsrf } from '../../middleware/csrf';
 import { hashPassword } from '../../services/auth';
 import { uniqueGallerySlug } from '../../services/slug';
 import { deletePrefix } from '../../services/storage';
+import { enqueue } from '../../services/queue';
 import { parseBody } from '../../lib/validation';
 import { newId, now } from '../../lib/ids';
 
@@ -106,7 +107,24 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
       patch.passwordHash = password === null || password === '' ? null : await hashPassword(password);
     }
 
+    // If the watermark preset is changing (either attaching, detaching, or
+    // swapping), enqueue apply_watermark jobs for every existing photo so the
+    // derivative on S3 catches up. The job is cheap — reads the existing
+    // preview, composites, uploads — no full reprocess needed.
+    const watermarkChanged =
+      patch.watermarkPresetId !== undefined &&
+      patch.watermarkPresetId !== existing.watermarkPresetId;
+
     await db.update(galleries).set(patch).where(eq(galleries.id, ctx.params.galleryId));
+
+    if (watermarkChanged) {
+      const photoRows = await db.select({ id: photos.id }).from(photos)
+        .where(eq(photos.galleryId, existing.id));
+      for (const p of photoRows) {
+        await enqueue('apply_watermark', { photoId: p.id, galleryId: existing.id }, existing.id);
+      }
+    }
+
     return db.query.galleries.findFirst({ where: eq(galleries.id, ctx.params.galleryId) });
   })
 
