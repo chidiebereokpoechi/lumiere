@@ -55,5 +55,11 @@ export const env = {
   TRUSTED_PROXY_HOPS: int('TRUSTED_PROXY_HOPS', 1),
   RATE_LIMIT_WINDOW_MS: int('RATE_LIMIT_WINDOW_MS', 60_000),
 
+  SMTP_HOST: optional('SMTP_HOST', ''),
+  SMTP_PORT: int('SMTP_PORT', 587),
+  SMTP_USER: optional('SMTP_USER', ''),
+  SMTP_PASS: optional('SMTP_PASS', ''),
+  FROM_EMAIL: optional('FROM_EMAIL', 'noreply@example.com'),
+
   IS_PROD: optional('NODE_ENV', 'development') === 'production',
 } as const;
