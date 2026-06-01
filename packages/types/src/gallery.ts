@@ -2,7 +2,14 @@ import { z } from 'zod';
 
 // Booleans on the wire, 0/1 in the DB. Transforms here so handlers don't have
 // to rewrap. Stays `undefined` when the field is absent in a PATCH.
-const dbBool = z.boolean().transform((b) => (b ? 1 : 0));
+//
+// Idempotent: accepts a real boolean OR an already-coerced 0/1. The frontend
+// validates with this same schema before sending, which turns `true` → `1`;
+// the API then re-parses, so dbBool must tolerate seeing `1` the second time
+// (otherwise z.boolean() rejects the number and the PATCH 400s).
+const dbBool = z
+  .union([z.boolean(), z.literal(0), z.literal(1)])
+  .transform((v) => (v === true || v === 1 ? 1 : 0));
 
 export const GalleryCreateInput = z.object({
   title: z.string().min(1).max(200),
