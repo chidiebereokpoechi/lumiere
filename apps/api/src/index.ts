@@ -20,6 +20,7 @@ import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
 import { handleProcessPhoto } from './services/image-processor';
 import { handleSendEmail } from './services/email-job';
+import { handleApplyWatermark } from './services/watermark-job';
 
 migrate();
 
@@ -27,6 +28,7 @@ migrate();
 const concurrency = Number(process.env.IMAGE_CONCURRENCY ?? 3);
 registerHandler('process_photo', handleProcessPhoto);
 registerHandler('send_email', handleSendEmail);
+registerHandler('apply_watermark', handleApplyWatermark);
 startWorker({ concurrency });
 startReaper({ intervalMs: 60_000, staleAfterMs: 5 * 60_000 });
 log.info('worker.started', { concurrency });

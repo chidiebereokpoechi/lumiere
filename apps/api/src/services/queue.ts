@@ -7,7 +7,7 @@ import { eq, sql } from 'drizzle-orm';
 import { newId, now } from '../lib/ids';
 import { log } from '../lib/logger';
 
-export type JobType = 'process_photo' | 'send_email';
+export type JobType = 'process_photo' | 'send_email' | 'apply_watermark';
 
 export interface JobRow {
   id: string;
