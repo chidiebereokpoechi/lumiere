@@ -82,10 +82,12 @@ Built so far (v1.2 Phase 1 backend core):
 - Downloads: `GET /api/gallery/:slug/download/:photoId` (302 → presigned w/ Content-Disposition), `GET /api/gallery/:slug/download?scope=all|favorites` (streaming ZIP via archiver, store=level 0, filename dedupe). Rate-limit 3/hour/IP/gallery; admin bypasses.
 - `/img/:gid/:pid/:size` presigned redirect — accepts admin JWT, gallery_session, or public-gallery anonymous (thumb/preview); original is admin-only
 - Admin analytics: `GET /api/analytics/overview` (totals + activity feed), `GET /api/galleries/:galleryId/analytics` (views/downloads timelines, favorites-by-photo, device split). Crude UA bucketer in `lib/user-agent.ts` (no full UA parser dep).
+- Watermarks: `GET/POST/GET/PATCH/DELETE /api/watermark-presets[/:id]` admin CRUD with discriminated-union Zod (`text` / `image`). `services/watermark.ts` composites text via SVG (no Pango font dep). `process_photo` builds `watermarked/{gid}/{pid}.webp` derivative when the gallery's `watermarkPresetId` is set; `downloadMode='watermarked'` then serves it via the existing fallback in `routes/api/downloads.ts`.
 - `/health` reports `{ db, s3 }`
 
 Not built (next):
 - Email notifications (Nodemailer SMTP, templates for gallery_viewed / download / favorites_received)
-- Watermark presets + watermark composition step in the image processor
 - Comments + moderation queue
+- Re-process existing photos when a watermark preset is attached to a gallery after upload (today only new uploads pick up the watermark)
+- Image-watermark uploads endpoint (text watermarks work end-to-end; the image branch of `applyWatermark` is implemented but there's no upload flow for the logo asset yet)
 - The whole Next.js frontend tier
