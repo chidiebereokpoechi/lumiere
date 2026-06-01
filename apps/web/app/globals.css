@@ -43,10 +43,10 @@
   --ink-muted: #5f6671;
   --ink-subtle: #9aa0a9;
 
-  /* Accent (peach). Light enough that dark ink reads on top. */
-  --accent: #ffb088;
-  --accent-hover: #f89d71;
-  --accent-soft: #fcede2;
+  /* Accent (peach, leaning slightly pink). Light enough that dark ink reads on top. */
+  --accent: #ffab95;
+  --accent-hover: #f89884;
+  --accent-soft: #fde7dc;
   --accent-ink: #0e1014;
 
   /* Semantic — kept neutral-leaning so they don't clash with peach. */
@@ -86,9 +86,9 @@
   --ink-muted: #9aa0a9;
   --ink-subtle: #5f6671;
 
-  --accent: #ffc2a0;        /* brighter peach so it pops against dark bg */
-  --accent-hover: #ffd4b8;
-  --accent-soft: #2a1f18;   /* warm-toned dark surface for accent regions */
+  --accent: #ffbba8;        /* brighter peach so it pops against dark bg */
+  --accent-hover: #ffcebd;
+  --accent-soft: #2c1f1c;   /* peach-soft dark surface */
   --accent-ink: #0e1014;    /* peach is light; dark ink reads on it */
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
@@ -107,9 +107,9 @@
     --ink: #f6f8fb;
     --ink-muted: #9aa0a9;
     --ink-subtle: #5f6671;
-    --accent: #ffc2a0;
-    --accent-hover: #ffd4b8;
-    --accent-soft: #2a1f18;
+    --accent: #ffbba8;
+    --accent-hover: #ffcebd;
+    --accent-soft: #2c1f1c;
     --accent-ink: #0e1014;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
