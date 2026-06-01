@@ -1,8 +1,15 @@
-import { Elysia } from 'elysia';
+import { Elysia, type Context } from 'elysia';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { photographers } from '../db/schema';
 import { verifyAccessToken } from '../services/auth';
+
+export interface CurrentPhotographer {
+  id: string;
+  email: string;
+  name: string;
+  brandName: string | null;
+}
 
 export const ACCESS_COOKIE = 'lumiere_jwt';
 export const REFRESH_COOKIE = 'lumiere_refresh';
@@ -27,11 +34,19 @@ export const authContext = new Elysia({ name: 'auth-context' }).derive({ as: 'gl
   };
 });
 
-export const requireAuth = new Elysia({ name: 'require-auth' })
-  .use(authContext)
-  .onBeforeHandle(({ currentPhotographer, set }) => {
-    if (!currentPhotographer) {
-      set.status = 401;
-      return { error: 'unauthenticated' };
-    }
-  });
+/**
+ * Inline guard for routes that need an authenticated photographer. Returns a
+ * 401 response object the handler should return immediately, or `null` if the
+ * request passes. The narrowing assertion lets callers use
+ * `ctx.currentPhotographer!` afterwards without re-checking.
+ */
+export function requireAuth(ctx: {
+  currentPhotographer: CurrentPhotographer | null;
+  set: Context['set'];
+}): { error: string } | null {
+  if (!ctx.currentPhotographer) {
+    ctx.set.status = 401;
+    return { error: 'unauthenticated' };
+  }
+  return null;
+}
