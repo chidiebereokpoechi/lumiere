@@ -8,6 +8,7 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/api/auth';
 import { galleryRoutes } from './routes/api/galleries';
 import { photoRoutes } from './routes/api/photos';
+import { clientGalleryRoutes } from './routes/api/gallery';
 import { eventsRoutes } from './routes/events';
 import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
@@ -45,6 +46,7 @@ const app = new Elysia()
   .use(authRoutes)
   .use(galleryRoutes)
   .use(photoRoutes)
+  .use(clientGalleryRoutes)
   .use(eventsRoutes)
   .use(imageRoutes)
   .listen({ port: env.PORT, hostname: '0.0.0.0' });
