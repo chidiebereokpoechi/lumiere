@@ -81,10 +81,10 @@ Built so far (v1.2 Phase 1 backend core):
 - Favorites: `GET/POST/DELETE /api/gallery/:slug/favorite[s]`, idempotent, auto-issues a guest session on first POST for public galleries
 - Downloads: `GET /api/gallery/:slug/download/:photoId` (302 → presigned w/ Content-Disposition), `GET /api/gallery/:slug/download?scope=all|favorites` (streaming ZIP via archiver, store=level 0, filename dedupe). Rate-limit 3/hour/IP/gallery; admin bypasses.
 - `/img/:gid/:pid/:size` presigned redirect — accepts admin JWT, gallery_session, or public-gallery anonymous (thumb/preview); original is admin-only
+- Admin analytics: `GET /api/analytics/overview` (totals + activity feed), `GET /api/galleries/:galleryId/analytics` (views/downloads timelines, favorites-by-photo, device split). Crude UA bucketer in `lib/user-agent.ts` (no full UA parser dep).
 - `/health` reports `{ db, s3 }`
 
 Not built (next):
-- Analytics admin routes (timeline, downloads log, per-photo favorites — data is already collected in `gallery_views` / `downloads` / `favorites`)
 - Email notifications (Nodemailer SMTP, templates for gallery_viewed / download / favorites_received)
 - Watermark presets + watermark composition step in the image processor
 - Comments + moderation queue
