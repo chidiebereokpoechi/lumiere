@@ -84,10 +84,10 @@ Built so far (v1.2 Phase 1 backend core):
 - Admin analytics: `GET /api/analytics/overview` (totals + activity feed), `GET /api/galleries/:galleryId/analytics` (views/downloads timelines, favorites-by-photo, device split). Crude UA bucketer in `lib/user-agent.ts` (no full UA parser dep).
 - Watermarks: `GET/POST/GET/PATCH/DELETE /api/watermark-presets[/:id]` admin CRUD with discriminated-union Zod (`text` / `image`). `services/watermark.ts` composites text via SVG (no Pango font dep). `process_photo` builds `watermarked/{gid}/{pid}.webp` derivative when the gallery's `watermarkPresetId` is set; `downloadMode='watermarked'` then serves it via the existing fallback in `routes/api/downloads.ts`.
 - Email notifications: Nodemailer + Handlebars templates in [apps/api/emails/](apps/api/emails/), `send_email` is a queue job (handler in `services/email-job.ts`) so requests never block on SMTP. The `notifyPhotographer(galleryId, template, data)` helper wraps "insert notification row + enqueue job" with sensible defaults (galleryTitle/Url injected). Three hook points: `track-view` (gated by `notify_on_view`, rate-limited 1/4h per gallery+IP), single+ZIP `download` (skipped for admin owner, rate-limited 1/h), and `favorite` (rate-limited 1/h per gallery — clients click in clusters). With SMTP unset, `nodemailer.jsonTransport` runs so the pipeline is testable without a real server.
+- Comments + moderation: `POST /api/gallery/:slug/comments` (client; gated by `allowComments`, rate-limited 5/15min per gallery+IP, optional `photoId` for per-photo threads) lands `is_approved=0`. `GET /api/gallery/:slug/comments[?photoId=…]` shows only approved. Admin: `GET /api/galleries/:galleryId/comments` (all incl. pending), `PATCH /:commentId { isApproved }`, `DELETE /:commentId`.
 - `/health` reports `{ db, s3 }`
 
 Not built (next):
-- Comments + moderation queue
 - Re-process existing photos when a watermark preset is attached to a gallery after upload (today only new uploads pick up the watermark)
 - Image-watermark uploads endpoint (text watermarks work end-to-end; the image branch of `applyWatermark` is implemented but there's no upload flow for the logo asset yet)
 - The whole Next.js frontend tier
