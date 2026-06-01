@@ -1,5 +1,6 @@
-import { Elysia } from 'elysia';
-import { eq, and } from 'drizzle-orm';
+import { Elysia, t } from 'elysia';
+import { eq, and, asc } from 'drizzle-orm';
+import { Readable } from 'node:stream';
 import { db } from '../../db';
 import { galleries, photos, favorites, downloads } from '../../db/schema';
 import { authContext } from '../../middleware/auth';
@@ -7,6 +8,8 @@ import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
 import { presignDownload } from '../../services/storage';
+import { buildZipStream, type ZipEntry } from '../../services/zip-builder';
+import { slugify } from '../../services/slug';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
 
@@ -119,4 +122,84 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     set.status = 302;
     set.headers['location'] = url;
     return '';
+  })
+
+  // GET /api/gallery/:slug/download?scope=all|favorites — streaming ZIP of the
+  // chosen photo set. Uses store (level 0); inputs are already-compressed
+  // JPEG/WebP so deflate would burn CPU for ~0% gain (v1.2 §9).
+  .get('/:slug/download', async (ctx) => {
+    const { params, query, currentPhotographer, gallerySession, clientIp, set } = ctx;
+    const scope = query.scope ?? 'all';
+
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { error: 'not_found' }; }
+    if (!hasGalleryAccess(gallery, { currentPhotographer, gallerySession })) {
+      set.status = isExpired(gallery) ? 410 : 401;
+      return { error: isExpired(gallery) ? 'expired' : 'unauthenticated' };
+    }
+
+    // v1.2 §14: 3 ZIP initiations per IP per gallery per hour. Admin bypass —
+    // photographers downloading their own galleries shouldn't be throttled.
+    const isAdmin = currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    if (!isAdmin && !checkRateLimit(`zip:${gallery.id}`, clientIp ?? 'unknown', 3, 3600)) {
+      set.status = 429;
+      return { error: 'too_many_zip_downloads' };
+    }
+
+    let photoRows = await db.query.photos.findMany({
+      where: and(eq(photos.galleryId, gallery.id), eq(photos.uploadStatus, 'ready')),
+      orderBy: [asc(photos.position), asc(photos.createdAt)],
+    });
+
+    if (scope === 'favorites') {
+      if (!gallerySession) { set.status = 401; return { error: 'no_session' }; }
+      const favs = await db.query.favorites.findMany({
+        where: and(eq(favorites.galleryId, gallery.id), eq(favorites.sessionToken, gallerySession.token)),
+      });
+      const favIds = new Set(favs.map((f) => f.photoId));
+      photoRows = photoRows.filter((p) => favIds.has(p.id));
+    }
+
+    if (photoRows.length === 0) {
+      set.status = 404;
+      return { error: 'no_photos_in_scope' };
+    }
+
+    const entries: ZipEntry[] = [];
+    for (const photo of photoRows) {
+      const resolved = await resolveDownloadKey(gallery, photo, { currentPhotographer, gallerySession });
+      if (!resolved.ok) continue; // skip photos without a usable derivative
+      entries.push({ key: resolved.key, filename: photo.filenameOriginal });
+    }
+    if (entries.length === 0) {
+      set.status = 403;
+      return { error: 'no_downloadable_photos' };
+    }
+
+    await db.insert(downloads).values({
+      id: newId(),
+      galleryId: gallery.id,
+      photoId: null,
+      clientIp: clientIp ?? null,
+      createdAt: now(),
+    });
+
+    const { archive } = buildZipStream(entries);
+    const zipName = `${slugify(gallery.title) || 'gallery'}${scope === 'favorites' ? '-favorites' : ''}.zip`;
+    log.info('download.zip', { galleryId: gallery.id, scope, count: entries.length });
+
+    return new Response(
+      Readable.toWeb(archive) as unknown as ReadableStream,
+      {
+        headers: {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${zipName}"`,
+          'Cache-Control': 'no-store',
+        },
+      },
+    );
+  }, {
+    query: t.Object({
+      scope: t.Optional(t.Union([t.Literal('all'), t.Literal('favorites')])),
+    }),
   });
