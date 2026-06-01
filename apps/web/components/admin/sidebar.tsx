@@ -20,7 +20,7 @@ const NAV: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="hidden md:flex md:w-52 flex-col bg-surface-2 border-r-2 border-border px-3 py-6">
+    <aside className="hidden md:flex md:w-52 flex-col bg-surface-2 border-r border-border px-3 py-6">
       <div className="px-2 pb-5">
         <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
           Lumière
@@ -43,13 +43,13 @@ export function Sidebar() {
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const base =
-    'flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-semibold transition-colors';
+    "flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-semibold uppercase tracking-wider font-[family-name:'Ika_Compact'] transition-colors";
 
   if (item.disabled) {
     return (
       <span
         aria-disabled
-        className={`${base} bg-surface-2 text-ink-subtle border-2 border-border cursor-not-allowed`}
+        className={`${base} bg-surface-2 text-ink-subtle border border-border cursor-not-allowed`}
       >
         <span className="opacity-50">{item.icon}</span>
         {item.label}
@@ -61,7 +61,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
     return (
       <Link
         href={item.href}
-        className={`${base} bg-surface-strong text-ink-inverse border-2 border-surface-strong`}
+        className={`${base} bg-surface-strong text-ink-inverse border border-surface-strong`}
         style={{ boxShadow: 'var(--ring-accent)' }}
       >
         {item.icon}
@@ -73,7 +73,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}
-      className={`${base} bg-surface text-ink-muted border-2 border-border hover:bg-surface-sunken hover:text-ink-strong`}
+      className={`${base} bg-surface text-ink-muted border border-border hover:bg-surface-sunken hover:text-ink-strong`}
     >
       {item.icon}
       {item.label}

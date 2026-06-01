@@ -66,8 +66,8 @@ export default function NewGalleryPage() {
 
   return (
     <div>
-      <header className="px-8 py-6 border-b-2 border-border">
-        <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-bold tracking-widest uppercase text-ink-muted hover:text-ink-strong">
+      <header className="px-8 py-6 border-b border-border">
+        <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-bold tracking-widest uppercase font-[family-name:'Ika_Compact'] text-ink-muted hover:text-ink-strong">
           ← Galleries
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink-strong">New gallery</h1>
@@ -75,45 +75,49 @@ export default function NewGalleryPage() {
       </header>
 
       <div className="px-8 py-6 pb-16">
-        <form onSubmit={onSubmit} className="mx-auto max-w-2xl rounded-lg bg-surface border-2 border-border p-8 space-y-6">
-          <Field id="title" label="Title" required>
-            <TextInput id="title" required value={title} onChange={setTitle} placeholder="Smith Wedding" />
-          </Field>
+        <form onSubmit={onSubmit} className="max-w-2xl space-y-6">
+          <section className="rounded-lg bg-surface border border-border p-8 space-y-5">
+            <h2 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted">Details</h2>
 
-          <Field id="slug" label="URL slug" hint="leave blank to auto-generate">
-            <TextInput id="slug" value={slug} onChange={setSlug} placeholder="smith-wedding" />
-          </Field>
-
-          <Field id="subtitle" label="Subtitle" hint="optional">
-            <Textarea id="subtitle" rows={2} value={subtitle} onChange={setSubtitle} placeholder="A weekend in Mendoza" />
-          </Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="clientName" label="Client name" hint="optional">
-              <TextInput id="clientName" value={clientName} onChange={setClientName} placeholder="Sarah Smith" />
+            <Field id="title" label="Title" required>
+              <TextInput id="title" required value={title} onChange={setTitle} placeholder="Smith Wedding" />
             </Field>
-            <Field id="clientEmail" label="Client email" hint="optional">
-              <TextInput id="clientEmail" type="email" value={clientEmail} onChange={setClientEmail} placeholder="sarah@example.com" />
-            </Field>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="eventDate" label="Event date" hint="optional">
-              <TextInput id="eventDate" type="date" value={eventDate} onChange={setEventDate} />
+            <Field id="slug" label="URL slug" hint="leave blank to auto-generate">
+              <TextInput id="slug" value={slug} onChange={setSlug} placeholder="smith-wedding" />
             </Field>
-            <Field id="eventType" label="Event type" hint="optional">
-              <TextInput id="eventType" value={eventType} onChange={setEventType} placeholder="Wedding" />
-            </Field>
-          </div>
 
-          <Field id="password" label="Client password" hint="leave blank for public access">
-            <TextInput id="password" type="password" autoComplete="new-password" value={password} onChange={setPassword} placeholder="••••••••" />
-          </Field>
+            <Field id="subtitle" label="Subtitle" hint="optional">
+              <Textarea id="subtitle" rows={2} value={subtitle} onChange={setSubtitle} placeholder="A weekend in Mendoza" />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="clientName" label="Client name" hint="optional">
+                <TextInput id="clientName" value={clientName} onChange={setClientName} placeholder="Sarah Smith" />
+              </Field>
+              <Field id="clientEmail" label="Client email" hint="optional">
+                <TextInput id="clientEmail" type="email" value={clientEmail} onChange={setClientEmail} placeholder="sarah@example.com" />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="eventDate" label="Event date" hint="optional">
+                <TextInput id="eventDate" type="date" value={eventDate} onChange={setEventDate} />
+              </Field>
+              <Field id="eventType" label="Event type" hint="optional">
+                <TextInput id="eventType" value={eventType} onChange={setEventType} placeholder="Wedding" />
+              </Field>
+            </div>
+
+            <Field id="password" label="Client password" hint="leave blank for public access">
+              <TextInput id="password" type="password" autoComplete="new-password" value={password} onChange={setPassword} placeholder="••••••••" />
+            </Field>
+          </section>
 
           <FormError message={error} />
 
           <div className="flex items-center justify-end gap-4 pt-2">
-            <Link href="/admin" className="text-sm font-semibold text-ink-muted hover:text-ink-strong">
+            <Link href="/admin" className="text-sm font-semibold uppercase tracking-wider font-[family-name:'Ika_Compact'] text-ink-muted hover:text-ink-strong">
               Cancel
             </Link>
             <Button type="submit" disabled={pending || title.trim().length === 0}>

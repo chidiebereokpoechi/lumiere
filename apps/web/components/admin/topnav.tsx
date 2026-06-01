@@ -29,7 +29,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
   }
 
   return (
-    <header className="flex items-center justify-between px-8 py-6 bg-bg border-b-2 border-border">
+    <header className="flex items-center justify-between px-8 py-6 bg-bg border-b border-border">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">{title}</h1>
         {subtitle && (
@@ -46,7 +46,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            className="flex items-center gap-2.5 rounded-md bg-surface border-2 border-border px-3 py-2 text-sm font-semibold text-ink-strong hover:bg-surface-2 transition-colors"
+            className="flex items-center gap-2.5 rounded-md bg-surface border border-border px-3 py-2 text-sm font-semibold text-ink-strong hover:bg-surface-2 transition-colors"
           >
             <Avatar name={user.name || user.email} />
             <span className="hidden sm:inline">{user.name || user.email.split('@')[0]}</span>
@@ -62,13 +62,13 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
               />
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-2 w-56 rounded-md bg-surface border-2 border-border p-2"
+                className="absolute right-0 z-20 mt-2 w-56 rounded-md bg-surface border border-border p-2"
               >
                 <div className="px-3 py-2.5">
                   <p className="text-sm font-semibold text-ink-strong truncate">{user.name}</p>
                   <p className="text-xs text-ink-muted truncate mt-0.5">{user.email}</p>
                 </div>
-                <div className="my-1 mx-1 h-[2px] bg-border" />
+                <div className="my-1 mx-1 h-px bg-border" />
                 <button
                   type="button"
                   onClick={signOut}

@@ -1,19 +1,141 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-/* Self-hosted Satoshi (Fontshare, OFL). Variable axis covers 300–900 in one
- * 42KB WOFF2 per style. */
+/* Self-hosted Ika (TRIAL) — static weights. Ika ships discrete weights with
+ * NO 600/SemiBold step: 100 Thin, 200 ExtraLight, 300 Light, 400 Regular,
+ * 500 Medium, 700 Bold, 800 ExtraBold, 900 Black, 950 Ultra. */
 @font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/satoshi-variable.woff2') format('woff2');
-  font-weight: 300 900;
+  font-family: "Ika";
+  src: url("/fonts/ika-thin.woff2") format("woff2");
+  font-weight: 100;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/satoshi-variable-italic.woff2') format('woff2');
-  font-weight: 300 900;
+  font-family: "Ika";
+  src: url("/fonts/ika-thin-italic.woff2") format("woff2");
+  font-weight: 100;
   font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-extralight.woff2") format("woff2");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-extralight-italic.woff2") format("woff2");
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-light-italic.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-regular-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-medium-italic.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-bold-italic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-extrabold.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-extrabold-italic.woff2") format("woff2");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-black-italic.woff2") format("woff2");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-ultra.woff2") format("woff2");
+  font-weight: 950;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ika";
+  src: url("/fonts/ika-ultra-italic.woff2") format("woff2");
+  font-weight: 950;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Ika Compact (variable, full weight axis) — headings only, rendered Light. */
+@font-face {
+  font-family: "Ika Compact";
+  src: url("/fonts/ika-compact-variable.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
   font-display: swap;
 }
 
@@ -22,7 +144,7 @@
  *
  *  - Slate-tone neutrals (cool, slightly blue) — chrome, surfaces,
  *    text.
- *  - 2px borders are a primary separation device. Soft rounding
+ *  - 1px borders are a primary separation device. Soft rounding
  *    (8px default) keeps things crisp.
  *  - Peach accent (warm) + accent-dark (deeper peach) for active /
  *    hover states. Echoes Spenny's primary / primary-dark.
@@ -33,24 +155,24 @@
  * ---------------------------------------------------------------- */
 
 :root {
-  --bg: #f1f3f7;          /* canvas */
-  --surface: #ffffff;     /* primary card */
-  --surface-2: #f8fafc;   /* alt panel, input bg */
+  --bg: #ffffff; /* canvas */
+  --surface: #ffffff; /* primary card */
+  --surface-2: #f8fafc; /* alt panel, input bg */
   --surface-sunken: #e8ecf1;
   --surface-strong: #0f172a; /* slate-900 — active/inverse */
 
-  --border: #e2e8f0;        /* slate-200 */
+  --border: #e2e8f0; /* slate-200 */
   --border-strong: #cbd5e1; /* slate-300 */
 
-  --ink: #334155;          /* slate-700 — body */
-  --ink-strong: #0f172a;   /* slate-900 — titles */
-  --ink-muted: #64748b;    /* slate-500 */
-  --ink-subtle: #94a3b8;   /* slate-400 */
-  --ink-inverse: #ffffff;  /* on dark surfaces */
+  --ink: #000000; /* black — body */
+  --ink-strong: #000000; /* black — titles */
+  --ink-muted: #64748b; /* slate-500 */
+  --ink-subtle: #94a3b8; /* slate-400 */
+  --ink-inverse: #ffffff; /* on dark surfaces */
 
-  --accent: #ffab95;        /* peach */
+  --accent: #ffab95; /* peach */
   --accent-hover: #f89884;
-  --accent-dark: #d87a5a;   /* deeper peach — analogous to primary-dark */
+  --accent-dark: #d87a5a; /* deeper peach — analogous to primary-dark */
   --accent-soft: #fde7dc;
   --accent-ink: #1f1411;
 
@@ -64,7 +186,8 @@
   --radius-pill: 9999px;
 
   --ring-accent: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
-  --ring-negative: 0 0 0 4px color-mix(in srgb, var(--negative) 20%, transparent);
+  --ring-negative: 0 0 0 4px
+    color-mix(in srgb, var(--negative) 20%, transparent);
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 120ms;
@@ -73,7 +196,7 @@
   color-scheme: light;
 }
 
-[data-theme='dark'] {
+[data-theme="dark"] {
   --bg: #0b1220;
   --surface: #111827;
   --surface-2: #0f172a;
@@ -99,7 +222,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root:not([data-theme="light"]) {
     --bg: #0b1220;
     --surface: #111827;
     --surface-2: #0f172a;
@@ -112,9 +235,9 @@
     --ink-muted: #94a3b8;
     --ink-subtle: #64748b;
     --ink-inverse: #0f172a;
-    --accent: #ffbba8;
-    --accent-hover: #ffcebd;
-    --accent-dark: #d87a5a;
+    --accent: #0077ff;
+    --accent-hover: #005fcc;
+    --accent-dark: #004799;
     --accent-soft: #2c1f1c;
     --accent-ink: #0e1014;
     color-scheme: dark;
@@ -123,10 +246,16 @@
 
 @theme inline {
   --font-sans:
-    'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
-    sans-serif;
+    "Ika", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono:
-    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* No bold anywhere — Ika's bold weights read chunky in this UI. Headings
+   * and emphasis all render at Regular 400. */
+  --font-weight-semibold: 400;
+  --font-weight-bold: 400;
+  --font-weight-extrabold: 400;
+  --font-weight-black: 400;
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -167,6 +296,32 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1,
+    "clig" 1,
+    "calt" 1,
+    "tnum" 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Ika Compact", var(--font-sans);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Buttons read as Ika Compact caps with tracking, matching the headings. */
+button {
+  font-family: "Ika Compact", var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 html:not(.theme-no-transition) * {

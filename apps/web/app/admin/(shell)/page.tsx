@@ -42,7 +42,7 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
   return (
     <Link
       href={`/admin/galleries/${gallery.id}`}
-      className="group flex flex-col rounded-lg bg-surface border-2 border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
+      className="group flex flex-col rounded-lg bg-surface border border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
     >
       <div className="aspect-[16/10] w-full overflow-hidden rounded-md bg-surface-sunken relative">
         {gallery.coverPhotoId ? (
@@ -81,7 +81,7 @@ function StatusPill({ status }: { status: 'active' | 'archived' | 'draft' }) {
         : 'bg-surface-sunken text-ink-muted border-border';
   return (
     <span
-      className={`absolute top-2 left-2 rounded-md border-2 px-2 py-1 text-xs font-extrabold uppercase tracking-widest ${cls}`}
+      className={`absolute top-2 left-2 rounded-md border px-2 py-1 text-xs font-extrabold uppercase tracking-widest ${cls}`}
     >
       {status}
     </span>
@@ -108,7 +108,7 @@ function NewGalleryButton() {
   return (
     <Link
       href="/admin/galleries/new"
-      className="inline-flex items-center gap-2 rounded-md bg-accent border-2 border-accent px-4 py-2.5 text-sm font-bold text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider font-[family-name:'Ika_Compact'] text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
         <path d="M12 5v14M5 12h14" />
@@ -120,7 +120,7 @@ function NewGalleryButton() {
 
 function EmptyState() {
   return (
-    <div className="mx-auto max-w-md rounded-lg bg-surface border-2 border-border p-10 text-center mt-8">
+    <div className="max-w-2xl rounded-lg bg-surface border border-border p-10">
       <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
         Nothing here yet
       </p>
@@ -131,7 +131,7 @@ function EmptyState() {
         Galleries hold photos and attachments and ship to your clients via a
         password-protected link.
       </p>
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex">
         <NewGalleryButton />
       </div>
     </div>

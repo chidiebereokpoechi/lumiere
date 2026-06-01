@@ -58,7 +58,7 @@ export function TextInput({
       autoComplete={autoComplete}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md bg-surface-2 border-2 border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
+      className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
     />
   );
 }
@@ -82,7 +82,7 @@ export function Textarea({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md bg-surface-2 border-2 border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors resize-y"
+      className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors resize-y"
     />
   );
 }
@@ -112,7 +112,7 @@ export function Button({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 rounded-md border-2 px-4 py-2.5 text-sm font-bold transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm font-bold transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {children}
     </button>
@@ -131,7 +131,7 @@ export function Select<T extends string>({ id, value, onChange, options }: Selec
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className="w-full rounded-md bg-surface-2 border-2 border-border px-3.5 py-2.5 text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors appearance-none cursor-pointer"
+      className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors appearance-none cursor-pointer"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'no-repeat',
@@ -175,7 +175,7 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill border-2 transition-colors ${
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill border transition-colors ${
           checked
             ? 'bg-accent border-accent'
             : 'bg-surface-sunken border-border'
@@ -196,7 +196,7 @@ export function FormError({ message }: { message: string | null }) {
   return (
     <div
       role="alert"
-      className="rounded-md bg-accent-soft border-2 border-accent/40 px-4 py-3 text-sm font-semibold text-ink-strong"
+      className="rounded-md bg-accent-soft border border-accent/40 px-4 py-3 text-sm font-semibold text-ink-strong"
     >
       {message}
     </div>

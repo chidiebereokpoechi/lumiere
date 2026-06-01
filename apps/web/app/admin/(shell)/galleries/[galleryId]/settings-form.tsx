@@ -203,7 +203,7 @@ export function SettingsForm({ gallery }: Props) {
 
       <FormError message={error} />
 
-      <div className="flex items-center justify-between gap-3 sticky bottom-4 bg-surface border-2 border-border rounded-lg px-5 py-4">
+      <div className="flex items-center justify-between gap-3 pt-2">
         <Button type="button" variant="danger" onClick={onDelete}>Delete gallery</Button>
         <div className="flex items-center gap-4">
           {savedAt && !saving && (
@@ -222,7 +222,7 @@ export function SettingsForm({ gallery }: Props) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg bg-surface border-2 border-border p-8 space-y-5">
+    <section className="rounded-lg bg-surface border border-border p-8 space-y-5">
       <h2 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted">{title}</h2>
       {children}
     </section>
