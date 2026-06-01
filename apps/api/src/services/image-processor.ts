@@ -1,12 +1,15 @@
 // Sharp pipeline per v1.2 §9. Reads the original from S3, generates
-// thumbnail/preview WebP derivatives, strips EXIF GPS, extracts a 5-colour
-// palette via Sharp's .stats(), and writes everything back to S3.
+// thumbnail/preview/(optionally watermarked) WebP derivatives, strips EXIF GPS,
+// extracts a dominant-colour palette via Sharp's .stats(), and writes
+// everything back to S3.
 import sharp from 'sharp';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq } from 'drizzle-orm';
+import { WatermarkConfig } from '@lumiere/types';
 import { db } from '../db';
-import { photos } from '../db/schema';
+import { photos, galleries, watermarkPresets } from '../db/schema';
 import { uploadObject } from './storage';
+import { applyWatermark } from './watermark';
 import { env } from '../lib/config';
 import { log } from '../lib/logger';
 import { emit } from './events';
@@ -39,6 +42,27 @@ interface ProcessPhotoPayload {
   batchId: string;
   s3KeyOriginal: string;
   filename: string;
+}
+
+async function maybeBuildWatermarked(galleryId: string, photoId: string, previewBuf: Buffer): Promise<string | null> {
+  const gallery = await db.query.galleries.findFirst({ where: eq(galleries.id, galleryId) });
+  if (!gallery?.watermarkPresetId) return null;
+
+  const preset = await db.query.watermarkPresets.findFirst({
+    where: eq(watermarkPresets.id, gallery.watermarkPresetId),
+  });
+  if (!preset) return null;
+
+  const cfgParsed = WatermarkConfig.safeParse(JSON.parse(preset.config));
+  if (!cfgParsed.success) {
+    log.warn('watermark preset has invalid config', { presetId: preset.id, issues: cfgParsed.error.issues });
+    return null;
+  }
+
+  const watermarkedBuf = await applyWatermark(previewBuf, cfgParsed.data);
+  const watermarkedKey = `watermarked/${galleryId}/${photoId}.webp`;
+  await uploadObject(watermarkedKey, watermarkedBuf, 'image/webp');
+  return watermarkedKey;
 }
 
 function narrow(payload: Record<string, unknown>): ProcessPhotoPayload {
@@ -92,9 +116,15 @@ export async function handleProcessPhoto(rawPayload: Record<string, unknown>, _j
     const previewKey = `previews/${galleryId}/${photoId}.webp`;
     await uploadObject(previewKey, previewBuf, 'image/webp');
 
+    // Watermarked derivative — only produced when the gallery has a preset
+    // assigned. Composited on top of the preview so it matches what the client
+    // sees in the lightbox.
+    const watermarkedKey = await maybeBuildWatermarked(galleryId, photoId, previewBuf);
+
     await db.update(photos).set({
       s3KeyThumbnail: thumbKey,
       s3KeyPreview: previewKey,
+      s3KeyWatermarked: watermarkedKey,
       width,
       height,
       fileSize: original.byteLength,
