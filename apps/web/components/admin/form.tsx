@@ -2,11 +2,9 @@
 
 import type React from 'react';
 
-// Spenny-language form primitives.
-// - 2px borders are the primary separator.
-// - text-xs by default (12px); labels are xs/slate-500.
-// - Inputs sit on surface-2, get a peach border + ring on focus.
-// - Buttons are compact: py-2 px-3, text-xs font-bold.
+// Spenny-language form primitives — slate surfaces, 2px borders, focus ring.
+// Typography is regular-sized (text-sm body, text-xs eyebrow labels),
+// not Spenny's ultra-dense default.
 
 interface FieldProps {
   id: string;
@@ -20,14 +18,14 @@ export function Field({ id, label, hint, required, children }: FieldProps) {
     <div>
       <label
         htmlFor={id}
-        className="flex items-baseline justify-between gap-3 text-xs font-bold text-ink-muted mb-1.5 uppercase tracking-wider"
+        className="flex items-baseline justify-between gap-3 text-xs font-bold text-ink-muted mb-2 uppercase tracking-wider"
       >
         <span>
           {label}
           {required && <span className="text-accent-dark ml-1">*</span>}
         </span>
         {hint && (
-          <span className="text-[0.65rem] text-ink-subtle font-normal normal-case tracking-normal">
+          <span className="text-xs text-ink-subtle font-normal normal-case tracking-normal">
             {hint}
           </span>
         )}
@@ -60,7 +58,7 @@ export function TextInput({
       autoComplete={autoComplete}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md bg-surface-2 border-2 border-border px-3 py-2 text-xs text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
+      className="w-full rounded-md bg-surface-2 border-2 border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
     />
   );
 }
@@ -84,7 +82,7 @@ export function Textarea({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-md bg-surface-2 border-2 border-border px-3 py-2 text-xs text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors resize-y"
+      className="w-full rounded-md bg-surface-2 border-2 border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors resize-y"
     />
   );
 }
@@ -114,7 +112,7 @@ export function Button({
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-md border-2 px-3 py-2 text-xs font-bold transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-md border-2 px-4 py-2.5 text-sm font-bold transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${cls}`}
     >
       {children}
     </button>
@@ -133,12 +131,12 @@ export function Select<T extends string>({ id, value, onChange, options }: Selec
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className="w-full rounded-md bg-surface-2 border-2 border-border px-3 py-2 text-xs text-ink-strong hover:border-border-strong focus:border-accent transition-colors appearance-none cursor-pointer"
+      className="w-full rounded-md bg-surface-2 border-2 border-border px-3.5 py-2.5 text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors appearance-none cursor-pointer"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 10px center',
-        paddingRight: '32px',
+        backgroundPosition: 'right 12px center',
+        paddingRight: '36px',
       }}
     >
       {options.map((o) => (
@@ -164,9 +162,9 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
       className="flex items-start justify-between gap-4 py-2 cursor-pointer"
     >
       <div className="flex-1">
-        <span className="block text-xs font-bold text-ink-strong">{label}</span>
+        <span className="block text-sm font-semibold text-ink-strong">{label}</span>
         {description && (
-          <span className="block mt-0.5 text-[0.65rem] text-ink-muted leading-relaxed">
+          <span className="block mt-1 text-xs text-ink-muted leading-relaxed">
             {description}
           </span>
         )}
@@ -177,15 +175,15 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-pill border-2 transition-colors ${
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill border-2 transition-colors ${
           checked
             ? 'bg-accent border-accent'
             : 'bg-surface-sunken border-border'
         }`}
       >
         <span
-          className={`inline-block h-3 w-3 rounded-pill bg-surface transition-transform ${
-            checked ? 'translate-x-[18px]' : 'translate-x-0.5'
+          className={`inline-block h-4 w-4 rounded-pill bg-surface transition-transform ${
+            checked ? 'translate-x-[20px]' : 'translate-x-0.5'
           }`}
         />
       </button>
@@ -198,7 +196,7 @@ export function FormError({ message }: { message: string | null }) {
   return (
     <div
       role="alert"
-      className="rounded-md bg-accent-soft border-2 border-accent/40 px-3 py-2 text-xs font-bold text-ink-strong"
+      className="rounded-md bg-accent-soft border-2 border-accent/40 px-4 py-3 text-sm font-semibold text-ink-strong"
     >
       {message}
     </div>

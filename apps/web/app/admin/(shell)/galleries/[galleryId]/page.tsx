@@ -34,9 +34,9 @@ export default async function GalleryEditorPage({ params }: Props) {
             href={`/g/${gallery.slug}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md bg-surface border-2 border-border px-3 py-2 text-xs font-bold text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
+            className="inline-flex items-center gap-2 rounded-md bg-surface border-2 border-border px-4 py-2.5 text-sm font-bold text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
@@ -62,12 +62,12 @@ export default async function GalleryEditorPage({ params }: Props) {
 }
 
 function Tab({ href, active, disabled, children }: { href: string; active?: boolean; disabled?: boolean; children: React.ReactNode }) {
-  const base = 'inline-flex items-center gap-1 rounded-md border-2 px-3 py-1.5 text-xs font-bold transition-colors';
+  const base = 'inline-flex items-center gap-2 rounded-md border-2 px-4 py-2 text-sm font-bold transition-colors';
   if (disabled) {
     return (
       <span className={`${base} bg-surface-2 text-ink-subtle border-border cursor-not-allowed`}>
         {children}
-        <span className="ml-1 text-[0.55rem] uppercase tracking-widest text-ink-subtle">soon</span>
+        <span className="ml-1 text-xs uppercase tracking-widest text-ink-subtle">soon</span>
       </span>
     );
   }

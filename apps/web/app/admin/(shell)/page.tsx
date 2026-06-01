@@ -58,9 +58,9 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
         <StatusPill status={status} />
       </div>
 
-      <div className="px-2 pt-3 pb-2">
-        <h2 className="text-sm font-bold text-ink-strong truncate">{gallery.title}</h2>
-        <div className="mt-1.5 flex items-center gap-1.5 text-[0.65rem] text-ink-muted">
+      <div className="px-2 pt-4 pb-2">
+        <h2 className="text-base font-bold text-ink-strong truncate">{gallery.title}</h2>
+        <div className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
           <span>{gallery.photoCount} {gallery.photoCount === 1 ? 'photo' : 'photos'}</span>
           <Dot />
           <span>{gallery.viewCount ?? 0} {gallery.viewCount === 1 ? 'view' : 'views'}</span>
@@ -81,7 +81,7 @@ function StatusPill({ status }: { status: 'active' | 'archived' | 'draft' }) {
         : 'bg-surface-sunken text-ink-muted border-border';
   return (
     <span
-      className={`absolute top-2 left-2 rounded-md border-2 px-2 py-0.5 text-[0.55rem] font-extrabold uppercase tracking-widest ${cls}`}
+      className={`absolute top-2 left-2 rounded-md border-2 px-2 py-1 text-xs font-extrabold uppercase tracking-widest ${cls}`}
     >
       {status}
     </span>
@@ -108,9 +108,9 @@ function NewGalleryButton() {
   return (
     <Link
       href="/admin/galleries/new"
-      className="inline-flex items-center gap-1.5 rounded-md bg-accent border-2 border-accent px-3 py-2 text-xs font-bold text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-md bg-accent border-2 border-accent px-4 py-2.5 text-sm font-bold text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
         <path d="M12 5v14M5 12h14" />
       </svg>
       New gallery
@@ -121,17 +121,17 @@ function NewGalleryButton() {
 function EmptyState() {
   return (
     <div className="mx-auto max-w-md rounded-lg bg-surface border-2 border-border p-10 text-center mt-8">
-      <p className="text-[0.5rem] font-bold tracking-[0.32em] uppercase text-ink-muted">
+      <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
         Nothing here yet
       </p>
-      <h2 className="mt-3 text-xl font-extrabold tracking-tight text-ink-strong">
+      <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-ink-strong">
         Create your first gallery
       </h2>
-      <p className="mt-2 text-xs text-ink-muted">
+      <p className="mt-3 text-sm text-ink-muted leading-relaxed">
         Galleries hold photos and attachments and ship to your clients via a
         password-protected link.
       </p>
-      <div className="mt-5 flex justify-center">
+      <div className="mt-6 flex justify-center">
         <NewGalleryButton />
       </div>
     </div>

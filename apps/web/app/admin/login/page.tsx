@@ -47,20 +47,20 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
-      <div className="w-full max-w-sm">
-        <p className="text-center text-[0.5rem] font-bold tracking-[0.32em] uppercase text-ink-muted">
+      <div className="w-full max-w-md">
+        <p className="text-center text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
           Lumière
         </p>
 
-        <div className="mt-8 rounded-lg bg-surface border-2 border-border p-8">
-          <h1 className="text-xl font-extrabold tracking-tight text-ink-strong">
+        <div className="mt-8 rounded-lg bg-surface border-2 border-border p-10">
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink-strong">
             Sign in
           </h1>
-          <p className="mt-1 text-xs text-ink-muted">
+          <p className="mt-2 text-sm text-ink-muted">
             Access your photographer dashboard.
           </p>
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
+          <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
             <Field id="email" label="Email">
               <TextInput
                 id="email"
