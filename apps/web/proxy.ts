@@ -6,10 +6,13 @@ import { NextResponse, type NextRequest } from 'next/server';
  * pages and bounces them to the login screen.
  *
  * We only look for cookie *presence*, not validity — the backend rejects
- * stale tokens on the actual API hit. That's the v1.2 §14 model:
- * middleware is a first gate, not the security boundary.
+ * stale tokens on the actual API hit. That's the v1.2 §14 model: proxy is
+ * a first gate, not the security boundary.
+ *
+ * Next 16 renamed the `middleware.ts` convention to `proxy.ts` (same edge
+ * runtime, same shape) — the exported function must be named `proxy`.
  */
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
     if (!req.cookies.get('lumiere_jwt')) {
