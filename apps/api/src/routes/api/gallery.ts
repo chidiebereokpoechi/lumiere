@@ -1,14 +1,14 @@
 import { Elysia, t } from 'elysia';
-import { eq, asc, and } from 'drizzle-orm';
+import { eq, asc, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries, photos } from '../../db/schema';
+import { galleries, photos, galleryViews } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
 import { verifyPassword, hashPassword } from '../../services/auth';
 import { createGallerySession, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
 import { env } from '../../lib/config';
-import { now } from '../../lib/ids';
+import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
 
 type AccessState = 'ok' | 'locked' | 'expired';
@@ -161,4 +161,32 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
         previewUrl: `/img/${gallery.id}/${p.id}/preview`,
       })),
     };
+  })
+
+  // POST /api/gallery/:slug/track-view — fire-and-forget view event from the
+  // client. Bumps gallery.view_count and inserts into gallery_views.
+  .post('/:slug/track-view', async ({ params, request, clientIp, set }) => {
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) {
+      set.status = 404;
+      return { error: 'not_found' };
+    }
+    if (isExpired(gallery)) {
+      set.status = 410;
+      return { error: 'expired' };
+    }
+
+    await db.insert(galleryViews).values({
+      id: newId(),
+      galleryId: gallery.id,
+      clientIp: clientIp ?? null,
+      userAgent: request.headers.get('user-agent') ?? null,
+      referrer: request.headers.get('referer') ?? null,
+      createdAt: now(),
+    });
+    await db.update(galleries)
+      .set({ viewCount: sql`${galleries.viewCount} + 1` })
+      .where(eq(galleries.id, gallery.id));
+
+    return { ok: true };
   });
