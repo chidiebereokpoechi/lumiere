@@ -20,7 +20,7 @@ const NAV: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="hidden md:flex md:w-64 flex-col bg-surface px-5 py-8">
+    <aside className="hidden md:flex md:w-64 flex-col bg-surface-sunken px-5 py-8">
       <div className="px-3">
         <p className="text-xs font-semibold tracking-[0.22em] uppercase text-ink-muted">
           Lumière
@@ -55,7 +55,7 @@ export function Sidebar() {
                 'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ' +
                 (active
                   ? 'bg-accent-soft text-ink'
-                  : 'text-ink-muted hover:bg-surface-2 hover:text-ink')
+                  : 'text-ink-muted hover:bg-surface hover:text-ink')
               }
             >
               <span>{item.icon}</span>

@@ -51,7 +51,7 @@ export default function LoginPage() {
           Lumière
         </p>
 
-        <div className="mt-10 rounded-xl bg-surface p-10 shadow-md">
+        <div className="mt-10 rounded-lg bg-surface p-10">
           <h1 className="text-2xl font-semibold tracking-tight text-ink">Sign in</h1>
           <p className="mt-2 text-sm text-ink-muted">
             Access your photographer dashboard.
@@ -122,7 +122,7 @@ function Field({ id, label, type, required, autoComplete, value, onChange }: Fie
         autoComplete={autoComplete}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md bg-surface-2 px-4 py-3 text-sm text-ink placeholder:text-ink-subtle outline-none focus:bg-surface-2 transition-colors"
+        className="w-full rounded-md bg-surface-sunken px-4 py-3 text-sm text-ink placeholder:text-ink-subtle focus:bg-surface-2 transition-colors"
       />
     </div>
   );

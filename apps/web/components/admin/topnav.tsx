@@ -63,7 +63,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
               />
               <div
                 role="menu"
-                className="absolute right-0 z-20 mt-2 w-56 rounded-lg bg-surface-2 p-2 shadow-lg"
+                className="absolute right-0 z-20 mt-2 w-56 rounded-md bg-surface p-2"
               >
                 <div className="px-3 py-2.5">
                   <p className="text-sm font-medium text-ink truncate">{user.name}</p>
@@ -73,7 +73,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
                   type="button"
                   onClick={signOut}
                   disabled={signingOut}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-ink hover:bg-surface disabled:opacity-50"
+                  className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50"
                 >
                   {signingOut ? 'Signing out…' : 'Sign out'}
                 </button>

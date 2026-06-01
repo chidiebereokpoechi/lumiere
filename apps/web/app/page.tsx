@@ -42,7 +42,7 @@ export default async function HomePage() {
         <h2 className="text-xs font-medium tracking-widest uppercase text-ink-subtle">
           System status
         </h2>
-        <div className="mt-4 rounded-lg bg-surface p-8 shadow-sm">
+        <div className="mt-4 rounded-md bg-surface p-8">
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <StatusDot kind={isOk ? 'ok' : isDegraded ? 'warn' : 'error'} />
@@ -102,9 +102,9 @@ function StatusDot({ kind }: { kind: 'ok' | 'warn' | 'error' }) {
 
 function SwatchCard({ label, varName }: { label: string; varName: string }) {
   return (
-    <div className="rounded-lg bg-surface p-5 shadow-sm">
+    <div className="rounded-md bg-surface p-5">
       <div
-        className="h-20 w-full rounded-md shadow-sm"
+        className="h-20 w-full rounded-md"
         style={{ background: `var(${varName})` }}
       />
       <div className="mt-4 flex items-baseline justify-between">

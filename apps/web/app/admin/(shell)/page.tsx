@@ -42,9 +42,9 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
   return (
     <Link
       href={`/admin/galleries/${gallery.id}`}
-      className="group flex flex-col rounded-xl bg-surface p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200"
+      className="group flex flex-col rounded-lg bg-surface p-3 hover:bg-surface-2 hover:-translate-y-0.5 transition-[transform,background-color] duration-200"
     >
-      <div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-surface-sunken relative">
+      <div className="aspect-[16/10] w-full overflow-hidden rounded-md bg-surface-sunken relative">
         {gallery.coverPhotoId ? (
           // The /img route is admin-gated; this works in-browser because the
           // photographer's JWT cookie is sent same-origin via the Next rewrite.
@@ -125,7 +125,7 @@ function NewGalleryButton() {
 
 function EmptyState() {
   return (
-    <div className="mx-auto max-w-xl rounded-xl bg-surface p-12 text-center shadow-sm mt-10">
+    <div className="mx-auto max-w-xl rounded-lg bg-surface p-12 text-center mt-10">
       <p className="text-xs font-semibold tracking-[0.22em] uppercase text-ink-muted">
         Nothing here yet
       </p>
