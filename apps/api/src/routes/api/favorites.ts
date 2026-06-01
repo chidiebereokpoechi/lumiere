@@ -1,11 +1,13 @@
 import { Elysia } from 'elysia';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { FavoriteInput, UnfavoriteInput } from '@lumiere/types';
 import { db } from '../../db';
 import { galleries, photos, favorites } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
+import { checkRateLimit } from '../../middleware/rate-limit';
 import { createGallerySession, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
+import { notifyPhotographer } from '../../services/notify';
 import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
@@ -110,6 +112,20 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
       note: input.note ?? null,
       createdAt: now(),
     });
+
+    // Notify the photographer at most once per hour per gallery — clients add
+    // favorites in clusters, so a single email per browsing session is the
+    // useful summary, not one ping per click.
+    if (checkRateLimit('email:favorites', gallery.id, 1, 3600)) {
+      const total = await db.select({ c: sql<number>`COUNT(*)` })
+        .from(favorites).where(eq(favorites.galleryId, gallery.id));
+      await notifyPhotographer(gallery.id, 'favorites_received', {
+        favoriteCount: Number(total[0]?.c ?? 0),
+        one: Number(total[0]?.c ?? 0) === 1,
+        clientName: gallery.clientName ?? null,
+      });
+    }
+
     return { ok: true, favorited: true };
   })
 
