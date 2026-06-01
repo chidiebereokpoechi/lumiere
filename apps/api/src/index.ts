@@ -17,12 +17,14 @@ import { eventsRoutes } from './routes/events';
 import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
 import { handleProcessPhoto } from './services/image-processor';
+import { handleSendEmail } from './services/email-job';
 
 migrate();
 
 // Worker setup — concurrency from env (v1.2 §9: bounded for memory safety).
 const concurrency = Number(process.env.IMAGE_CONCURRENCY ?? 3);
 registerHandler('process_photo', handleProcessPhoto);
+registerHandler('send_email', handleSendEmail);
 startWorker({ concurrency });
 startReaper({ intervalMs: 60_000, staleAfterMs: 5 * 60_000 });
 log.info('worker.started', { concurrency });
