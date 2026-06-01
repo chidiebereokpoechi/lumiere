@@ -1,12 +1,7 @@
 @import 'tailwindcss';
 
 /* Self-hosted Satoshi (Fontshare, OFL). Variable axis covers 300–900 in one
- * 42KB WOFF2 per style.
- *
- * NOTE: Use plain `format('woff2')` — the older `format('woff2-variations')`
- * alias is deprecated and modern browsers may silently ignore the @font-face,
- * falling back to system-ui without warning. The browser figures out it's a
- * variable font from the file itself once the format matches. */
+ * 42KB WOFF2 per style. */
 @font-face {
   font-family: 'Satoshi';
   src: url('/fonts/satoshi-variable.woff2') format('woff2');
@@ -23,65 +18,80 @@
 }
 
 /* ---------------------------------------------------------------- *
- *  Design tokens
- *  - Surface hierarchy: bg is the CANVAS (around cards). `surface` is the
- *    card itself — pure white in light mode so cards pop against the gray
- *    bg without needing a drop shadow.
- *  - No shadows. Separation = bg-tone contrast.
- *  - Modest rounding: 4 / 6 / 10 / 14, plus pill.
+ *  Design tokens — Spenny language adapted to Lumière.
+ *
+ *  - Slate-tone neutrals (cool, slightly blue) — chrome, surfaces,
+ *    text.
+ *  - 2px borders are a primary separation device. Soft rounding
+ *    (8px default) keeps things crisp.
+ *  - Peach accent (warm) + accent-dark (deeper peach) for active /
+ *    hover states. Echoes Spenny's primary / primary-dark.
+ *  - Focus is a 4px accent/20 ring via box-shadow, applied to
+ *    `:focus-visible` everywhere.
+ *  - Body defaults to 12px (text-xs) with tabular-nums for finance-
+ *    grade alignment. Headings ramp up from there.
  * ---------------------------------------------------------------- */
 
 :root {
-  /* Surfaces — canvas (bg) is a meaningful gray; cards (surface) are white. */
-  --bg: #e6ecf2;          /* canvas */
-  --surface: #ffffff;     /* card / panel — pops on canvas */
-  --surface-2: #f4f7fb;   /* subtle alt — hover states, secondary panels */
-  --surface-sunken: #d3dae3; /* sidebar bg, inputs */
+  --bg: #f1f3f7;          /* canvas */
+  --surface: #ffffff;     /* primary card */
+  --surface-2: #f8fafc;   /* alt panel, input bg */
+  --surface-sunken: #e8ecf1;
+  --surface-strong: #0f172a; /* slate-900 — active/inverse */
 
-  /* Ink */
-  --ink: #0e1014;
-  --ink-muted: #565d68;
-  --ink-subtle: #8e95a0;
+  --border: #e2e8f0;        /* slate-200 */
+  --border-strong: #cbd5e1; /* slate-300 */
 
-  /* Accent (peach, leaning slightly pink). */
-  --accent: #ffab95;
+  --ink: #334155;          /* slate-700 — body */
+  --ink-strong: #0f172a;   /* slate-900 — titles */
+  --ink-muted: #64748b;    /* slate-500 */
+  --ink-subtle: #94a3b8;   /* slate-400 */
+  --ink-inverse: #ffffff;  /* on dark surfaces */
+
+  --accent: #ffab95;        /* peach */
   --accent-hover: #f89884;
+  --accent-dark: #d87a5a;   /* deeper peach — analogous to primary-dark */
   --accent-soft: #fde7dc;
-  --accent-ink: #0e1014;
+  --accent-ink: #1f1411;
 
-  /* Semantic */
   --positive: #2f8055;
   --negative: #b34a36;
 
-  /* Radius — modest, not soft. */
   --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 9999px;
 
-  /* Motion */
+  --ring-accent: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+  --ring-negative: 0 0 0 4px color-mix(in srgb, var(--negative) 20%, transparent);
+
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-fast: 120ms;
-  --dur-base: 220ms;
-  --dur-slow: 360ms;
+  --dur-base: 200ms;
 
   color-scheme: light;
 }
 
 [data-theme='dark'] {
-  --bg: #0a0d12;          /* canvas (deepest) */
-  --surface: #181c23;     /* card — clearly lighter than canvas */
-  --surface-2: #232932;   /* alt elevated */
-  --surface-sunken: #050810; /* sidebar bg in dark */
+  --bg: #0b1220;
+  --surface: #111827;
+  --surface-2: #0f172a;
+  --surface-sunken: #060a14;
+  --surface-strong: #f8fafc;
 
-  --ink: #f6f8fb;
-  --ink-muted: #9aa1ac;
-  --ink-subtle: #5f6671;
+  --border: #1f2937;
+  --border-strong: #334155;
+
+  --ink: #cbd5e1;
+  --ink-strong: #f8fafc;
+  --ink-muted: #94a3b8;
+  --ink-subtle: #64748b;
+  --ink-inverse: #0f172a;
 
   --accent: #ffbba8;
   --accent-hover: #ffcebd;
+  --accent-dark: #d87a5a;
   --accent-soft: #2c1f1c;
   --accent-ink: #0e1014;
 
@@ -90,24 +100,27 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #0a0d12;
-    --surface: #181c23;
-    --surface-2: #232932;
-    --surface-sunken: #050810;
-    --ink: #f6f8fb;
-    --ink-muted: #9aa1ac;
-    --ink-subtle: #5f6671;
+    --bg: #0b1220;
+    --surface: #111827;
+    --surface-2: #0f172a;
+    --surface-sunken: #060a14;
+    --surface-strong: #f8fafc;
+    --border: #1f2937;
+    --border-strong: #334155;
+    --ink: #cbd5e1;
+    --ink-strong: #f8fafc;
+    --ink-muted: #94a3b8;
+    --ink-subtle: #64748b;
+    --ink-inverse: #0f172a;
     --accent: #ffbba8;
     --accent-hover: #ffcebd;
+    --accent-dark: #d87a5a;
     --accent-soft: #2c1f1c;
     --accent-ink: #0e1014;
     color-scheme: dark;
   }
 }
 
-/* ---------------------------------------------------------------- *
- *  Tailwind theme — aliases tokens into utility-class generators.
- * ---------------------------------------------------------------- */
 @theme inline {
   --font-sans:
     'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
@@ -119,11 +132,17 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-sunken: var(--surface-sunken);
+  --color-surface-strong: var(--surface-strong);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-ink: var(--ink);
+  --color-ink-strong: var(--ink-strong);
   --color-ink-muted: var(--ink-muted);
   --color-ink-subtle: var(--ink-subtle);
+  --color-ink-inverse: var(--ink-inverse);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-dark: var(--accent-dark);
   --color-accent-soft: var(--accent-soft);
   --color-accent-ink: var(--accent-ink);
   --color-positive: var(--positive);
@@ -144,26 +163,32 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-size: 12px; /* text-xs default, à la Spenny */
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Smooth theme transitions, but never on first paint (prevents flash). */
 html:not(.theme-no-transition) * {
   transition:
     background-color var(--dur-base) var(--ease-out),
-    color var(--dur-base) var(--ease-out);
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+
+/* Focus: peach ring on any focusable element. Box-shadow so it composes
+ * cleanly with rounded inputs/pills (unlike outline, which doesn't follow
+ * border-radius the same way). */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-accent);
 }
 
 ::selection {
   background: var(--accent-soft);
-  color: var(--ink);
-}
-
-/* Focus via outline (not box-shadow) so we keep the "no drop shadow" rule. */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  color: var(--ink-strong);
 }
