@@ -102,6 +102,62 @@ export function Button({ type = 'button', variant = 'primary', disabled, onClick
   );
 }
 
+interface SelectProps<T extends string> {
+  id: string;
+  value: T;
+  onChange: (next: T) => void;
+  options: Array<{ value: T; label: string }>;
+}
+export function Select<T extends string>({ id, value, onChange, options }: SelectProps<T>) {
+  return (
+    <select
+      id={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      className="w-full rounded-md bg-surface-sunken px-4 py-3 text-sm text-ink focus:bg-surface-2 transition-colors appearance-none cursor-pointer"
+      style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238e95a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '40px' }}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
+interface ToggleProps {
+  id: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  description?: string;
+}
+export function Toggle({ id, checked, onChange, label, description }: ToggleProps) {
+  return (
+    <label htmlFor={id} className="flex items-start justify-between gap-4 py-2 cursor-pointer">
+      <div className="flex-1">
+        <span className="block text-sm font-medium text-ink">{label}</span>
+        {description && <span className="block mt-0.5 text-xs text-ink-muted">{description}</span>}
+      </div>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-pill transition-colors ${
+          checked ? 'bg-accent' : 'bg-surface-sunken'
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 rounded-pill bg-surface transition-transform ${
+            checked ? 'translate-x-[18px]' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
+    </label>
+  );
+}
+
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
