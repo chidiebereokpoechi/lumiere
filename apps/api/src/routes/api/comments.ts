@@ -93,4 +93,82 @@ export const commentRoutes = new Elysia()
     };
   }, {
     query: t.Object({ photoId: t.Optional(t.String()) }),
+  })
+
+  // GET /api/galleries/:galleryId/comments — admin: every comment for the
+  // gallery, pending and approved, newest first.
+  .get('/api/galleries/:galleryId/comments', async (ctx) => {
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'not_found' }; }
+
+    const rows = await db.query.comments.findMany({
+      where: eq(comments.galleryId, gallery.id),
+      orderBy: [desc(comments.createdAt)],
+    });
+    return rows.map((c) => ({
+      id: c.id,
+      photoId: c.photoId,
+      clientName: c.clientName,
+      clientEmail: c.clientEmail,
+      body: c.body,
+      isApproved: c.isApproved === 1,
+      createdAt: c.createdAt,
+    }));
+  })
+
+  // PATCH /api/galleries/:galleryId/comments/:commentId — admin approves
+  // (or unapproves) a comment so it becomes visible (or hidden) publicly.
+  .patch('/api/galleries/:galleryId/comments/:commentId', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'not_found' }; }
+
+    const existing = await db.query.comments.findFirst({
+      where: and(eq(comments.id, ctx.params.commentId), eq(comments.galleryId, gallery.id)),
+    });
+    if (!existing) { ctx.set.status = 404; return { error: 'comment_not_found' }; }
+
+    const parsed = parseBody(ctx, CommentModerationInput);
+    if (!parsed.ok) return parsed.error;
+
+    await db.update(comments)
+      .set({ isApproved: parsed.data.isApproved ? 1 : 0 })
+      .where(eq(comments.id, existing.id));
+    return { id: existing.id, isApproved: parsed.data.isApproved };
+  })
+
+  // DELETE /api/galleries/:galleryId/comments/:commentId — admin removes a
+  // comment outright (spam, etc.).
+  .delete('/api/galleries/:galleryId/comments/:commentId', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'not_found' }; }
+
+    const existing = await db.query.comments.findFirst({
+      where: and(eq(comments.id, ctx.params.commentId), eq(comments.galleryId, gallery.id)),
+    });
+    if (!existing) { ctx.set.status = 404; return { error: 'comment_not_found' }; }
+
+    await db.delete(comments).where(eq(comments.id, existing.id));
+    return { ok: true };
   });
