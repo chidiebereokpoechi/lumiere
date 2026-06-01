@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { eq, and, asc } from 'drizzle-orm';
 import { Readable } from 'node:stream';
 import { db } from '../../db';
-import { galleries, photos, favorites, downloads } from '../../db/schema';
+import { galleries, photos, favorites, downloads, attachments } from '../../db/schema';
 import { authContext } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
@@ -184,8 +184,24 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     for (const photo of photoRows) {
       const resolved = await resolveDownloadKey(gallery, photo, { currentPhotographer, gallerySession });
       if (!resolved.ok) continue; // skip photos without a usable derivative
-      entries.push({ key: resolved.key, filename: photo.filenameOriginal });
+      entries.push({ key: resolved.key, filename: `photos/${photo.filenameOriginal}` });
     }
+
+    // Include gallery attachments alongside photos under a separate prefix.
+    // Skip when scope is "favorites" — favorites are per-photo, not per-file.
+    if (scope !== 'favorites') {
+      const attRows = await db.query.attachments.findMany({
+        where: eq(attachments.galleryId, gallery.id),
+        orderBy: [asc(attachments.position), asc(attachments.createdAt)],
+      });
+      for (const att of attRows) {
+        entries.push({
+          key: att.s3Key,
+          filename: `files/${att.displayName ?? att.filenameOriginal}`,
+        });
+      }
+    }
+
     if (entries.length === 0) {
       set.status = 403;
       return { error: 'no_downloadable_photos' };
