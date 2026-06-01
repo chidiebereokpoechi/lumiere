@@ -7,6 +7,7 @@ import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
 import { verifyPassword, hashPassword } from '../../services/auth';
 import { createGallerySession, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
+import { notifyPhotographer } from '../../services/notify';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
@@ -187,6 +188,18 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     await db.update(galleries)
       .set({ viewCount: sql`${galleries.viewCount} + 1` })
       .where(eq(galleries.id, gallery.id));
+
+    // Email the photographer, but only if they've left notifications on and
+    // not more than once every 4 hours per gallery+IP — otherwise a single
+    // client refreshing the page would spam the inbox.
+    if (gallery.notifyOnView === 1) {
+      const limitKey = `${gallery.id}:${clientIp ?? 'unknown'}`;
+      if (checkRateLimit('email:gallery_viewed', limitKey, 1, 4 * 3600)) {
+        await notifyPhotographer(gallery.id, 'gallery_viewed', {
+          clientName: gallery.clientName ?? null,
+        });
+      }
+    }
 
     return { ok: true };
   });
