@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
-import { eq } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries } from '../../db/schema';
+import { galleries, photos } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
@@ -125,4 +125,40 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     return { ok: true, gallery: toMinimal(gallery) };
   }, {
     body: t.Object({ password: t.String({ minLength: 1 }) }),
+  })
+
+  // GET /api/gallery/:slug/photos — public photo list with placeholder data
+  // (frontend plan §14: include colorPalette, width, height, theme, customCss).
+  .get('/:slug/photos', async ({ params, gallerySession, set }) => {
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) {
+      set.status = 404;
+      return { error: 'not_found' };
+    }
+    if (isExpired(gallery)) {
+      set.status = 410;
+      return { error: 'expired' };
+    }
+    if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+      set.status = 401;
+      return { error: 'locked' };
+    }
+
+    const rows = await db.query.photos.findMany({
+      where: and(eq(photos.galleryId, gallery.id), eq(photos.uploadStatus, 'ready')),
+      orderBy: [asc(photos.position), asc(photos.createdAt)],
+    });
+
+    return {
+      gallery: toMinimal(gallery),
+      photos: rows.map((p) => ({
+        id: p.id,
+        width: p.width,
+        height: p.height,
+        colorPalette: p.colorPalette ? JSON.parse(p.colorPalette) as string[] : null,
+        position: p.position,
+        thumbUrl: `/img/${gallery.id}/${p.id}/thumb`,
+        previewUrl: `/img/${gallery.id}/${p.id}/preview`,
+      })),
+    };
   });
