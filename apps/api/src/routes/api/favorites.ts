@@ -6,7 +6,7 @@ import { galleries, photos, favorites } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { createGallerySession, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
-import { parseJsonBody } from '../../lib/validation';
+import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
 
@@ -70,7 +70,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
 
   // POST /api/gallery/:slug/favorite — add or update a favorite (idempotent)
   .post('/:slug/favorite', async (ctx) => {
-    const parsed = await parseJsonBody(ctx, FavoriteInput);
+    const parsed = parseBody(ctx, FavoriteInput);
     if (!parsed.ok) return parsed.error;
     const input = parsed.data;
     const { params, gallerySession, clientIp, cookie, set } = ctx;
@@ -115,7 +115,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
 
   // DELETE /api/gallery/:slug/favorite — remove a favorite for the current session
   .delete('/:slug/favorite', async (ctx) => {
-    const parsed = await parseJsonBody(ctx, UnfavoriteInput);
+    const parsed = parseBody(ctx, UnfavoriteInput);
     if (!parsed.ok) return parsed.error;
     const { params, gallerySession, set } = ctx;
 

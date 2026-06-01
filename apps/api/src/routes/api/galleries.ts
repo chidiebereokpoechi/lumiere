@@ -8,7 +8,7 @@ import { checkCsrf } from '../../middleware/csrf';
 import { hashPassword } from '../../services/auth';
 import { uniqueGallerySlug } from '../../services/slug';
 import { deletePrefix } from '../../services/storage';
-import { parseJsonBody } from '../../lib/validation';
+import { parseBody } from '../../lib/validation';
 import { newId, now } from '../../lib/ids';
 
 export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
@@ -42,7 +42,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
     if (auth) return auth;
     const me = ctx.currentPhotographer!;
 
-    const parsed = await parseJsonBody(ctx, GalleryCreateInput);
+    const parsed = parseBody(ctx, GalleryCreateInput);
     if (!parsed.ok) return parsed.error;
     const input = parsed.data;
 
@@ -97,7 +97,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
       return { error: 'not_found' };
     }
 
-    const parsed = await parseJsonBody(ctx, GalleryPatchInput);
+    const parsed = parseBody(ctx, GalleryPatchInput);
     if (!parsed.ok) return parsed.error;
     const { password, ...rest } = parsed.data;
 
