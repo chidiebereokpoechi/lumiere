@@ -45,7 +45,7 @@ export function ThemeToggle() {
       aria-label={label}
       title={label}
       onClick={cycle}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-surface text-ink hover:bg-surface-2 active:scale-95 transition-[transform,background-color] duration-150"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-surface border-2 border-border text-ink-strong hover:bg-surface-2 active:scale-95 transition-[transform,background-color] duration-150"
     >
       {mounted ? <ThemeIcon theme={theme} /> : <ThemeIcon theme="system" />}
     </button>
