@@ -11,6 +11,7 @@ import { photoRoutes } from './routes/api/photos';
 import { clientGalleryRoutes } from './routes/api/gallery';
 import { favoriteRoutes } from './routes/api/favorites';
 import { downloadRoutes } from './routes/api/downloads';
+import { analyticsRoutes } from './routes/api/analytics';
 import { eventsRoutes } from './routes/events';
 import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
@@ -51,6 +52,7 @@ const app = new Elysia()
   .use(clientGalleryRoutes)
   .use(favoriteRoutes)
   .use(downloadRoutes)
+  .use(analyticsRoutes)
   .use(eventsRoutes)
   .use(imageRoutes)
   .listen({ port: env.PORT, hostname: '0.0.0.0' });
