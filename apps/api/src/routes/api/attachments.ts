@@ -5,12 +5,33 @@ import { AttachmentPatchInput } from '@lumiere/types';
 import { db } from '../../db';
 import { galleries, attachments } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
+import { gallerySessionContext } from '../../middleware/gallery-session';
+import { clientIp } from '../../middleware/client-ip';
 import { checkCsrf } from '../../middleware/csrf';
-import { uploadStream, deleteObject } from '../../services/storage';
+import { checkRateLimit } from '../../middleware/rate-limit';
+import { uploadStream, deleteObject, presignDownload } from '../../services/storage';
+import { notifyPhotographer } from '../../services/notify';
 import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
+
+function isExpired(g: typeof galleries.$inferSelect): boolean {
+  if (!g.expiresAt) return false;
+  const grace = (g.gracePeriodDays ?? 0) * 86_400;
+  return g.expiresAt + grace < now();
+}
+
+function publicShape(row: typeof attachments.$inferSelect) {
+  return {
+    id: row.id,
+    filename: row.displayName ?? row.filenameOriginal,
+    mimeType: row.mimeType,
+    fileSize: row.fileSize,
+    description: row.description,
+    position: row.position,
+  };
+}
 
 const MAX_BYTES = env.MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
@@ -155,4 +176,67 @@ export const attachmentRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/
       log.warn('attachment.s3_delete_failed', { key: existing.s3Key, err: String(err) });
     });
     return { ok: true };
+  });
+
+// Client-facing routes — same prefix style as gallery.ts / favorites.ts /
+// downloads.ts. Listed separately because Elysia's router rejects param-name
+// collisions between trees, and these use `:slug` instead of `:galleryId`.
+export const clientAttachmentRoutes = new Elysia()
+  .use(authContext)
+  .use(gallerySessionContext)
+  .use(clientIp)
+
+  // GET /api/gallery/:slug/attachments — public list (subject to gallery access).
+  .get('/api/gallery/:slug/attachments', async ({ params, gallerySession, set }) => {
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { error: 'not_found' }; }
+    if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
+    if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+      set.status = 401; return { error: 'locked' };
+    }
+
+    const rows = await db.query.attachments.findMany({
+      where: eq(attachments.galleryId, gallery.id),
+      orderBy: [asc(attachments.position), asc(attachments.createdAt)],
+    });
+    return { attachments: rows.map(publicShape) };
+  })
+
+  // GET /api/gallery/:slug/attachments/:attachmentId/download — 302 to a
+  // short-lived presigned URL with attachment Content-Disposition.
+  .get('/api/gallery/:slug/attachments/:attachmentId/download', async (ctx) => {
+    const { params, gallerySession, currentPhotographer, clientIp, set } = ctx;
+
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { error: 'not_found' }; }
+    if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
+    const isOwner = currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    if (!isOwner) {
+      if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+        set.status = 401; return { error: 'locked' };
+      }
+    }
+
+    const att = await db.query.attachments.findFirst({
+      where: and(eq(attachments.id, params.attachmentId), eq(attachments.galleryId, gallery.id)),
+    });
+    if (!att) { set.status = 404; return { error: 'attachment_not_found' }; }
+
+    // Same rate-limit + email pattern as photo/zip downloads, scoped to a
+    // separate bucket so attachment fetches don't crowd out photo downloads.
+    if (!isOwner && checkRateLimit(
+      'email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600,
+    )) {
+      await notifyPhotographer(gallery.id, 'download', {
+        isZip: false,
+        clientName: gallery.clientName ?? null,
+        filename: att.displayName ?? att.filenameOriginal,
+      });
+    }
+
+    const url = await presignDownload(att.s3Key, att.displayName ?? att.filenameOriginal);
+    log.info('attachment.download', { galleryId: gallery.id, attachmentId: att.id });
+    set.status = 302;
+    set.headers['location'] = url;
+    return '';
   });
