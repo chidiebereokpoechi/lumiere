@@ -7,6 +7,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readable } from 'node:stream';
 import { env } from '../lib/config';
 
 const base = {
@@ -88,10 +89,14 @@ export function presignDownload(
 }
 
 /** Fetch an object's body as a Node Readable — used by the ZIP builder. */
-export async function getObjectStream(key: string): Promise<NodeJS.ReadableStream> {
+export async function getObjectStream(key: string): Promise<Readable> {
   const res = await s3.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
   if (!res.Body) throw new Error(`empty body for ${key}`);
-  return res.Body as NodeJS.ReadableStream;
+  // Under Bun the S3 SDK returns a Web ReadableStream; under Node it returns a
+  // Node Readable. Normalize to Node Readable for archiver/pipe consumers.
+  const body = res.Body as Readable | ReadableStream;
+  if (body instanceof Readable) return body;
+  return Readable.fromWeb(body as unknown as Parameters<typeof Readable.fromWeb>[0]);
 }
 
 export async function checkS3(): Promise<boolean> {
