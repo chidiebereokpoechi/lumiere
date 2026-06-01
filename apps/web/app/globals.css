@@ -1,0 +1,183 @@
+@import 'tailwindcss';
+
+/* Self-hosted Satoshi (Fontshare, OFL). Variable axis covers 300–900 in one
+ * 42KB WOFF2 per style. */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi-variable.woff2') format('woff2-variations');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi-variable-italic.woff2') format('woff2-variations');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------- *
+ *  Design tokens
+ *  - Underlying values live in :root and [data-theme="*"] selectors.
+ *  - Tailwind v4's @theme block aliases them so utilities (bg-bg, etc)
+ *    follow the active theme without rebuilds.
+ *  - "Apple soft" palette: monochrome chrome + warm ochre accent.
+ *  - No borders by default — separation comes from bg tone + shadow.
+ * ---------------------------------------------------------------- */
+
+:root {
+  /* Surfaces */
+  --bg: #fafaf7;          /* warm off-white */
+  --surface: #f2f1ed;     /* card / panel */
+  --surface-2: #ffffff;   /* elevated (popovers, modals) */
+  --surface-sunken: #ebeae5;
+
+  /* Ink */
+  --ink: #0f0f0e;
+  --ink-muted: #6b6b66;
+  --ink-subtle: #a09f98;
+
+  /* Accent (warm ochre) */
+  --accent: #b0532a;
+  --accent-hover: #9a4923;
+  --accent-soft: #f3e2d2;
+  --accent-ink: #ffffff;
+
+  /* Semantic */
+  --positive: #2d7a4a;
+  --negative: #a8341e;
+
+  /* Radius scale (Apple-soft is generous) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+
+  /* Shadows (layered + subtle) */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.08), 0 2px 6px rgb(0 0 0 / 0.04);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 360ms;
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #0e0e0c;
+  --surface: #1a1a17;
+  --surface-2: #232320;
+  --surface-sunken: #080807;
+
+  --ink: #fafaf7;
+  --ink-muted: #a09f98;
+  --ink-subtle: #6b6b66;
+
+  --accent: #d67946;
+  --accent-hover: #e58a55;
+  --accent-soft: #3a2418;
+  --accent-ink: #181814;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e0e0c;
+    --surface: #1a1a17;
+    --surface-2: #232320;
+    --surface-sunken: #080807;
+    --ink: #fafaf7;
+    --ink-muted: #a09f98;
+    --ink-subtle: #6b6b66;
+    --accent: #d67946;
+    --accent-hover: #e58a55;
+    --accent-soft: #3a2418;
+    --accent-ink: #181814;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 16px rgb(0 0 0 / 0.4), 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3);
+    color-scheme: dark;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ *  Tailwind theme — aliases tokens into utility-class generators.
+ * ---------------------------------------------------------------- */
+@theme inline {
+  --font-sans:
+    'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+/* ---------------------------------------------------------------- *
+ *  Base
+ * ---------------------------------------------------------------- */
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings:
+    'ss01' on, 'ss02' on, 'cv01' on, 'cv02' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Smooth theme transitions, but never on first paint (prevents flash). */
+html:not(.theme-no-transition) * {
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
