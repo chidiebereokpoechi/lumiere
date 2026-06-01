@@ -10,6 +10,7 @@ import { checkRateLimit } from '../../middleware/rate-limit';
 import { presignDownload } from '../../services/storage';
 import { buildZipStream, type ZipEntry } from '../../services/zip-builder';
 import { slugify } from '../../services/slug';
+import { notifyPhotographer } from '../../services/notify';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
 
@@ -117,6 +118,20 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       createdAt: now(),
     });
 
+    // Don't notify on admin downloads (they're the photographer themselves)
+    // and rate-limit non-admin notifications to one email per hour per gallery
+    // per IP — clients often re-download multiple times.
+    const isOwner = currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    if (!isOwner && checkRateLimit(
+      'email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600,
+    )) {
+      await notifyPhotographer(gallery.id, 'download', {
+        isZip: false,
+        clientName: gallery.clientName ?? null,
+        filename: photo.filenameOriginal,
+      });
+    }
+
     const url = await presignDownload(resolved.key, photo.filenameOriginal);
     log.info('download.single', { galleryId: gallery.id, photoId: photo.id });
     set.status = 302;
@@ -183,6 +198,18 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       clientIp: clientIp ?? null,
       createdAt: now(),
     });
+
+    if (!isAdmin && checkRateLimit(
+      'email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600,
+    )) {
+      await notifyPhotographer(gallery.id, 'download', {
+        isZip: true,
+        scope,
+        photoCount: entries.length,
+        one: entries.length === 1,
+        clientName: gallery.clientName ?? null,
+      });
+    }
 
     const { archive } = buildZipStream(entries);
     const zipName = `${slugify(gallery.title) || 'gallery'}${scope === 'favorites' ? '-favorites' : ''}.zip`;
