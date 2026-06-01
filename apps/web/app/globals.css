@@ -1,17 +1,22 @@
 @import 'tailwindcss';
 
 /* Self-hosted Satoshi (Fontshare, OFL). Variable axis covers 300–900 in one
- * 42KB WOFF2 per style. */
+ * 42KB WOFF2 per style.
+ *
+ * NOTE: Use plain `format('woff2')` — the older `format('woff2-variations')`
+ * alias is deprecated and modern browsers may silently ignore the @font-face,
+ * falling back to system-ui without warning. The browser figures out it's a
+ * variable font from the file itself once the format matches. */
 @font-face {
   font-family: 'Satoshi';
-  src: url('/fonts/satoshi-variable.woff2') format('woff2-variations');
+  src: url('/fonts/satoshi-variable.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Satoshi';
-  src: url('/fonts/satoshi-variable-italic.woff2') format('woff2-variations');
+  src: url('/fonts/satoshi-variable-italic.woff2') format('woff2');
   font-weight: 300 900;
   font-style: italic;
   font-display: swap;
@@ -156,8 +161,6 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-feature-settings:
-    'ss01' on, 'ss02' on, 'cv01' on, 'cv02' on;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
