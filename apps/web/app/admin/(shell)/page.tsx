@@ -14,13 +14,13 @@ export default async function AdminGalleriesPage() {
         subtitle={
           galleries.length === 0
             ? 'Start delivering photos to your clients.'
-            : `${galleries.length} gallery${galleries.length === 1 ? '' : 'ies'}`
+            : `${galleries.length} ${galleries.length === 1 ? 'gallery' : 'galleries'}`
         }
         user={{ name: me.name, email: me.email }}
         action={<NewGalleryButton />}
       />
 
-      <div className="px-10 pb-16">
+      <div className="px-8 py-6">
         {galleries.length === 0 ? <EmptyState /> : <GalleryGrid galleries={galleries} />}
       </div>
     </div>
@@ -29,7 +29,7 @@ export default async function AdminGalleriesPage() {
 
 function GalleryGrid({ galleries }: { galleries: GallerySummary[] }) {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
       {galleries.map((g) => (
         <GalleryCard key={g.id} gallery={g} />
       ))}
@@ -42,12 +42,10 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
   return (
     <Link
       href={`/admin/galleries/${gallery.id}`}
-      className="group flex flex-col rounded-lg bg-surface p-3 hover:bg-surface-2 hover:-translate-y-0.5 transition-[transform,background-color] duration-200"
+      className="group flex flex-col rounded-lg bg-surface border-2 border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
     >
       <div className="aspect-[16/10] w-full overflow-hidden rounded-md bg-surface-sunken relative">
         {gallery.coverPhotoId ? (
-          // The /img route is admin-gated; this works in-browser because the
-          // photographer's JWT cookie is sent same-origin via the Next rewrite.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={`/img/${gallery.id}/${gallery.coverPhotoId}/thumb`}
@@ -60,12 +58,12 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
         <StatusPill status={status} />
       </div>
 
-      <div className="px-2 pt-5 pb-3">
-        <h2 className="text-base font-semibold text-ink truncate">{gallery.title}</h2>
-        <div className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
-          <span>{gallery.photoCount} photo{gallery.photoCount === 1 ? '' : 's'}</span>
+      <div className="px-2 pt-3 pb-2">
+        <h2 className="text-sm font-bold text-ink-strong truncate">{gallery.title}</h2>
+        <div className="mt-1.5 flex items-center gap-1.5 text-[0.65rem] text-ink-muted">
+          <span>{gallery.photoCount} {gallery.photoCount === 1 ? 'photo' : 'photos'}</span>
           <Dot />
-          <span>{gallery.viewCount ?? 0} view{gallery.viewCount === 1 ? '' : 's'}</span>
+          <span>{gallery.viewCount ?? 0} {gallery.viewCount === 1 ? 'view' : 'views'}</span>
           <Dot />
           <span title={absoluteDate(gallery.updatedAt)}>{relativeDate(gallery.updatedAt)}</span>
         </div>
@@ -77,13 +75,13 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
 function StatusPill({ status }: { status: 'active' | 'archived' | 'draft' }) {
   const cls =
     status === 'active'
-      ? 'bg-surface-2 text-ink'
+      ? 'bg-surface text-ink-strong border-border'
       : status === 'draft'
-        ? 'bg-accent-soft text-ink'
-        : 'bg-surface text-ink-muted';
+        ? 'bg-accent-soft text-ink-strong border-accent/40'
+        : 'bg-surface-sunken text-ink-muted border-border';
   return (
     <span
-      className={`absolute top-3 left-3 rounded-pill px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest ${cls} backdrop-blur-sm`}
+      className={`absolute top-2 left-2 rounded-md border-2 px-2 py-0.5 text-[0.55rem] font-extrabold uppercase tracking-widest ${cls}`}
     >
       {status}
     </span>
@@ -96,8 +94,8 @@ function Dot() {
 
 function PlaceholderCover() {
   return (
-    <div className="h-full w-full bg-gradient-to-br from-surface-sunken to-surface flex items-center justify-center">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-subtle">
+    <div className="h-full w-full bg-surface-sunken flex items-center justify-center">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="text-ink-subtle">
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <circle cx="9" cy="11" r="1.5" />
         <path d="m21 17-5-5L8 19" />
@@ -110,9 +108,9 @@ function NewGalleryButton() {
   return (
     <Link
       href="/admin/galleries/new"
-      className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover transition-colors active:scale-[0.99]"
+      className="inline-flex items-center gap-1.5 rounded-md bg-accent border-2 border-accent px-3 py-2 text-xs font-bold text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
         <path d="M12 5v14M5 12h14" />
       </svg>
       New gallery
@@ -122,18 +120,18 @@ function NewGalleryButton() {
 
 function EmptyState() {
   return (
-    <div className="mx-auto max-w-xl rounded-lg bg-surface p-12 text-center mt-10">
-      <p className="text-xs font-semibold tracking-[0.22em] uppercase text-ink-muted">
+    <div className="mx-auto max-w-md rounded-lg bg-surface border-2 border-border p-10 text-center mt-8">
+      <p className="text-[0.5rem] font-bold tracking-[0.32em] uppercase text-ink-muted">
         Nothing here yet
       </p>
-      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-ink">
+      <h2 className="mt-3 text-xl font-extrabold tracking-tight text-ink-strong">
         Create your first gallery
       </h2>
-      <p className="mt-3 text-sm text-ink-muted">
+      <p className="mt-2 text-xs text-ink-muted">
         Galleries hold photos and attachments and ship to your clients via a
         password-protected link.
       </p>
-      <div className="mt-8">
+      <div className="mt-5 flex justify-center">
         <NewGalleryButton />
       </div>
     </div>

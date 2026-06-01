@@ -66,16 +66,16 @@ export default function NewGalleryPage() {
 
   return (
     <div>
-      <header className="px-10 py-6">
-        <Link href="/admin" className="text-xs font-medium tracking-widest uppercase text-ink-muted hover:text-ink">
+      <header className="px-8 py-6 border-b-2 border-border">
+        <Link href="/admin" className="inline-flex items-center gap-1 text-[0.55rem] font-bold tracking-widest uppercase text-ink-muted hover:text-ink-strong">
           ← Galleries
         </Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink">New gallery</h1>
-        <p className="mt-1 text-sm text-ink-muted">A blank canvas. You can add photos and tweak settings after it's created.</p>
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-strong">New gallery</h1>
+        <p className="mt-1 text-xs text-ink-muted">A blank canvas. You can add photos and tweak settings after it's created.</p>
       </header>
 
-      <div className="px-10 pb-16">
-        <form onSubmit={onSubmit} className="mx-auto max-w-2xl rounded-lg bg-surface p-10 space-y-6">
+      <div className="px-8 py-6 pb-16">
+        <form onSubmit={onSubmit} className="mx-auto max-w-2xl rounded-lg bg-surface border-2 border-border p-6 space-y-5">
           <Field id="title" label="Title" required>
             <TextInput id="title" required value={title} onChange={setTitle} placeholder="Smith Wedding" />
           </Field>
@@ -88,7 +88,7 @@ export default function NewGalleryPage() {
             <Textarea id="subtitle" rows={2} value={subtitle} onChange={setSubtitle} placeholder="A weekend in Mendoza" />
           </Field>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field id="clientName" label="Client name" hint="optional">
               <TextInput id="clientName" value={clientName} onChange={setClientName} placeholder="Sarah Smith" />
             </Field>
@@ -97,7 +97,7 @@ export default function NewGalleryPage() {
             </Field>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field id="eventDate" label="Event date" hint="optional">
               <TextInput id="eventDate" type="date" value={eventDate} onChange={setEventDate} />
             </Field>
@@ -113,11 +113,11 @@ export default function NewGalleryPage() {
           <FormError message={error} />
 
           <div className="flex items-center justify-end gap-3 pt-2">
-            <Link href="/admin" className="text-sm font-medium text-ink-muted hover:text-ink">
+            <Link href="/admin" className="text-xs font-bold uppercase tracking-widest text-ink-muted hover:text-ink-strong">
               Cancel
             </Link>
             <Button type="submit" disabled={pending || title.trim().length === 0}>
-              {pending ? 'Creating…' : 'Create gallery'}
+              {pending ? 'Creating…' : 'Create gallery →'}
             </Button>
           </div>
         </form>
