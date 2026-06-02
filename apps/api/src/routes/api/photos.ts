@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia';
 import { eq, and, asc, inArray } from 'drizzle-orm';
-import { PhotoMoveInput, PhotoReorderInput } from '@lumiere/types';
+import { PhotoMoveInput, PhotoReorderInput, MediaReorderInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, galleryFolders, photos } from '../../db/schema';
+import { galleries, galleryFolders, photos, attachments } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { uploadObject } from '../../services/storage';
@@ -211,6 +211,39 @@ export const photoRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/photo
     });
 
     return { ok: true, count: parsed.data.photoIds.length };
+  })
+
+  // POST /api/galleries/:galleryId/photos/order-media — unified order across
+  // photos AND file attachments. Each item's position = its index, written to
+  // the right table, so the two share one ordering space the client respects.
+  .post('/order-media', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, MediaReorderInput);
+    if (!parsed.ok) return parsed.error;
+
+    db.transaction((tx) => {
+      parsed.data.items.forEach((it, i) => {
+        if (it.kind === 'photo') {
+          tx.update(photos).set({ position: i })
+            .where(and(eq(photos.id, it.id), eq(photos.galleryId, gallery.id))).run();
+        } else {
+          tx.update(attachments).set({ position: i })
+            .where(and(eq(attachments.id, it.id), eq(attachments.galleryId, gallery.id))).run();
+        }
+      });
+    });
+
+    return { ok: true, count: parsed.data.items.length };
   })
 
   // DELETE /api/galleries/:galleryId/photos/:photoId

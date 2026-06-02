@@ -24,3 +24,14 @@ export const PhotoReorderInput = z.object({
   photoIds: z.array(z.string().min(1)).min(1),
 }).strict();
 export type PhotoReorderInput = z.infer<typeof PhotoReorderInput>;
+
+// Set a unified order across photos AND file attachments: each item's position
+// becomes its index in the array, written to whichever table it belongs to, so
+// the two share one ordering space.
+export const MediaReorderInput = z.object({
+  items: z.array(z.object({
+    kind: z.enum(['photo', 'file']),
+    id: z.string().min(1),
+  })).min(1),
+}).strict();
+export type MediaReorderInput = z.infer<typeof MediaReorderInput>;

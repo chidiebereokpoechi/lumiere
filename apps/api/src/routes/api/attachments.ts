@@ -275,7 +275,9 @@ export const clientAttachmentRoutes = new Elysia()
     });
     if (!att) { set.status = 404; return { error: 'attachment_not_found' }; }
 
-    const url = await presignGet(att.s3Key);
+    // Long TTL so seeking/playing a long clip doesn't 403 when the URL expires
+    // mid-stream. Browsers issue fresh Range requests against the same URL.
+    const url = await presignGet(att.s3Key, 6 * 3600);
     set.status = 302;
     set.headers['location'] = url;
     return '';
