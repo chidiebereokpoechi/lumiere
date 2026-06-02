@@ -76,7 +76,7 @@ export default function NewGalleryPage() {
 
       <div className="px-8 py-6 pb-16">
         <form onSubmit={onSubmit} className="max-w-2xl space-y-6">
-          <section className="rounded-lg bg-surface border border-border p-8 space-y-5">
+          <section className="rounded-xl bg-surface border border-border p-7 space-y-6">
             <h2 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted">Details</h2>
 
             <Field id="title" label="Title" required>

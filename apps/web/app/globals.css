@@ -155,14 +155,15 @@
  * ---------------------------------------------------------------- */
 
 :root {
-  --bg: #ffffff; /* canvas */
+  --bg: #ffffff; /* white canvas */
   --surface: #ffffff; /* primary card */
-  --surface-2: #f8fafc; /* alt panel, input bg */
-  --surface-sunken: #e8ecf1;
+  --surface-2: #f5f5f7; /* alt panel, input bg */
+  --surface-sunken: #e8e8ec;
   --surface-strong: #0f172a; /* slate-900 — active/inverse */
 
-  --border: #e2e8f0; /* slate-200 */
-  --border-strong: #cbd5e1; /* slate-300 */
+  /* Flat: hairline borders define grouped cards (no shadows). */
+  --border: #e6e6ea; /* hairline */
+  --border-strong: #d4d4dc;
 
   --ink: #000000; /* black — body */
   --ink-strong: #000000; /* black — titles */
@@ -235,9 +236,9 @@
     --ink-muted: #94a3b8;
     --ink-subtle: #64748b;
     --ink-inverse: #0f172a;
-    --accent: #0077ff;
-    --accent-hover: #005fcc;
-    --accent-dark: #004799;
+    --accent: #ffbba8;
+    --accent-hover: #ffcebd;
+    --accent-dark: #d87a5a;
     --accent-soft: #2c1f1c;
     --accent-ink: #0e1014;
     color-scheme: dark;

@@ -175,15 +175,13 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill border transition-colors ${
-          checked
-            ? 'bg-accent border-accent'
-            : 'bg-surface-sunken border-border'
+        className={`relative inline-flex h-6 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ease-out ${
+          checked ? 'bg-accent' : 'bg-surface-sunken'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 rounded-pill bg-surface transition-transform ${
-            checked ? 'translate-x-[20px]' : 'translate-x-0.5'
+          className={`block h-5 w-7 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-out ${
+            checked ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
       </button>

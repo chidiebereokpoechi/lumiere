@@ -52,7 +52,7 @@ export default function LoginPage() {
           Lumière
         </p>
 
-        <div className="mt-8 rounded-lg bg-surface border border-border p-10">
+        <div className="mt-8 rounded-xl bg-surface border border-border p-10">
           <h1 className="text-2xl font-extrabold tracking-tight text-ink-strong">
             Sign in
           </h1>

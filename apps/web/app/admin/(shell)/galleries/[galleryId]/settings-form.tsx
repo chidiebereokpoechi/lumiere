@@ -222,7 +222,7 @@ export function SettingsForm({ gallery }: Props) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg bg-surface border border-border p-8 space-y-5">
+    <section className="rounded-xl bg-surface border border-border p-7 space-y-6">
       <h2 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted">{title}</h2>
       {children}
     </section>

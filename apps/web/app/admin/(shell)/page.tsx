@@ -42,7 +42,7 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
   return (
     <Link
       href={`/admin/galleries/${gallery.id}`}
-      className="group flex flex-col rounded-lg bg-surface border border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
+      className="group flex flex-col rounded-xl bg-surface border border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
     >
       <div className="aspect-[16/10] w-full overflow-hidden rounded-md bg-surface-sunken relative">
         {gallery.coverPhotoId ? (
@@ -120,7 +120,7 @@ function NewGalleryButton() {
 
 function EmptyState() {
   return (
-    <div className="max-w-2xl rounded-lg bg-surface border border-border p-10">
+    <div className="max-w-2xl rounded-xl bg-surface border border-border p-10">
       <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
         Nothing here yet
       </p>
