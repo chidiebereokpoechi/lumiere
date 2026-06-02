@@ -378,8 +378,9 @@ export function ClientGallery({
         )}
       </div>
 
-      {/* Edge-to-edge masonry — minimal chrome, photo-forward. */}
-      <section className="px-1 sm:px-2 pt-1">
+      {/* Edge-to-edge masonry — minimal chrome, photo-forward. min-height fills
+          the viewport so short galleries still scroll the cover fully away. */}
+      <section className="px-1 sm:px-2 pt-1 min-h-svh">
         {files.length === 0 ? (
           <p className="text-center text-sm text-ink-muted py-24">
             {view.kind === 'list' ? 'This list is empty.' : view.kind === 'favorites' ? 'No favorites yet.' : 'Nothing in this folder yet.'}
