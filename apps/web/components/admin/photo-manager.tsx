@@ -5,16 +5,23 @@ import { useRouter } from 'next/navigation';
 import { apiClient, apiClientMutation, ApiError } from '@/lib/api-client';
 import type { Photo } from '@/lib/api/photos';
 import type { Folder } from '@/lib/api/folders';
+import type { Attachment } from '@/lib/api/attachments';
 
 interface Props {
   galleryId: string;
   initialPhotos: Photo[];
   initialFolders: Folder[];
+  initialAttachments: Attachment[];
   initialCoverPhotoId: string | null;
 }
 
-// null = all photos, 'unfiled' = photos with no folder, otherwise a folder id.
-type FolderFilter = 'all' | 'unfiled' | string;
+function formatBytes(n: number | null): string {
+  if (!n) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
 
 type UploadState = 'uploading' | 'processing' | 'ready' | 'error';
 interface UploadTile {
@@ -41,11 +48,12 @@ async function getCsrfToken(): Promise<string> {
   return token;
 }
 
-export function PhotoManager({ galleryId, initialPhotos, initialFolders, initialCoverPhotoId }: Props) {
+export function PhotoManager({ galleryId, initialPhotos, initialFolders, initialAttachments, initialCoverPhotoId }: Props) {
   const router = useRouter();
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
   const [folders, setFolders] = useState<Folder[]>(initialFolders);
-  const [filter, setFilter] = useState<FolderFilter>('all');
+  const [attachments, setAttachments] = useState<Attachment[]>(initialAttachments);
+  const [activeFolder, setActiveFolder] = useState<string>(initialFolders[0]?.id ?? '');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cover, setCover] = useState<string | null>(initialCoverPhotoId);
   const [tiles, setTiles] = useState<UploadTile[]>([]);
@@ -66,7 +74,15 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
 
   const refreshFolders = useCallback(async () => {
     try {
-      setFolders(await apiClient<Folder[]>(`/api/galleries/${galleryId}/folders`));
+      const fresh = await apiClient<Folder[]>(`/api/galleries/${galleryId}/folders`);
+      setFolders(fresh);
+      setActiveFolder((cur) => (fresh.some((f) => f.id === cur) ? cur : (fresh[0]?.id ?? '')));
+    } catch { /* non-critical */ }
+  }, [galleryId]);
+
+  const refreshAttachments = useCallback(async () => {
+    try {
+      setAttachments(await apiClient<Attachment[]>(`/api/galleries/${galleryId}/attachments`));
     } catch { /* non-critical */ }
   }, [galleryId]);
 
@@ -106,7 +122,8 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       const form = new FormData();
       form.append('files', file);
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `/api/galleries/${galleryId}/photos`);
+      const q = activeFolder ? `?folderId=${activeFolder}` : '';
+      xhr.open('POST', `/api/galleries/${galleryId}/photos${q}`);
       xhr.withCredentials = true;
       xhr.setRequestHeader('X-CSRF-Token', token);
       xhr.upload.onprogress = (e) => {
@@ -134,7 +151,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       };
       xhr.send(form);
     });
-  }, [galleryId, updateTile, watchBatch, settle]);
+  }, [galleryId, activeFolder, updateTile, watchBatch, settle]);
 
   const upload = useCallback(async (fileList: FileList | File[]) => {
     const files = Array.from(fileList).filter((f) => ACCEPT.includes(f.type));
@@ -221,10 +238,15 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
   // you freely move a photo back to where it started.
   const [dragId, setDragId] = useState<string | null>(null);
   const [overlayPhoto, setOverlayPhoto] = useState<Photo | null>(null);
+  const [dropFolderId, setDropFolderId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
+  const dragPayload = useRef<string[]>([]); // photo ids being dragged (selection-aware)
+  const dropFolderRef = useRef<string | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const dragInfo = useRef<{ offsetX: number; offsetY: number; w: number; h: number; startX: number; startY: number } | null>(null);
-  const canReorder = selected.size === 0 && tiles.length === 0;
+  // Dragging is allowed even with a selection (to drag the selection into a
+  // folder); only block it during uploads.
+  const canDrag = tiles.length === 0;
 
   const tileNodes = useRef(new Map<string, HTMLElement>());
   const prevRects = useRef(new Map<string, DOMRect>());
@@ -240,12 +262,39 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     ov.style.transform = `translate(${clientX - info.offsetX}px, ${clientY - info.offsetY}px) scale(1.04)`;
   }, []);
 
+  const movePhotos = useCallback(async (photoIds: string[], folderId: string) => {
+    if (photoIds.length === 0) return;
+    const idSet = new Set(photoIds);
+    setPhotos((prev) => prev.map((p) => (idSet.has(p.id) ? { ...p, folderId } : p)));
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/photos/move`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ photoIds, folderId }),
+      });
+      await refreshFolders();
+    } catch (err) {
+      setError(err instanceof ApiError ? `Could not move photos (${err.status})` : 'Network error');
+      void refreshPhotos();
+    }
+  }, [galleryId, refreshFolders, refreshPhotos]);
+
   const onPointerMove = useCallback((e: PointerEvent) => {
     if (!dragIdRef.current) return;
     positionOverlay(e.clientX, e.clientY);
-    // Find the tile under the cursor (overlay is pointer-events:none; tiles
-    // mid-FLIP are too, so we never hit a transiently-positioned one).
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+
+    // Over a folder chip? Mark it as the drop target and don't reorder.
+    const folderEl = el?.closest<HTMLElement>('[data-folder]');
+    const overFolder = folderEl?.dataset.folder ?? null;
+    if (overFolder && overFolder !== activeFolder) {
+      if (dropFolderRef.current !== overFolder) { dropFolderRef.current = overFolder; setDropFolderId(overFolder); }
+      return;
+    }
+    if (dropFolderRef.current !== null) { dropFolderRef.current = null; setDropFolderId(null); }
+
+    // Reorder only makes sense for a single dragged photo.
+    if (dragPayload.current.length > 1) return;
     const overId = el?.closest<HTMLElement>('[data-pid]')?.dataset.pid;
     const dragging = dragIdRef.current;
     if (!overId || overId === dragging) return;
@@ -258,16 +307,29 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       copy.splice(to, 0, moved!);
       return copy;
     });
-  }, [positionOverlay]);
+  }, [positionOverlay, activeFolder]);
 
   const onPointerUp = useCallback(() => {
     window.removeEventListener('pointermove', onPointerMove);
     window.removeEventListener('pointerup', onPointerUp);
     document.body.style.userSelect = '';
+    const payload = dragPayload.current;
+    const targetFolder = dropFolderRef.current;
     dragIdRef.current = null;
     dragInfo.current = null;
+    dragPayload.current = [];
+    dropFolderRef.current = null;
     setDragId(null);
     setOverlayPhoto(null);
+    setDropFolderId(null);
+
+    if (targetFolder) {
+      // Dropped on a folder chip → move the payload there (no reorder persist).
+      void movePhotos(payload, targetFolder);
+      setSelected(new Set());
+      return;
+    }
+    // Otherwise persist the (single-photo) reorder.
     setPhotos((prev) => {
       const orderedIds = prev.map((p) => p.id);
       void apiClientMutation(`/api/galleries/${galleryId}/photos/reorder`, {
@@ -280,10 +342,10 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       });
       return prev;
     });
-  }, [galleryId, refreshPhotos, onPointerMove]);
+  }, [galleryId, refreshPhotos, onPointerMove, movePhotos]);
 
   const beginDrag = useCallback((photo: Photo, e: React.PointerEvent<HTMLElement>) => {
-    if (!canReorder || e.button !== 0) return;
+    if (!canDrag || e.button !== 0) return;
     if ((e.target as HTMLElement).closest('button')) return; // let checkbox/actions work
     const rect = e.currentTarget.getBoundingClientRect();
     dragInfo.current = {
@@ -291,25 +353,56 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       w: rect.width, h: rect.height, startX: e.clientX, startY: e.clientY,
     };
     dragIdRef.current = photo.id;
+    // If the dragged photo is part of a multi-selection, drag the whole set.
+    dragPayload.current = selected.has(photo.id) && selected.size > 0 ? [...selected] : [photo.id];
     setDragId(photo.id);
     setOverlayPhoto(photo);
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
-  }, [canReorder, onPointerMove, onPointerUp]);
+  }, [canDrag, selected, onPointerMove, onPointerUp]);
 
   async function createFolder() {
     const name = window.prompt('Folder name')?.trim();
     if (!name) return;
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}/folders`, {
+      const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ name }),
       });
       await refreshFolders();
+      if (created?.id) setActiveFolder(created.id);
     } catch (err) {
       setError(err instanceof ApiError ? `Could not create folder (${err.status})` : 'Network error');
+    }
+  }
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  async function uploadFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (files.length === 0 || !activeFolder) return;
+    setError(null);
+    const form = new FormData();
+    for (const f of files) form.append('files', f);
+    try {
+      const res = await apiClientMutation<{ attachments: Attachment[]; rejected: { filename: string; reason: string }[] }>(
+        `/api/galleries/${galleryId}/attachments?folderId=${activeFolder}`,
+        { method: 'POST', body: form },
+      );
+      setAttachments((prev) => [...prev, ...res.attachments]);
+      if (res.rejected?.length) setError(`Rejected: ${res.rejected.map((r) => r.filename).join(', ')}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? `File upload failed (${err.status})` : 'Network error');
+    }
+  }
+  async function deleteFile(att: Attachment) {
+    if (!confirm(`Delete "${att.displayName ?? att.filenameOriginal}"?`)) return;
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/attachments/${att.id}`, { method: 'DELETE' });
+      setAttachments((prev) => prev.filter((a) => a.id !== att.id));
+    } catch (err) {
+      setError(err instanceof ApiError ? `Delete failed (${err.status})` : 'Network error');
     }
   }
 
@@ -329,41 +422,34 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
   }
 
   async function deleteFolder(folder: Folder) {
-    if (!confirm(`Delete folder "${folder.name}"? Its photos move back to the gallery (they are not deleted).`)) return;
+    if (folders.length <= 1) { setError('A gallery must have at least one folder.'); return; }
+    if (!confirm(`Delete folder "${folder.name}"? Its photos and files move into another folder (nothing is deleted).`)) return;
     try {
       await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, { method: 'DELETE' });
-      if (filter === folder.id) setFilter('all');
-      await Promise.all([refreshFolders(), refreshPhotos()]);
+      if (activeFolder === folder.id) setActiveFolder(folders.find((f) => f.id !== folder.id)?.id ?? '');
+      // refreshFolders runs ensureDefaultFolder (re-files orphaned content) first.
+      await refreshFolders();
+      await Promise.all([refreshPhotos(), refreshAttachments()]);
     } catch (err) {
       setError(err instanceof ApiError ? `Could not delete folder (${err.status})` : 'Network error');
     }
   }
 
-  async function moveSelected(folderId: string | null) {
+  async function moveSelected(folderId: string) {
     if (selected.size === 0) return;
-    const photoIds = [...selected];
-    try {
-      await apiClientMutation(`/api/galleries/${galleryId}/photos/move`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ photoIds, folderId }),
-      });
-      // Optimistic local update + refresh folder counts.
-      setPhotos((prev) => prev.map((p) => (selected.has(p.id) ? { ...p, folderId } : p)));
-      setSelected(new Set());
-      await refreshFolders();
-    } catch (err) {
-      setError(err instanceof ApiError ? `Could not move photos (${err.status})` : 'Network error');
-    }
+    const ids = [...selected];
+    setSelected(new Set());
+    await movePhotos(ids, folderId);
   }
 
-  const visiblePhotos = useMemo(() => {
-    if (filter === 'all') return photos;
-    if (filter === 'unfiled') return photos.filter((p) => !p.folderId);
-    return photos.filter((p) => p.folderId === filter);
-  }, [photos, filter]);
-
-  const unfiledCount = useMemo(() => photos.filter((p) => !p.folderId).length, [photos]);
+  const visiblePhotos = useMemo(
+    () => photos.filter((p) => p.folderId === activeFolder),
+    [photos, activeFolder],
+  );
+  const visibleFiles = useMemo(
+    () => attachments.filter((a) => a.folderId === activeFolder),
+    [attachments, activeFolder],
+  );
 
   // FLIP: animate tiles from their previous positions to their new ones when
   // the order changes, instead of popping into place.
@@ -393,7 +479,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     prevRects.current = newRects;
   }, [visiblePhotos]);
 
-  const isEmpty = photos.length === 0 && tiles.length === 0;
+  const folderEmpty = visiblePhotos.length === 0 && tiles.length === 0;
 
   return (
     <div className="space-y-6">
@@ -434,19 +520,17 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
 
       {/* Folder rail */}
       <div className="flex flex-wrap items-center gap-2">
-        <FolderChip active={filter === 'all'} onClick={() => setFilter('all')} label="All photos" count={photos.length} />
-        {folders.length > 0 && (
-          <FolderChip active={filter === 'unfiled'} onClick={() => setFilter('unfiled')} label="Unfiled" count={unfiledCount} />
-        )}
         {folders.map((f) => (
           <FolderChip
             key={f.id}
-            active={filter === f.id}
-            onClick={() => setFilter(f.id)}
+            id={f.id}
+            active={activeFolder === f.id}
+            isDropTarget={dropFolderId === f.id}
+            onClick={() => setActiveFolder(f.id)}
             label={f.name}
             count={f.photoCount}
             onRename={() => renameFolder(f)}
-            onDelete={() => deleteFolder(f)}
+            onDelete={folders.length > 1 ? () => deleteFolder(f) : undefined}
           />
         ))}
         <button
@@ -458,13 +542,14 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
           New folder
         </button>
       </div>
+      {selected.size > 0 && <p className="text-xs text-ink-subtle">Drag a selected photo onto a folder to move {selected.size > 1 ? 'them' : 'it'}.</p>}
 
-      {canReorder && visiblePhotos.length > 1 && (
+      {canDrag && selected.size === 0 && visiblePhotos.length > 1 && (
         <p className="text-xs text-ink-subtle">Drag photos to reorder.</p>
       )}
 
-      {isEmpty ? (
-        <p className="text-sm text-ink-muted">No photos yet. Upload some to get started.</p>
+      {folderEmpty ? (
+        <p className="text-sm text-ink-muted">This folder has no photos yet. Drop some above.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {/* In-flight upload tiles */}
@@ -498,7 +583,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
               isCover={cover === photo.id}
               selected={selected.has(photo.id)}
               busy={busyId === photo.id}
-              reorderable={canReorder}
+              reorderable={canDrag}
               dragging={dragId === photo.id}
               onRef={(n) => registerTile(photo.id, n)}
               onPointerDownReorder={(e) => beginDrag(photo, e)}
@@ -510,6 +595,41 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
         </div>
       )}
 
+      {/* Files in this folder */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted">Files in this folder</h3>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Add file
+          </button>
+          <input ref={fileInputRef} type="file" multiple hidden onChange={(e) => { if (e.target.files) void uploadFiles(e.target.files); e.target.value = ''; }} />
+        </div>
+        {visibleFiles.length === 0 ? (
+          <p className="text-sm text-ink-muted">No files in this folder.</p>
+        ) : (
+          <ul className="space-y-2 max-w-2xl">
+            {visibleFiles.map((a) => (
+              <li key={a.id} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-subtle shrink-0">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+                <span className="flex-1 min-w-0 text-sm font-semibold text-ink-strong truncate">{a.displayName ?? a.filenameOriginal}</span>
+                <span className="text-xs tabular-nums text-ink-subtle shrink-0">{formatBytes(a.fileSize)}</span>
+                <button type="button" onClick={() => deleteFile(a)} title="Delete" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-negative hover:bg-surface-2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Selection move bar */}
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
@@ -518,11 +638,10 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
             <label className="text-sm text-ink-muted">Move to</label>
             <select
               defaultValue=""
-              onChange={(e) => { const v = e.target.value; if (v) { void moveSelected(v === 'root' ? null : v); e.target.value = ''; } }}
+              onChange={(e) => { const v = e.target.value; if (v) { void moveSelected(v); e.target.value = ''; } }}
               className="rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong focus:border-accent transition-colors"
             >
               <option value="" disabled>Choose folder…</option>
-              <option value="root">Gallery root (unfiled)</option>
               {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
             <button type="button" onClick={() => setSelected(new Set())} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
@@ -546,6 +665,11 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`/img/${galleryId}/${overlayPhoto.id}/thumb`} alt="" draggable={false} className="h-full w-full object-cover" />
+          {dragPayload.current.length > 1 && (
+            <span className="absolute top-1 right-1 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums">
+              {dragPayload.current.length}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -553,9 +677,11 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
 }
 
 function FolderChip({
-  active, onClick, label, count, onRename, onDelete,
+  id, active, isDropTarget, onClick, label, count, onRename, onDelete,
 }: {
+  id: string;
   active: boolean;
+  isDropTarget?: boolean;
   onClick: () => void;
   label: string;
   count: number;
@@ -564,8 +690,11 @@ function FolderChip({
 }) {
   return (
     <span
+      data-folder={id}
       className={`group/chip inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
-        active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
+        isDropTarget
+          ? 'bg-accent-soft text-accent-ink border-accent ring-2 ring-accent'
+          : active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
       }`}
     >
       <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 focus-visible:outline-none">

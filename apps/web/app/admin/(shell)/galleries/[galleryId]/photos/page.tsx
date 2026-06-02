@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { fetchGallery, fetchMe } from '@/lib/api/galleries';
 import { fetchPhotos } from '@/lib/api/photos';
 import { fetchFolders } from '@/lib/api/folders';
+import { fetchAttachments } from '@/lib/api/attachments';
 import { ApiError } from '@/lib/api-client';
 import { GalleryHeader } from '@/components/admin/gallery-header';
 import { PhotoManager } from '@/components/admin/photo-manager';
@@ -22,7 +23,10 @@ export default async function GalleryPhotosPage({ params }: Props) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  const [me, photos, folders] = await Promise.all([fetchMe(), fetchPhotos(galleryId), fetchFolders(galleryId)]);
+  // Fetch folders first — it lazily creates the default folder and re-files
+  // any orphaned content, so photos/attachments come back with folderIds set.
+  const folders = await fetchFolders(galleryId);
+  const [me, photos, attachments] = await Promise.all([fetchMe(), fetchPhotos(galleryId), fetchAttachments(galleryId)]);
 
   return (
     <div>
@@ -40,6 +44,7 @@ export default async function GalleryPhotosPage({ params }: Props) {
           galleryId={galleryId}
           initialPhotos={photos}
           initialFolders={folders}
+          initialAttachments={attachments}
           initialCoverPhotoId={gallery.coverPhotoId}
         />
       </div>
