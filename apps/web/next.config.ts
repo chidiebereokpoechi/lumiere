@@ -1,6 +1,13 @@
 import type { NextConfig } from 'next';
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:3200';
+// Single knob for the API base the web server talks to (RSC fetch in
+// lib/api-client uses INTERNAL_API_URL; the rewrites below proxy the browser's
+// same-origin /api,/events,/img,/health here). Set it to the internal compose
+// host (http://api:3000) or the public API URL (https://lumiere-api.domain.com).
+const API_ORIGIN =
+  process.env.NEXT_PUBLIC_API_ORIGIN ??
+  process.env.INTERNAL_API_URL ??
+  'http://localhost:3200';
 
 const config: NextConfig = {
   // The Bun/Elysia backend at /api, /events, and /img is a separate process in

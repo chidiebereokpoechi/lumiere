@@ -1,24 +1,46 @@
 services:
 
-  app:
+  api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: lumiere-app
+    container_name: lumiere-api
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
       NODE_ENV: production
     env_file:
       - .env
     volumes:
       - db-data:/app/data
+    # host 3337 -> container 3000. NPM serves lumiere-api.domain.com from 3337;
+    # the web container still reaches it internally as http://api:3000.
+    ports:
+      - "3337:3000"
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: lumiere-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # RSC server fetches + Next rewrites (/api /events /img /health) reach the
+      # API by its compose hostname. NPM only needs to proxy to this web port.
+      INTERNAL_API_URL: http://api:3000
+      NEXT_PUBLIC_API_ORIGIN: http://api:3000
+    env_file:
+      - .env
+    depends_on:
+      - api
+    # host 3338 -> container 3400. NPM forwards lumiere.domain.com here.
+    ports:
+      - "3338:3400"
 
   litestream:
     image: litestream/litestream:latest
