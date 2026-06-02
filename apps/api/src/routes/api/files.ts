@@ -17,7 +17,7 @@ import {
 import { enqueue } from '../../services/queue';
 import { emit, trackBatch } from '../../services/events';
 import { ensureDefaultFolder } from '../../services/folders';
-import { detectImageMime, extForMime } from '../../lib/mime';
+import { detectImageMime, extForMime, type SupportedMime } from '../../lib/mime';
 import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
@@ -94,7 +94,7 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
     const batchId = newId();
     const fileIds: string[] = [];
     const rejections: { filename: string; reason: string }[] = [];
-    const images: { fileId: string; filename: string; mime: 'image/jpeg' | 'image/png' | 'image/webp'; bytes: Uint8Array }[] = [];
+    const images: { fileId: string; filename: string; mime: SupportedMime; bytes: Uint8Array }[] = [];
     const others: { fileId: string; filename: string; file: File }[] = [];
 
     for (const file of list) {
@@ -128,11 +128,17 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
     for (const r of rejections) emit(batchId, { type: 'error', filename: r.filename, reason: r.reason });
     for (const a of images) emit(batchId, { type: 'queued', photoId: a.fileId, filename: a.filename });
 
-    // Images: store original, enqueue processing.
+    // Images: store original, enqueue processing. GIFs skip Sharp (it would
+    // flatten the animation) — the original is served as its own thumb/preview.
     for (const a of images) {
       const key = `originals/${gallery.id}/${a.fileId}.${extForMime(a.mime)}`;
       try {
         await uploadObject(key, Buffer.from(a.bytes), a.mime);
+        if (a.mime === 'image/gif') {
+          await db.update(files).set({ s3KeyOriginal: key, s3KeyThumbnail: key, s3KeyPreview: key, uploadStatus: 'ready' }).where(eq(files.id, a.fileId));
+          emit(batchId, { type: 'ready', photoId: a.fileId, filename: a.filename });
+          continue;
+        }
         await db.update(files).set({ s3KeyOriginal: key }).where(eq(files.id, a.fileId));
         await enqueue('process_photo', {
           photoId: a.fileId, galleryId: gallery.id, batchId, s3KeyOriginal: key, filename: a.filename,
@@ -199,7 +205,7 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
     const mime = mimeType || 'application/octet-stream';
     const type = kindForMime(mime);
     const fileId = newId();
-    const ext = type === 'image' ? extForMime(mime as 'image/jpeg' | 'image/png' | 'image/webp') : extOf(filename);
+    const ext = type === 'image' ? extForMime(mime as SupportedMime) : extOf(filename);
     const key = type === 'image'
       ? `originals/${gallery.id}/${fileId}.${ext || 'bin'}`
       : `files/${gallery.id}/${fileId}${ext ? '.' + ext : ''}`;
@@ -266,12 +272,15 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
       ctx.set.status = 502; return { error: 'complete_failed' };
     }
 
-    if (file.type === 'image') {
+    if (file.type === 'image' && file.mimeType !== 'image/gif') {
       await db.update(files).set({ uploadStatus: 'processing', s3UploadId: null }).where(eq(files.id, file.id));
       await enqueue('process_photo', {
         photoId: file.id, galleryId: gallery.id, batchId: newId(),
         s3KeyOriginal: file.s3KeyOriginal, filename: file.filenameOriginal,
       }, gallery.id);
+    } else if (file.type === 'image') {
+      // GIF: serve the original as its own derivatives (no Sharp flattening).
+      await db.update(files).set({ s3KeyThumbnail: file.s3KeyOriginal, s3KeyPreview: file.s3KeyOriginal, uploadStatus: 'ready', s3UploadId: null }).where(eq(files.id, file.id));
     } else {
       await db.update(files).set({ uploadStatus: 'ready', s3UploadId: null }).where(eq(files.id, file.id));
     }
