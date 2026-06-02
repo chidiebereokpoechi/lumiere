@@ -30,3 +30,13 @@ export interface AdminList {
 export function fetchAdminLists(galleryId: string) {
   return apiServer<AdminList[]>(`/api/galleries/${galleryId}/lists`);
 }
+
+// Client favorites grouped by email (for per-client export).
+export interface AdminFavoriteGroup {
+  clientEmail: string | null;
+  fileIds: string[];
+}
+
+export function fetchAdminFavorites(galleryId: string) {
+  return apiServer<AdminFavoriteGroup[]>(`/api/galleries/${galleryId}/favorites`);
+}
