@@ -171,20 +171,20 @@
   --ink-subtle: #94a3b8; /* slate-400 */
   --ink-inverse: #ffffff; /* on dark surfaces */
 
-  --accent: #ffab95; /* peach */
-  --accent-hover: #f89884;
-  --accent-dark: #d87a5a; /* deeper peach — analogous to primary-dark */
+  --accent: #ff5c33; /* peach */
+  --accent-hover: #f37859;
+  --accent-dark: #e9461d; /* deeper peach — analogous to primary-dark */
   --accent-soft: #fde7dc;
   --accent-ink: #1f1411;
 
   --positive: #2f8055;
   --negative: #b34a36;
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-pill: 9999px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-pill: 0px;
 
   --ring-accent: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
   --ring-negative: 0 0 0 4px
@@ -346,4 +346,12 @@ html:not(.theme-no-transition) * {
 ::selection {
   background: var(--accent-soft);
   color: var(--ink-strong);
+}
+
+/* Squared-off system: no rounding anywhere. Catches rounded-full / pill /
+ * arbitrary radii that don't flow through the --radius-* tokens. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
 }
