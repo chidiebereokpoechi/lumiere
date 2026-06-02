@@ -196,12 +196,12 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
                         className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? 'brightness-90' : ''}`}
                       />
                     ) : f.type === 'video' ? (
-                      <span className="relative block aspect-video w-full bg-black">
-                        <video src={`${f.streamUrl ?? ''}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-contain" />
+                      <span className="relative block w-full bg-black">
+                        <video src={`${f.streamUrl ?? ''}#t=0.1`} preload="metadata" muted playsInline className="block w-full h-auto" />
                         <span className="absolute inset-0 flex items-center justify-center"><span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></span></span>
                       </span>
                     ) : (
-                      <span className="flex aspect-video w-full flex-col items-center justify-center gap-2 p-3 text-center">
+                      <span className="flex aspect-square w-full flex-col items-center justify-center gap-2 p-3 text-center">
                         {f.type === 'audio' ? (
                           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
                         ) : (
