@@ -47,6 +47,7 @@ export const folderRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/fold
       id: f.id,
       name: f.name,
       position: f.position,
+      hidden: !!f.hidden,
       coverFileId: f.coverFileId,
       photoCount: countMap.get(f.id) ?? 0,
     }));
