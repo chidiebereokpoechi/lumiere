@@ -15,7 +15,7 @@ export interface GalleryAnalytics {
   };
   viewsByDay: DayCount[];
   downloadsByDay: DayCount[];
-  favoritesByPhoto: { photoId: string; count: number }[];
+  favoritesByFile: { fileId: string; count: number }[];
   deviceSplit: {
     mobile: number;
     tablet: number;

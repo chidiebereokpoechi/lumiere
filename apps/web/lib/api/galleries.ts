@@ -8,7 +8,7 @@ export interface GallerySummary {
   title: string;
   subtitle: string | null;
   status: 'active' | 'archived' | 'draft' | null;
-  coverPhotoId: string | null;
+  coverFileId: string | null;
   clientName: string | null;
   clientEmail: string | null;
   eventDate: number | null;
@@ -26,7 +26,7 @@ export interface GalleryDetail {
   slug: string;
   title: string;
   subtitle: string | null;
-  coverPhotoId: string | null;
+  coverFileId: string | null;
   passwordHash: string | null;
   status: 'active' | 'archived' | 'draft' | null;
   downloadMode: 'none' | 'watermarked' | 'full' | 'selected' | null;

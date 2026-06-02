@@ -45,10 +45,10 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
       className="group flex flex-col rounded-xl bg-surface border border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
     >
       <div className="aspect-[16/10] w-full overflow-hidden rounded-md bg-surface-sunken relative">
-        {gallery.coverPhotoId ? (
+        {gallery.coverFileId ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={`/img/${gallery.id}/${gallery.coverPhotoId}/thumb`}
+            src={`/img/${gallery.id}/${gallery.coverFileId}/thumb`}
             alt=""
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />

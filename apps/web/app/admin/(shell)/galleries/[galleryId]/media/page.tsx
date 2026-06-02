@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import { fetchGallery, fetchMe } from "@/lib/api/galleries";
-import { fetchPhotos } from "@/lib/api/photos";
+import { fetchFiles } from "@/lib/api/files";
 import { fetchFolders } from "@/lib/api/folders";
-import { fetchAttachments } from "@/lib/api/attachments";
 import { ApiError } from "@/lib/api-client";
 import { GalleryHeader } from "@/components/admin/gallery-header";
-import { PhotoManager } from "@/components/admin/photo-manager";
+import { FileManager } from "@/components/admin/file-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +12,7 @@ interface Props {
   params: Promise<{ galleryId: string }>;
 }
 
-export default async function GalleryPhotosPage({ params }: Props) {
+export default async function GalleryMediaPage({ params }: Props) {
   const { galleryId } = await params;
 
   let gallery;
@@ -24,13 +23,9 @@ export default async function GalleryPhotosPage({ params }: Props) {
     throw err;
   }
   // Fetch folders first — it lazily creates the default folder and re-files
-  // any orphaned content, so photos/attachments come back with folderIds set.
+  // any orphaned content, so files come back with folderIds set.
   const folders = await fetchFolders(galleryId);
-  const [me, photos, attachments] = await Promise.all([
-    fetchMe(),
-    fetchPhotos(galleryId),
-    fetchAttachments(galleryId),
-  ]);
+  const [me, files] = await Promise.all([fetchMe(), fetchFiles(galleryId)]);
 
   return (
     <div>
@@ -44,13 +39,12 @@ export default async function GalleryPhotosPage({ params }: Props) {
       />
 
       <div className="px-8 py-6 pb-16">
-        <PhotoManager
+        <FileManager
           galleryId={galleryId}
           gallerySlug={gallery.slug}
-          initialPhotos={photos}
+          initialFiles={files}
           initialFolders={folders}
-          initialAttachments={attachments}
-          initialCoverPhotoId={gallery.coverPhotoId}
+          initialCoverFileId={gallery.coverFileId}
         />
       </div>
     </div>

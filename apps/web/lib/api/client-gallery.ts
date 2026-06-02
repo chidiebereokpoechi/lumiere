@@ -1,4 +1,5 @@
 import { apiServer } from '@/lib/api-client';
+import type { FileType } from '@/lib/api/files';
 
 export type AccessState = 'ok' | 'locked' | 'expired';
 
@@ -7,7 +8,7 @@ export interface MinimalGallery {
   slug: string;
   title: string;
   subtitle: string | null;
-  coverPhotoId: string | null;
+  coverFileId: string | null;
   layout: 'grid' | 'masonry' | 'slideshow';
   colorTheme: string;
   customCss: string | null;
@@ -25,18 +26,26 @@ export interface MinimalGallery {
 export interface ClientFolder {
   id: string;
   name: string;
-  coverPhotoId: string | null;
+  coverFileId: string | null;
 }
 
-export interface ClientPhoto {
+// Unified media item as served to clients. Images carry thumb/preview URLs;
+// video/audio/file carry a stream URL. All carry a download URL.
+export interface ClientFile {
   id: string;
   folderId: string | null;
+  type: FileType;
+  filename: string;
+  mimeType: string | null;
+  fileSize: number | null;
   width: number | null;
   height: number | null;
   colorPalette: string[] | null;
   position: number | null;
-  thumbUrl: string;
-  previewUrl: string;
+  thumbUrl: string | null;
+  previewUrl: string | null;
+  streamUrl: string | null;
+  downloadUrl: string;
 }
 
 export interface AccessResponse {
@@ -44,38 +53,24 @@ export interface AccessResponse {
   gallery: MinimalGallery;
 }
 
-export interface ClientPhotosResponse {
+export interface ClientFilesResponse {
   gallery: MinimalGallery;
   folders: ClientFolder[];
-  photos: ClientPhoto[];
+  files: ClientFile[];
 }
 
 export function fetchAccess(slug: string) {
   return apiServer<AccessResponse>(`/api/gallery/${slug}/access`);
 }
 
-export function fetchClientPhotos(slug: string) {
-  return apiServer<ClientPhotosResponse>(`/api/gallery/${slug}/photos`);
+export function fetchClientFiles(slug: string) {
+  return apiServer<ClientFilesResponse>(`/api/gallery/${slug}/files`);
 }
 
 export interface FavoritesResponse {
-  favorites: { photoId: string; note: string | null; createdAt: number }[];
+  favorites: { fileId: string; note: string | null; createdAt: number }[];
 }
 
 export function fetchFavorites(slug: string) {
   return apiServer<FavoritesResponse>(`/api/gallery/${slug}/favorites`);
-}
-
-export interface ClientAttachment {
-  id: string;
-  folderId: string | null;
-  filename: string;
-  mimeType: string | null;
-  fileSize: number | null;
-  description: string | null;
-  position: number | null;
-}
-
-export function fetchClientAttachments(slug: string) {
-  return apiServer<{ attachments: ClientAttachment[] }>(`/api/gallery/${slug}/attachments`);
 }

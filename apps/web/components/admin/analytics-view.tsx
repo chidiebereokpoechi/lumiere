@@ -21,7 +21,7 @@ function dayAxis(since: number): string[] {
 }
 
 export function AnalyticsView({ galleryId, analytics }: Props) {
-  const { totals, viewsByDay, downloadsByDay, favoritesByPhoto, deviceSplit, since } = analytics;
+  const { totals, viewsByDay, downloadsByDay, favoritesByFile, deviceSplit, since } = analytics;
 
   const days = dayAxis(since);
   const viewMap = new Map(viewsByDay.map((d) => [d.day, d.count]));
@@ -36,7 +36,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
     { key: 'unknown', label: 'Unknown' },
   ];
 
-  const topFavorites = favoritesByPhoto.slice(0, 8);
+  const topFavorites = favoritesByFile.slice(0, 8);
   const maxFav = Math.max(1, ...topFavorites.map((f) => f.count));
 
   return (
@@ -105,10 +105,10 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
           ) : (
             <ul className="space-y-3">
               {topFavorites.map((f) => (
-                <li key={f.photoId} className="flex items-center gap-3">
+                <li key={f.fileId} className="flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/img/${galleryId}/${f.photoId}/thumb`}
+                    src={`/img/${galleryId}/${f.fileId}/thumb`}
                     alt=""
                     className="h-10 w-10 rounded-md object-cover bg-surface-sunken shrink-0"
                   />

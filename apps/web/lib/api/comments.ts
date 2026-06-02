@@ -3,7 +3,7 @@ import { apiServer } from '@/lib/api-client';
 // Public (approved-only) comment shape.
 export interface ClientComment {
   id: string;
-  photoId: string | null;
+  fileId: string | null;
   clientName: string | null;
   body: string;
   createdAt: number;
@@ -16,7 +16,7 @@ export function fetchClientComments(slug: string) {
 // Admin shape — includes pending comments + email + approval state.
 export interface AdminComment {
   id: string;
-  photoId: string | null;
+  fileId: string | null;
   clientName: string | null;
   clientEmail: string | null;
   body: string;
