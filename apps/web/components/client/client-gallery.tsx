@@ -38,31 +38,39 @@ export function ClientGallery({
   const [openId, setOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [favorites, setFavorites] = useState<Set<string>>(new Set(initialFavorites));
-  const [folder, setFolder] = useState<string | null>(folders[0]?.id ?? null);
-  const [favsOnly, setFavsOnly] = useState(false);
 
   // Client identity + lists.
   const [email, setEmail] = useState<string | null>(initialEmail);
   const [lists, setLists] = useState<ClientList[]>(initialLists);
-  const [activeList, setActiveList] = useState<string | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
   const pendingRef = useRef<null | (() => void)>(null);
   // List picker targets one or many files (bulk).
   const [pickerFiles, setPickerFiles] = useState<string[] | null>(null);
 
+  // The current view — a folder, favorites, or a list — selected from one row.
+  // Mutually exclusive: picking any one clears the others.
+  type View = { kind: 'folder'; id: string } | { kind: 'favorites' } | { kind: 'list'; id: string };
+  const [view, setView] = useState<View>(folders[0] ? { kind: 'folder', id: folders[0].id } : { kind: 'favorites' });
+  const switchView = useCallback((v: View) => { setView(v); setOpenId(null); setSelected(new Set()); }, []);
+
   const canDownload = gallery.allowDownload && gallery.downloadMode !== 'none';
   const canFavorite = gallery.allowFavorites;
 
+  // Item count per folder (clients want to see how much is in each).
+  const folderCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const f of allFiles) if (f.folderId) m.set(f.folderId, (m.get(f.folderId) ?? 0) + 1);
+    return m;
+  }, [allFiles]);
+
   const files = useMemo(() => {
-    if (activeList) {
-      const l = lists.find((x) => x.id === activeList);
-      const ids = new Set(l?.fileIds ?? []);
+    if (view.kind === 'favorites') return allFiles.filter((f) => favorites.has(f.id));
+    if (view.kind === 'list') {
+      const ids = new Set(lists.find((x) => x.id === view.id)?.fileIds ?? []);
       return allFiles.filter((f) => ids.has(f.id));
     }
-    let list = folder === null ? allFiles : allFiles.filter((f) => f.folderId === folder);
-    if (favsOnly) list = list.filter((f) => favorites.has(f.id));
-    return list;
-  }, [allFiles, folder, favsOnly, favorites, activeList, lists]);
+    return allFiles.filter((f) => f.folderId === view.id);
+  }, [allFiles, view, favorites, lists]);
 
   // Lightbox steps through every item, of any type.
   const openIndex = openId === null ? -1 : files.findIndex((f) => f.id === openId);
@@ -116,9 +124,9 @@ export function ClientGallery({
 
   const deleteList = useCallback((id: string) => {
     setLists((prev) => prev.filter((l) => l.id !== id));
-    if (activeList === id) setActiveList(null);
+    setView((v) => (v.kind === 'list' && v.id === id ? (folders[0] ? { kind: 'folder', id: folders[0].id } : { kind: 'favorites' }) : v));
     void apiClient(`/api/gallery/${gallery.slug}/lists/${id}`, { method: 'DELETE' }).catch(() => {});
-  }, [gallery.slug, activeList]);
+  }, [gallery.slug, folders]);
 
   const setMembership = useCallback((listId: string, fileIds: string[], member: boolean) => {
     setLists((prev) => prev.map((l) => {
@@ -168,16 +176,28 @@ export function ClientGallery({
   const selectAll = useCallback(() => setSelected(new Set(files.map((f) => f.id))), [files]);
   const clearSelection = useCallback(() => setSelected(new Set()), []);
 
-  const downloadSelected = useCallback(() => {
-    if (selected.size === 0) return;
-    const ids = [...selected].join(',');
+  const triggerDownload = useCallback((qs: string) => {
     const a = document.createElement('a');
-    a.href = `/api/gallery/${gallery.slug}/download?ids=${ids}`;
+    a.href = `/api/gallery/${gallery.slug}/download?${qs}`;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }, [selected, gallery.slug]);
+  }, [gallery.slug]);
+
+  const downloadSelected = useCallback(() => {
+    if (selected.size === 0) return;
+    triggerDownload(`ids=${[...selected].join(',')}`);
+  }, [selected, triggerDownload]);
+
+  // Download the whole current view (folder / favorites / list) without first
+  // selecting every file in it.
+  const downloadView = useCallback(() => {
+    if (files.length === 0) return;
+    if (view.kind === 'folder') triggerDownload(`folderId=${view.id}`);
+    else if (view.kind === 'favorites') triggerDownload('scope=favorites');
+    else triggerDownload(`ids=${files.map((f) => f.id).join(',')}`);
+  }, [view, files, triggerDownload]);
 
   const close = useCallback(() => setOpenId(null), []);
   const step = useCallback((dir: number) => {
@@ -232,49 +252,67 @@ export function ClientGallery({
         )}
       </header>
 
-      {/* Folder nav — no "All"; clients browse one (visible) folder at a time. */}
-      {folders.length > 0 && (
+      {/* Unified nav: folders, favorites, and lists in one mutually-exclusive row. */}
+      {allFiles.length > 0 && (
         <nav className="px-4 sm:px-8 pt-6 flex flex-wrap items-center gap-2">
           {folders.map((f) => (
-            <FolderTab
+            <Chip
               key={f.id}
-              active={activeList === null && folder === f.id}
-              onClick={() => { setFolder(f.id); setActiveList(null); setOpenId(null); }}
+              active={view.kind === 'folder' && view.id === f.id}
+              onClick={() => switchView({ kind: 'folder', id: f.id })}
               label={f.name}
+              count={folderCounts.get(f.id) ?? 0}
             />
           ))}
+          {canFavorite && (
+            <Chip
+              active={view.kind === 'favorites'}
+              onClick={() => switchView({ kind: 'favorites' })}
+              label="Favorites"
+              count={favorites.size}
+              icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>}
+            />
+          )}
+          {lists.map((l) => (
+            <Chip
+              key={l.id}
+              active={view.kind === 'list' && view.id === l.id}
+              onClick={() => switchView({ kind: 'list', id: l.id })}
+              label={l.name}
+              count={l.fileIds.length}
+              icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>}
+              onDelete={() => { if (window.confirm(`Delete list "${l.name}"?`)) deleteList(l.id); }}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => requireEmail(async () => { const name = window.prompt('Name your list'); if (name?.trim()) await createList(name.trim()); })}
+            className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 py-1.5 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            List
+          </button>
         </nav>
       )}
 
       {/* Toolbar */}
       {allFiles.length > 0 && (
-        <div className="px-4 sm:px-8 pt-6 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 flex-wrap">
-            <p className="text-sm text-ink-muted tabular-nums">{files.length} item{files.length !== 1 ? 's' : ''}</p>
-            {canFavorite && (
+        <div className="px-4 sm:px-8 pt-5 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-ink-muted tabular-nums">{files.length} item{files.length !== 1 ? 's' : ''}</p>
+          {canDownload && files.length > 0 && (
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={allSelected ? clearSelection : selectAll} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
+                {allSelected ? 'Clear selection' : 'Select all'}
+              </button>
               <button
                 type="button"
-                onClick={() => { setFavsOnly((v) => !v); setActiveList(null); }}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                  favsOnly && !activeList ? 'bg-accent border-accent text-accent-ink' : 'bg-surface border-border text-ink-muted hover:text-ink-strong hover:border-border-strong'
-                }`}
+                onClick={downloadView}
+                className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
-                Favorites <span className="tabular-nums opacity-70">{favorites.size}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                Download {view.kind === 'favorites' ? 'favorites' : view.kind === 'list' ? 'list' : 'folder'}
               </button>
-            )}
-            <ListMenu
-              lists={lists}
-              activeList={activeList}
-              onPick={(id) => { setActiveList(id); setFavsOnly(false); setOpenId(null); }}
-              onCreate={() => requireEmail(async () => { const name = window.prompt('Name your list'); if (name?.trim()) await createList(name.trim()); })}
-              onDelete={deleteList}
-            />
-          </div>
-          {canDownload && files.length > 0 && (
-            <button type="button" onClick={allSelected ? clearSelection : selectAll} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
-              {allSelected ? 'Clear selection' : 'Select all'}
-            </button>
+            </div>
           )}
         </div>
       )}
@@ -283,7 +321,7 @@ export function ClientGallery({
       <section className="px-4 sm:px-8 py-6">
         {files.length === 0 ? (
           <p className="text-center text-sm text-ink-muted py-16">
-            {activeList ? 'This list is empty.' : favsOnly ? 'No favorites yet.' : 'Nothing in this folder yet.'}
+            {view.kind === 'list' ? 'This list is empty.' : view.kind === 'favorites' ? 'No favorites yet.' : 'Nothing in this folder yet.'}
           </p>
         ) : (
           <div className="columns-2 sm:columns-3 lg:columns-4 gap-2">
@@ -491,87 +529,38 @@ export function ClientGallery({
   );
 }
 
-function FolderTab({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+// Unified nav chip — a folder, favorites, or a list. Carries a count and an
+// optional icon; list chips also expose a hover delete.
+function Chip({ active, onClick, label, count, icon, onDelete }: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  icon?: React.ReactNode;
+  onDelete?: () => void;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+    <span
+      className={`group/chip inline-flex items-center gap-1.5 rounded-md border pl-3 text-sm font-semibold transition-colors ${onDelete ? 'pr-1.5' : 'pr-3'} py-1.5 ${
         active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
       }`}
     >
-      {label}
-    </button>
-  );
-}
-
-// Lists control: a button that opens a small menu to switch the active list,
-// create a new one, or delete an existing one.
-function ListMenu({
-  lists, activeList, onPick, onCreate, onDelete,
-}: {
-  lists: ClientList[];
-  activeList: string | null;
-  onPick: (id: string | null) => void;
-  onCreate: () => void;
-  onDelete: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
-
-  const activeName = lists.find((l) => l.id === activeList)?.name;
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
-          activeList ? 'bg-accent border-accent text-accent-ink' : 'bg-surface border-border text-ink-muted hover:text-ink-strong hover:border-border-strong'
-        }`}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
-        {activeName ?? 'Lists'}
-        {!activeList && lists.length > 0 && <span className="tabular-nums opacity-70">{lists.length}</span>}
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 focus-visible:outline-none">
+        {icon}
+        {label}
+        <span className={`tabular-nums text-xs ${active ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
       </button>
-      {open && (
-        <div className="absolute z-30 mt-1.5 w-60 rounded-md border border-border bg-surface shadow-lg p-1.5">
-          {activeList && (
-            <button type="button" onClick={() => { onPick(null); setOpen(false); }} className="w-full text-left rounded px-2.5 py-1.5 text-sm text-ink-muted hover:bg-surface-2">
-              ← Back to all items
-            </button>
-          )}
-          {lists.length === 0 && <p className="px-2.5 py-2 text-sm text-ink-subtle">No lists yet.</p>}
-          {lists.map((l) => (
-            <div key={l.id} className="group flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => { onPick(l.id); setOpen(false); }}
-                className={`flex-1 text-left rounded px-2.5 py-1.5 text-sm hover:bg-surface-2 ${activeList === l.id ? 'text-ink-strong font-semibold' : 'text-ink-muted'}`}
-              >
-                {l.name} <span className="text-ink-subtle tabular-nums">· {l.fileIds.length}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { if (window.confirm(`Delete list "${l.name}"?`)) onDelete(l.id); }}
-                aria-label="Delete list"
-                className="h-7 w-7 inline-flex items-center justify-center rounded text-ink-subtle opacity-0 group-hover:opacity-100 hover:text-negative hover:bg-surface-2"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-              </button>
-            </div>
-          ))}
-          <button type="button" onClick={() => { setOpen(false); onCreate(); }} className="mt-1 w-full text-left rounded px-2.5 py-1.5 text-sm font-semibold text-accent-dark hover:bg-surface-2">
-            + New list
-          </button>
-        </div>
+      {onDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="Delete list"
+          className={`h-5 w-5 inline-flex items-center justify-center rounded opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-negative'}`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
       )}
-    </div>
+    </span>
   );
 }
 
