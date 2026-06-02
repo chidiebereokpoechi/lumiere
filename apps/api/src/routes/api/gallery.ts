@@ -6,8 +6,10 @@ import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
 import { verifyPassword, hashPassword } from '../../services/auth';
-import { createGallerySession, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
+import { createGallerySession, setGallerySessionEmail, GALLERY_SESSION_COOKIE } from '../../services/gallery-session';
 import { notifyPhotographer } from '../../services/notify';
+import { parseBody } from '../../lib/validation';
+import { IdentifyInput } from '@lumiere/types';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
@@ -136,6 +138,38 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     body: t.Object({ password: t.String({ minLength: 1 }) }),
   })
 
+  // POST /api/gallery/:slug/identify — client supplies their email once. We
+  // issue a gallery session if there isn't one, then stamp the email on it.
+  // Required before favoriting or creating lists.
+  .post('/:slug/identify', async (ctx) => {
+    const { params, cookie, set, gallerySession, clientIp } = ctx;
+    const parsed = parseBody(ctx, IdentifyInput);
+    if (!parsed.ok) return parsed.error;
+
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { error: 'not_found' }; }
+    if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
+    if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+      set.status = 401; return { error: 'locked' };
+    }
+
+    let token = gallerySession?.galleryId === gallery.id ? gallerySession.token : null;
+    if (!token) {
+      const session = createGallerySession(gallery.id, clientIp ?? undefined);
+      cookie[GALLERY_SESSION_COOKIE]!.set({
+        value: session.token,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: env.IS_PROD,
+        path: '/',
+        maxAge: session.expiresAt - now(),
+      });
+      token = session.token;
+    }
+    setGallerySessionEmail(token, parsed.data.email);
+    return { ok: true, email: parsed.data.email };
+  })
+
   // GET /api/gallery/:slug/files — public, unified media list. Every item is a
   // file with a `type`; images carry thumb/preview URLs, video/audio/file carry
   // a stream + download URL.
@@ -154,19 +188,24 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
       return { error: 'locked' };
     }
 
-    const rows = await db.query.files.findMany({
-      where: and(eq(files.galleryId, gallery.id), eq(files.uploadStatus, 'ready')),
-      orderBy: [asc(files.position), asc(files.createdAt)],
-    });
-
     const folderRows = await db.query.galleryFolders.findMany({
       where: eq(galleryFolders.galleryId, gallery.id),
       orderBy: [asc(galleryFolders.position), asc(galleryFolders.name)],
     });
+    // Folders flagged hidden never reach the client — neither the tab nor the
+    // files inside it. The creator toggles visibility from the admin.
+    const visibleFolders = folderRows.filter((f) => !f.hidden);
+    const hiddenIds = new Set(folderRows.filter((f) => f.hidden).map((f) => f.id));
+
+    const allRows = await db.query.files.findMany({
+      where: and(eq(files.galleryId, gallery.id), eq(files.uploadStatus, 'ready')),
+      orderBy: [asc(files.position), asc(files.createdAt)],
+    });
+    const rows = allRows.filter((p) => !(p.folderId && hiddenIds.has(p.folderId)));
 
     return {
       gallery: toMinimal(gallery),
-      folders: folderRows.map((f) => ({ id: f.id, name: f.name, coverFileId: f.coverFileId })),
+      folders: visibleFolders.map((f) => ({ id: f.id, name: f.name, coverFileId: f.coverFileId })),
       files: rows.map((p) => ({
         id: p.id,
         folderId: p.folderId,

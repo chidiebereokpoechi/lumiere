@@ -11,6 +11,7 @@ export interface GallerySession {
   token: string;
   galleryId: string;
   expiresAt: number;
+  clientEmail?: string | null;
 }
 
 /**
@@ -37,7 +38,12 @@ export async function findValidGallerySession(token: string): Promise<GallerySes
     where: and(eq(gallerySessions.token, token), gte(gallerySessions.expiresAt, now())),
   });
   if (!row) return null;
-  return { token: row.token, galleryId: row.galleryId, expiresAt: row.expiresAt };
+  return { token: row.token, galleryId: row.galleryId, expiresAt: row.expiresAt, clientEmail: row.clientEmail };
+}
+
+/** Attach the client's email to a session (one-time, on first favorite/list). */
+export function setGallerySessionEmail(token: string, email: string): void {
+  db.update(gallerySessions).set({ clientEmail: email }).where(eq(gallerySessions.token, token)).run();
 }
 
 export function pruneExpiredGallerySessions(): number {
