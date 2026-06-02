@@ -8,6 +8,7 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/api/auth';
 import { galleryRoutes } from './routes/api/galleries';
 import { photoRoutes } from './routes/api/photos';
+import { folderRoutes } from './routes/api/folders';
 import { clientGalleryRoutes } from './routes/api/gallery';
 import { favoriteRoutes } from './routes/api/favorites';
 import { downloadRoutes } from './routes/api/downloads';
@@ -62,6 +63,7 @@ const app = new Elysia({
   .use(authRoutes)
   .use(galleryRoutes)
   .use(photoRoutes)
+  .use(folderRoutes)
   .use(clientGalleryRoutes)
   .use(favoriteRoutes)
   .use(downloadRoutes)

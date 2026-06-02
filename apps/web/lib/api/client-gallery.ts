@@ -21,8 +21,15 @@ export interface MinimalGallery {
   eventType: string | null;
 }
 
+export interface ClientFolder {
+  id: string;
+  name: string;
+  coverPhotoId: string | null;
+}
+
 export interface ClientPhoto {
   id: string;
+  folderId: string | null;
   width: number | null;
   height: number | null;
   colorPalette: string[] | null;
@@ -38,6 +45,7 @@ export interface AccessResponse {
 
 export interface ClientPhotosResponse {
   gallery: MinimalGallery;
+  folders: ClientFolder[];
   photos: ClientPhoto[];
 }
 

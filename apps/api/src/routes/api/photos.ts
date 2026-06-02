@@ -1,13 +1,15 @@
 import { Elysia, t } from 'elysia';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, inArray } from 'drizzle-orm';
+import { PhotoMoveInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, photos } from '../../db/schema';
+import { galleries, galleryFolders, photos } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { uploadObject } from '../../services/storage';
 import { enqueue } from '../../services/queue';
 import { emit, trackBatch } from '../../services/events';
 import { detectImageMime, extForMime } from '../../lib/mime';
+import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
@@ -134,6 +136,40 @@ export const photoRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/photo
         t.Array(t.File()),
       ]),
     }),
+  })
+
+  // POST /api/galleries/:galleryId/photos/move — bulk-assign photos to a folder
+  // (folderId null moves them back to the gallery root).
+  .post('/move', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, PhotoMoveInput);
+    if (!parsed.ok) return parsed.error;
+    const { photoIds, folderId } = parsed.data;
+
+    // A non-null target folder must belong to this gallery.
+    if (folderId !== null) {
+      const folder = await db.query.galleryFolders.findFirst({
+        where: and(eq(galleryFolders.id, folderId), eq(galleryFolders.galleryId, gallery.id)),
+      });
+      if (!folder) { ctx.set.status = 404; return { error: 'folder_not_found' }; }
+    }
+
+    // Scope the update to photos that actually belong to this gallery.
+    await db.update(photos)
+      .set({ folderId })
+      .where(and(eq(photos.galleryId, gallery.id), inArray(photos.id, photoIds)));
+
+    return { ok: true, moved: photoIds.length };
   })
 
   // DELETE /api/galleries/:galleryId/photos/:photoId

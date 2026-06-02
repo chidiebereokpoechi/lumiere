@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { eq, asc, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries, photos, galleryViews } from '../../db/schema';
+import { galleries, photos, galleryViews, galleryFolders } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
@@ -156,10 +156,17 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
       orderBy: [asc(photos.position), asc(photos.createdAt)],
     });
 
+    const folderRows = await db.query.galleryFolders.findMany({
+      where: eq(galleryFolders.galleryId, gallery.id),
+      orderBy: [asc(galleryFolders.position), asc(galleryFolders.name)],
+    });
+
     return {
       gallery: toMinimal(gallery),
+      folders: folderRows.map((f) => ({ id: f.id, name: f.name, coverPhotoId: f.coverPhotoId })),
       photos: rows.map((p) => ({
         id: p.id,
+        folderId: p.folderId,
         width: p.width,
         height: p.height,
         colorPalette: p.colorPalette ? JSON.parse(p.colorPalette) as string[] : null,
