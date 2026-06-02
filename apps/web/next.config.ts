@@ -2,7 +2,13 @@ import type { NextConfig } from 'next';
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:3200';
 
-const config: NextConfig = {
+const config = {
+  // Dev only: the Next rewrite proxy buffers request bodies and defaults to a
+  // 10MB cap, which truncates media uploads (proxied to the Bun backend) and
+  // hangs the socket. Raise it well past the per-file limits. In production
+  // nginx fronts both origins directly, so this proxy isn't in the path.
+  middlewareClientMaxBodySize: '1024mb',
+
   // The Bun/Elysia backend at /api, /events, and /img is a separate process in
   // dev (port 3200). In production nginx fronts both at the same origin; in
   // dev we proxy via Next rewrites so the browser sees one origin and cookies
@@ -29,6 +35,6 @@ const config: NextConfig = {
   },
 
   reactStrictMode: true,
-};
+} satisfies NextConfig & { middlewareClientMaxBodySize: string };
 
 export default config;

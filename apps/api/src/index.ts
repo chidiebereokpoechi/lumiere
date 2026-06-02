@@ -34,11 +34,9 @@ startReaper({ intervalMs: 60_000, staleAfterMs: 5 * 60_000 });
 log.info('worker.started', { concurrency });
 
 const app = new Elysia({
-  // Headroom above Bun's 128MB default so a single chunked upload request
-  // (client caps each batch ~80MB) never trips the body limit. The photo
-  // route still buffers files in memory, so this is a ceiling, not a target —
-  // the client is responsible for chunking large selections.
-  serve: { maxRequestBodySize: 256 * 1024 * 1024 },
+  // Allow a single file upload up to the attachment cap (+ multipart overhead).
+  // Uploads are one-file-per-request, so this bounds the largest single body.
+  serve: { maxRequestBodySize: (env.MAX_ATTACHMENT_SIZE_MB + 32) * 1024 * 1024 },
 })
   .use(cors({
     origin: env.BASE_URL.replace(/^https?:\/\//, ''),
