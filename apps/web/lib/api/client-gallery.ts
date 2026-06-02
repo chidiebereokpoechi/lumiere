@@ -12,6 +12,9 @@ export interface MinimalGallery {
   colorTheme: string;
   customCss: string | null;
   hasPassword: boolean;
+  allowDownload: boolean;
+  downloadMode: string;
+  allowFavorites: boolean;
   expiresAt: number | null;
   gracePeriodDays: number;
   eventDate: number | null;

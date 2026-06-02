@@ -139,12 +139,16 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     return '';
   })
 
-  // GET /api/gallery/:slug/download?scope=all|favorites — streaming ZIP of the
-  // chosen photo set. Uses store (level 0); inputs are already-compressed
-  // JPEG/WebP so deflate would burn CPU for ~0% gain (v1.2 §9).
+  // GET /api/gallery/:slug/download?scope=all|favorites|selected — streaming ZIP
+  // of the chosen photo set. `scope=selected` (or any request with an `ids`
+  // list) zips just those photo ids. Uses store (level 0); inputs are already-
+  // compressed JPEG/WebP so deflate would burn CPU for ~0% gain (v1.2 §9).
   .get('/:slug/download', async (ctx) => {
     const { params, query, currentPhotographer, gallerySession, clientIp, set } = ctx;
-    const scope = query.scope ?? 'all';
+    const selectedIds = query.ids
+      ? new Set(query.ids.split(',').map((s) => s.trim()).filter(Boolean))
+      : null;
+    const scope = selectedIds ? 'selected' : (query.scope ?? 'all');
 
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) { set.status = 404; return { error: 'not_found' }; }
@@ -173,6 +177,8 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       });
       const favIds = new Set(favs.map((f) => f.photoId));
       photoRows = photoRows.filter((p) => favIds.has(p.id));
+    } else if (selectedIds) {
+      photoRows = photoRows.filter((p) => selectedIds.has(p.id));
     }
 
     if (photoRows.length === 0) {
@@ -188,8 +194,8 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     }
 
     // Include gallery attachments alongside photos under a separate prefix.
-    // Skip when scope is "favorites" — favorites are per-photo, not per-file.
-    if (scope !== 'favorites') {
+    // Skip for per-photo scopes (favorites / explicit selection).
+    if (scope === 'all') {
       const attRows = await db.query.attachments.findMany({
         where: eq(attachments.galleryId, gallery.id),
         orderBy: [asc(attachments.position), asc(attachments.createdAt)],
@@ -228,7 +234,8 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     }
 
     const { archive } = buildZipStream(entries);
-    const zipName = `${slugify(gallery.title) || 'gallery'}${scope === 'favorites' ? '-favorites' : ''}.zip`;
+    const suffix = scope === 'favorites' ? '-favorites' : scope === 'selected' ? '-selected' : '';
+    const zipName = `${slugify(gallery.title) || 'gallery'}${suffix}.zip`;
     log.info('download.zip', { galleryId: gallery.id, scope, count: entries.length });
 
     return new Response(
@@ -243,6 +250,7 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     );
   }, {
     query: t.Object({
-      scope: t.Optional(t.Union([t.Literal('all'), t.Literal('favorites')])),
+      scope: t.Optional(t.Union([t.Literal('all'), t.Literal('favorites'), t.Literal('selected')])),
+      ids: t.Optional(t.String()),
     }),
   });

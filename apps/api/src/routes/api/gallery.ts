@@ -30,6 +30,9 @@ interface MinimalGallery {
   colorTheme: string;
   customCss: string | null;
   hasPassword: boolean;
+  allowDownload: boolean;
+  downloadMode: string;
+  allowFavorites: boolean;
   expiresAt: number | null;
   gracePeriodDays: number;
   eventDate: number | null;
@@ -47,6 +50,9 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
     colorTheme: g.colorTheme ?? 'light',
     customCss: g.customCss,
     hasPassword: !!g.passwordHash,
+    allowDownload: g.allowDownload === 1,
+    downloadMode: g.downloadMode ?? 'watermarked',
+    allowFavorites: g.allowFavorites === 1,
     expiresAt: g.expiresAt,
     gracePeriodDays: g.gracePeriodDays ?? 0,
     eventDate: g.eventDate,
