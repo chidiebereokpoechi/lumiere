@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { fetchAccess, fetchClientFiles, fetchFavorites } from '@/lib/api/client-gallery';
 import { fetchClientComments } from '@/lib/api/comments';
+import { fetchLists } from '@/lib/api/lists';
 import { ApiError } from '@/lib/api-client';
 import { PasswordGate } from '@/components/client/password-gate';
 import { ClientGallery } from '@/components/client/client-gallery';
@@ -38,11 +39,12 @@ export default async function ClientGalleryPage({ params }: Props) {
     return <PasswordGate slug={slug} title={access.gallery.title} />;
   }
 
-  // Unlocked / public — load the unified file list + favorites + comments.
-  const [{ gallery, folders, files }, favs, cmts] = await Promise.all([
+  // Unlocked / public — load the unified file list + favorites + comments + lists.
+  const [{ gallery, folders, files }, favs, cmts, lists] = await Promise.all([
     fetchClientFiles(slug),
     fetchFavorites(slug).catch(() => ({ favorites: [] })),
     fetchClientComments(slug).catch(() => ({ comments: [] })),
+    fetchLists(slug).catch(() => ({ email: null, lists: [] })),
   ]);
   return (
     <ClientGallery
@@ -51,6 +53,8 @@ export default async function ClientGalleryPage({ params }: Props) {
       files={files}
       initialFavorites={favs.favorites.map((f) => f.fileId)}
       comments={cmts.comments}
+      initialLists={lists.lists}
+      initialEmail={lists.email}
     />
   );
 }

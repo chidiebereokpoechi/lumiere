@@ -4,7 +4,8 @@ export interface Folder {
   id: string;
   name: string;
   position: number | null;
-  coverPhotoId: string | null;
+  hidden: boolean;
+  coverFileId: string | null;
   photoCount: number;
 }
 
