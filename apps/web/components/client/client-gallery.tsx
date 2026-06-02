@@ -15,6 +15,7 @@ interface Props {
   comments: ClientComment[];
   initialLists: ClientList[];
   initialEmail: string | null;
+  initialCollection: string | null;
 }
 
 function formatBytes(n: number | null): string {
@@ -22,6 +23,11 @@ function formatBytes(n: number | null): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// URL-safe slug from a folder/list name (favorites is fixed).
+function toSlug(s: string): string {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'untitled';
 }
 
 function jsonPost(path: string, body: unknown, method = 'POST') {
@@ -33,7 +39,7 @@ function jsonPost(path: string, body: unknown, method = 'POST') {
 }
 
 export function ClientGallery({
-  gallery, folders, files: allFiles, initialFavorites, comments, initialLists, initialEmail,
+  gallery, folders, files: allFiles, initialFavorites, comments, initialLists, initialEmail, initialCollection,
 }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -63,15 +69,52 @@ export function ClientGallery({
 
   // Cover acts as a full-screen intro; "View gallery" scrolls down to the grid.
   const gridRef = useRef<HTMLDivElement>(null);
-  const scrollToGrid = useCallback(() => gridRef.current?.scrollIntoView({ behavior: 'smooth' }), []);
+  const scrollToGrid = useCallback((smooth = true) => gridRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' }), []);
   // Comments live behind a toggle in the lightbox to keep it uncluttered.
   const [showComments, setShowComments] = useState(false);
 
   // The current view — a folder, favorites, or a list — selected from one row.
-  // Mutually exclusive: picking any one clears the others.
+  // Mutually exclusive: picking any one clears the others. The view is mirrored
+  // in the URL (/g/:slug/:collection) so it's deep-linkable and back/forward works.
   type View = { kind: 'folder'; id: string } | { kind: 'favorites' } | { kind: 'list'; id: string };
-  const [view, setView] = useState<View>(folders[0] ? { kind: 'folder', id: folders[0].id } : { kind: 'favorites' });
-  const switchView = useCallback((v: View) => { setView(v); setOpenId(null); setSelected(new Set()); }, []);
+  const defaultView: View = folders[0] ? { kind: 'folder', id: folders[0].id } : { kind: 'favorites' };
+  const resolveCollection = useCallback((seg: string | null): View | null => {
+    if (!seg) return null;
+    if (seg === 'favorites') return gallery.allowFavorites ? { kind: 'favorites' } : null;
+    const folder = folders.find((f) => toSlug(f.name) === seg);
+    if (folder) return { kind: 'folder', id: folder.id };
+    const list = lists.find((l) => toSlug(l.name) === seg);
+    if (list) return { kind: 'list', id: list.id };
+    return null;
+  }, [folders, lists, gallery.allowFavorites]);
+  const viewSlug = useCallback((v: View): string => {
+    if (v.kind === 'favorites') return 'favorites';
+    if (v.kind === 'list') return toSlug(lists.find((l) => l.id === v.id)?.name ?? 'list');
+    return toSlug(folders.find((f) => f.id === v.id)?.name ?? 'folder');
+  }, [folders, lists]);
+
+  const [view, setView] = useState<View>(() => resolveCollection(initialCollection) ?? defaultView);
+  const switchView = useCallback((v: View) => {
+    setView(v); setOpenId(null); setSelected(new Set());
+    window.history.pushState(null, '', `/g/${gallery.slug}/${viewSlug(v)}`);
+    scrollToGrid(false);
+  }, [gallery.slug, viewSlug, scrollToGrid]);
+
+  // Keep the view in sync with browser back/forward.
+  useEffect(() => {
+    const onPop = () => {
+      const seg = window.location.pathname.split('/').filter(Boolean)[2] ?? null;
+      setView(resolveCollection(seg) ?? (folders[0] ? { kind: 'folder', id: folders[0].id } : { kind: 'favorites' }));
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [resolveCollection, folders]);
+
+  // Deep link straight to a collection lands at the grid, not the cover.
+  useEffect(() => {
+    if (initialCollection) scrollToGrid(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const canDownload = gallery.allowDownload && gallery.downloadMode !== 'none';
   const canFavorite = gallery.allowFavorites;
@@ -361,7 +404,7 @@ export function ClientGallery({
           {gallery.subtitle && <p className="mt-4 max-w-xl text-sm sm:text-base opacity-90">{gallery.subtitle}</p>}
           <button
             type="button"
-            onClick={scrollToGrid}
+            onClick={() => scrollToGrid()}
             className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold uppercase tracking-[0.25em] transition-colors ${
               gallery.coverFileId ? 'border-white/70 text-white hover:bg-white hover:text-black' : 'border-border text-ink-strong hover:bg-surface-strong hover:text-ink-inverse hover:border-surface-strong'
             }`}

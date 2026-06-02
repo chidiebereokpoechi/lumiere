@@ -9,11 +9,13 @@ import { ClientGallery } from '@/components/client/client-gallery';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  // Optional catch-all: `/g/:slug` and `/g/:slug/:collection` both land here.
+  params: Promise<{ slug: string; collection?: string[] }>;
 }
 
 export default async function ClientGalleryPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug, collection } = await params;
+  const initialCollection = collection?.[0] ?? null;
 
   let access;
   try {
@@ -55,6 +57,7 @@ export default async function ClientGalleryPage({ params }: Props) {
       comments={cmts.comments}
       initialLists={lists.lists}
       initialEmail={lists.email}
+      initialCollection={initialCollection}
     />
   );
 }
