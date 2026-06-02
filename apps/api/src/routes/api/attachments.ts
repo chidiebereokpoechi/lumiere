@@ -9,7 +9,7 @@ import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkCsrf } from '../../middleware/csrf';
 import { checkRateLimit } from '../../middleware/rate-limit';
-import { uploadStream, deleteObject, presignDownload } from '../../services/storage';
+import { uploadStream, deleteObject, presignDownload, presignGet } from '../../services/storage';
 import { notifyPhotographer } from '../../services/notify';
 import { ensureDefaultFolder } from '../../services/folders';
 import { parseBody } from '../../lib/validation';
@@ -26,6 +26,7 @@ function isExpired(g: typeof galleries.$inferSelect): boolean {
 function publicShape(row: typeof attachments.$inferSelect) {
   return {
     id: row.id,
+    folderId: row.folderId,
     filename: row.displayName ?? row.filenameOriginal,
     mimeType: row.mimeType,
     fileSize: row.fileSize,
@@ -250,6 +251,31 @@ export const clientAttachmentRoutes = new Elysia()
 
     const url = await presignDownload(att.s3Key, att.displayName ?? att.filenameOriginal);
     log.info('attachment.download', { galleryId: gallery.id, attachmentId: att.id });
+    set.status = 302;
+    set.headers['location'] = url;
+    return '';
+  })
+
+  // GET /api/gallery/:slug/attachments/:attachmentId/stream — 302 to a presigned
+  // URL WITHOUT an attachment disposition, for inline <video>/<audio> playback.
+  // The presigned S3 URL supports Range requests natively, so seeking works.
+  .get('/api/gallery/:slug/attachments/:attachmentId/stream', async (ctx) => {
+    const { params, gallerySession, currentPhotographer, set } = ctx;
+
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { error: 'not_found' }; }
+    if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
+    const isOwner = currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    if (!isOwner && gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+      set.status = 401; return { error: 'locked' };
+    }
+
+    const att = await db.query.attachments.findFirst({
+      where: and(eq(attachments.id, params.attachmentId), eq(attachments.galleryId, gallery.id)),
+    });
+    if (!att) { set.status = 404; return { error: 'attachment_not_found' }; }
+
+    const url = await presignGet(att.s3Key);
     set.status = 302;
     set.headers['location'] = url;
     return '';
