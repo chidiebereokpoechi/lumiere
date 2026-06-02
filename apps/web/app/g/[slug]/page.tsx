@@ -38,6 +38,6 @@ export default async function ClientGalleryPage({ params }: Props) {
   }
 
   // Unlocked / public — load photos.
-  const { gallery, photos } = await fetchClientPhotos(slug);
-  return <ClientGallery gallery={gallery} photos={photos} />;
+  const { gallery, photos, folders } = await fetchClientPhotos(slug);
+  return <ClientGallery gallery={gallery} photos={photos} folders={folders} />;
 }

@@ -2,16 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import type { ClientPhoto, MinimalGallery } from '@/lib/api/client-gallery';
+import type { ClientFolder, ClientPhoto, MinimalGallery } from '@/lib/api/client-gallery';
 
 interface Props {
   gallery: MinimalGallery;
   photos: ClientPhoto[];
+  folders: ClientFolder[];
 }
 
-export function ClientGallery({ gallery, photos }: Props) {
+export function ClientGallery({ gallery, photos: allPhotos, folders }: Props) {
   const [open, setOpen] = useState<number | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [folder, setFolder] = useState<string | null>(null); // null = all
+
+  const photos = useMemo(
+    () => (folder === null ? allPhotos : allPhotos.filter((p) => p.folderId === folder)),
+    [allPhotos, folder],
+  );
 
   const canDownload = gallery.allowDownload && gallery.downloadMode !== 'none';
 
@@ -89,6 +96,16 @@ export function ClientGallery({ gallery, photos }: Props) {
           </div>
         )}
       </header>
+
+      {/* Folder nav */}
+      {folders.length > 0 && (
+        <nav className="px-4 sm:px-8 pt-6 flex flex-wrap items-center gap-2">
+          <FolderTab active={folder === null} onClick={() => { setFolder(null); setOpen(null); }} label="All" />
+          {folders.map((f) => (
+            <FolderTab key={f.id} active={folder === f.id} onClick={() => { setFolder(f.id); setOpen(null); }} label={f.name} />
+          ))}
+        </nav>
+      )}
 
       {/* Toolbar */}
       {canDownload && photos.length > 0 && (
@@ -198,6 +215,22 @@ export function ClientGallery({ gallery, photos }: Props) {
         </div>
       )}
     </main>
+  );
+}
+
+function FolderTab({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+        active
+          ? 'bg-surface-strong text-ink-inverse border-surface-strong'
+          : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
