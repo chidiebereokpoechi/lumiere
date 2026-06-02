@@ -229,8 +229,25 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     finally { setBusyId(null); }
   }
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelected((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  // Shift-click selects the contiguous range (in display order) from the last
+  // plain-clicked anchor — additive, never deselecting the existing selection.
+  const selectAnchor = useRef<string | null>(null);
+  const toggleSelect = useCallback((id: string, shift: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (shift && selectAnchor.current) {
+        const a = orderRef.current.indexOf(selectAnchor.current);
+        const b = orderRef.current.indexOf(id);
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a];
+          for (let i = lo; i <= hi; i++) next.add(orderRef.current[i]!);
+          return next; // keep anchor so further shift-clicks re-range from it
+        }
+      }
+      if (next.has(id)) next.delete(id); else next.add(id);
+      selectAnchor.current = id;
+      return next;
+    });
   }, []);
 
   // ---- pointer-based sortable -----------------------------------------
@@ -453,7 +470,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
                   dragging={dragId === file.id}
                   onRef={(n) => registerTile(file.id, n)}
                   onPointerDownReorder={(e) => beginDrag(file.id, e)}
-                  onToggleSelect={() => toggleSelect(file.id)}
+                  onToggleSelect={(shift) => toggleSelect(file.id, shift)}
                   onDelete={() => onDelete(file)}
                   onSetCover={() => onSetCover(file)}
                 />
@@ -503,7 +520,7 @@ function FileTile({
   file: GalleryFile; galleryId: string; gallerySlug: string; isCover: boolean; selected: boolean; busy: boolean;
   reorderable: boolean; dragging: boolean;
   onRef: (n: HTMLElement | null) => void; onPointerDownReorder: (e: React.PointerEvent<HTMLElement>) => void;
-  onToggleSelect: () => void; onDelete: () => void; onSetCover: () => void;
+  onToggleSelect: (shift: boolean) => void; onDelete: () => void; onSetCover: () => void;
 }) {
   const name = file.displayName ?? file.filenameOriginal;
   const ready = file.uploadStatus !== 'processing' && file.uploadStatus !== 'error';
@@ -544,7 +561,7 @@ function FileTile({
       {!dragging && isCover && <span className="absolute top-2 right-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">Cover</span>}
 
       {!dragging && (
-        <button type="button" onClick={onToggleSelect} onPointerDown={(e) => e.stopPropagation()} aria-pressed={selected} aria-label={selected ? 'Deselect' : 'Select'}
+        <button type="button" onClick={(e) => onToggleSelect(e.shiftKey)} onPointerDown={(e) => e.stopPropagation()} aria-pressed={selected} aria-label={selected ? 'Deselect' : 'Select'}
           className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${selected ? 'bg-accent border-accent text-accent-ink opacity-100' : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'}`}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
         </button>

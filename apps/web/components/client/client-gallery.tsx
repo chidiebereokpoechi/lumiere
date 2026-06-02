@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import type { ClientFile, ClientFolder, MinimalGallery } from '@/lib/api/client-gallery';
 import type { ClientComment } from '@/lib/api/comments';
@@ -64,13 +64,26 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
     void apiClient(`/api/gallery/${gallery.slug}/track-view`, { method: 'POST' }).catch(() => {});
   }, [gallery.slug]);
 
-  const toggleSelect = useCallback((id: string) => {
+  // Shift-click selects the contiguous range from the last plain-clicked anchor
+  // (additive — keeps the existing selection).
+  const selectAnchor = useRef<string | null>(null);
+  const toggleSelect = useCallback((id: string, shift: boolean) => {
     setSelected((prev) => {
       const next = new Set(prev);
+      if (shift && selectAnchor.current) {
+        const a = files.findIndex((f) => f.id === selectAnchor.current);
+        const b = files.findIndex((f) => f.id === id);
+        if (a !== -1 && b !== -1) {
+          const [lo, hi] = a < b ? [a, b] : [b, a];
+          for (let i = lo; i <= hi; i++) next.add(files[i]!.id);
+          return next;
+        }
+      }
       if (next.has(id)) next.delete(id); else next.add(id);
+      selectAnchor.current = id;
       return next;
     });
-  }, []);
+  }, [files]);
 
   const selectAll = useCallback(() => setSelected(new Set(files.map((f) => f.id))), [files]);
   const clearSelection = useCallback(() => setSelected(new Set()), []);
@@ -216,7 +229,7 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
                   {canDownload && (
                     <button
                       type="button"
-                      onClick={() => toggleSelect(f.id)}
+                      onClick={(e) => toggleSelect(f.id, e.shiftKey)}
                       aria-pressed={isSelected}
                       aria-label={isSelected ? 'Deselect' : 'Select'}
                       className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
