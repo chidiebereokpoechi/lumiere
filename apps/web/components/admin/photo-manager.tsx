@@ -213,6 +213,33 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     });
   }, []);
 
+  const [dragId, setDragId] = useState<string | null>(null);
+  // Reordering writes global positions, so only allow it in the unfiltered
+  // view with nothing selected and no uploads in flight.
+  const canReorder = filter === 'all' && selected.size === 0 && tiles.length === 0;
+
+  const reorder = useCallback(async (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    setPhotos((prev) => {
+      const from = prev.findIndex((p) => p.id === fromId);
+      const to = prev.findIndex((p) => p.id === toId);
+      if (from === -1 || to === -1) return prev;
+      const copy = [...prev];
+      const [moved] = copy.splice(from, 1);
+      copy.splice(to, 0, moved!);
+      const orderedIds = copy.map((p) => p.id);
+      void apiClientMutation(`/api/galleries/${galleryId}/photos/reorder`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ photoIds: orderedIds }),
+      }).catch((err) => {
+        setError(err instanceof ApiError ? `Reorder failed (${err.status})` : 'Network error');
+        void refreshPhotos();
+      });
+      return copy;
+    });
+  }, [galleryId, refreshPhotos]);
+
   async function createFolder() {
     const name = window.prompt('Folder name')?.trim();
     if (!name) return;
@@ -345,6 +372,10 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
         </button>
       </div>
 
+      {canReorder && visiblePhotos.length > 1 && (
+        <p className="text-xs text-ink-subtle">Drag photos to reorder.</p>
+      )}
+
       {isEmpty ? (
         <p className="text-sm text-ink-muted">No photos yet. Upload some to get started.</p>
       ) : (
@@ -380,6 +411,11 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
               isCover={cover === photo.id}
               selected={selected.has(photo.id)}
               busy={busyId === photo.id}
+              draggable={canReorder}
+              dragging={dragId === photo.id}
+              onDragStart={() => setDragId(photo.id)}
+              onDragEnd={() => setDragId(null)}
+              onDropOn={() => { if (dragId) void reorder(dragId, photo.id); setDragId(null); }}
               onToggleSelect={() => toggleSelect(photo.id)}
               onDelete={() => onDelete(photo)}
               onSetCover={() => onSetCover(photo)}
@@ -471,13 +507,19 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 }
 
 function PhotoTile({
-  photo, galleryId, isCover, selected, busy, onToggleSelect, onDelete, onSetCover,
+  photo, galleryId, isCover, selected, busy, draggable, dragging,
+  onDragStart, onDragEnd, onDropOn, onToggleSelect, onDelete, onSetCover,
 }: {
   photo: Photo;
   galleryId: string;
   isCover: boolean;
   selected: boolean;
   busy: boolean;
+  draggable: boolean;
+  dragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDropOn: () => void;
   onToggleSelect: () => void;
   onDelete: () => void;
   onSetCover: () => void;
@@ -485,12 +527,20 @@ function PhotoTile({
   const ready = photo.uploadStatus === 'ready';
   const errored = photo.uploadStatus === 'error';
   return (
-    <div className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-surface-sunken">
+    <div
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => { if (draggable) e.preventDefault(); }}
+      onDrop={(e) => { e.preventDefault(); onDropOn(); }}
+      className={`group relative aspect-square rounded-lg overflow-hidden border border-border bg-surface-sunken ${draggable ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging ? 'opacity-40' : ''}`}
+    >
       {ready ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`/img/${galleryId}/${photo.id}/thumb`}
           alt={photo.filenameOriginal}
+          draggable={false}
           className={`h-full w-full object-cover ${selected ? 'brightness-90' : ''}`}
         />
       ) : (

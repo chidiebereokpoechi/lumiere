@@ -18,3 +18,9 @@ export const PhotoMoveInput = z.object({
   folderId: z.string().nullable(),
 }).strict();
 export type PhotoMoveInput = z.infer<typeof PhotoMoveInput>;
+
+// Set photo order: position becomes the index of each id in the array.
+export const PhotoReorderInput = z.object({
+  photoIds: z.array(z.string().min(1)).min(1),
+}).strict();
+export type PhotoReorderInput = z.infer<typeof PhotoReorderInput>;

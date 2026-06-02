@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { eq, and, asc, inArray } from 'drizzle-orm';
-import { PhotoMoveInput } from '@lumiere/types';
+import { PhotoMoveInput, PhotoReorderInput } from '@lumiere/types';
 import { db } from '../../db';
 import { galleries, galleryFolders, photos } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
@@ -170,6 +170,33 @@ export const photoRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/photo
       .where(and(eq(photos.galleryId, gallery.id), inArray(photos.id, photoIds)));
 
     return { ok: true, moved: photoIds.length };
+  })
+
+  // POST /api/galleries/:galleryId/photos/reorder — set photo order; each id's
+  // position becomes its index in the array. Ids not in the gallery are ignored.
+  .post('/reorder', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, PhotoReorderInput);
+    if (!parsed.ok) return parsed.error;
+
+    db.transaction((tx) => {
+      parsed.data.photoIds.forEach((id, i) => {
+        tx.update(photos).set({ position: i })
+          .where(and(eq(photos.id, id), eq(photos.galleryId, gallery.id))).run();
+      });
+    });
+
+    return { ok: true, count: parsed.data.photoIds.length };
   })
 
   // DELETE /api/galleries/:galleryId/photos/:photoId
