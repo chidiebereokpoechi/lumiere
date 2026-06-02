@@ -175,6 +175,14 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
       await refreshFolders();
     } catch (err) { setError(err instanceof ApiError ? `Could not rename folder (${err.status})` : 'Network error'); }
   }
+  async function toggleFolderHidden(folder: Folder) {
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ hidden: !folder.hidden }),
+      });
+      await refreshFolders();
+    } catch (err) { setError(err instanceof ApiError ? `Could not update folder (${err.status})` : 'Network error'); }
+  }
   async function deleteFolder(folder: Folder) {
     if (folders.length <= 1) { setError('A gallery must have at least one folder.'); return; }
     if (!confirm(`Delete folder "${folder.name}"? Its contents move into another folder (nothing is deleted).`)) return;
@@ -465,10 +473,12 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
             id={f.id}
             active={activeFolder === f.id}
             isDropTarget={dropFolderId === f.id || fileOverFolder === f.id}
+            hidden={f.hidden}
             onClick={() => setActiveFolder(f.id)}
             label={f.name}
             count={f.photoCount}
             onRename={() => renameFolder(f)}
+            onToggleHidden={() => toggleFolderHidden(f)}
             onDelete={folders.length > 1 ? () => deleteFolder(f) : undefined}
             onFileEnter={() => setFileOverFolder(f.id)}
             onFileLeave={() => setFileOverFolder((c) => (c === f.id ? null : c))}
@@ -708,12 +718,14 @@ function TypeIcon({ type }: { type: GalleryFile['type'] }) {
 }
 
 function FolderChip({
-  id, active, isDropTarget, onClick, label, count, onRename, onDelete, onFileEnter, onFileLeave, onFileDrop,
+  id, active, isDropTarget, hidden, onClick, label, count, onRename, onDelete, onToggleHidden, onFileEnter, onFileLeave, onFileDrop,
 }: {
-  id: string; active: boolean; isDropTarget?: boolean; onClick: () => void; label: string; count: number;
-  onRename?: () => void; onDelete?: () => void; onFileEnter?: () => void; onFileLeave?: () => void; onFileDrop?: (files: FileList) => void;
+  id: string; active: boolean; isDropTarget?: boolean; hidden?: boolean; onClick: () => void; label: string; count: number;
+  onRename?: () => void; onDelete?: () => void; onToggleHidden?: () => void; onFileEnter?: () => void; onFileLeave?: () => void; onFileDrop?: (files: FileList) => void;
 }) {
   const hasFiles = (e: React.DragEvent) => e.dataTransfer.types.includes('Files');
+  const dim = hidden && !active && !isDropTarget ? 'opacity-60 border-dashed' : '';
+  const iconTint = active || isDropTarget ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-ink-strong';
   return (
     <span
       data-folder={id}
@@ -721,14 +733,27 @@ function FolderChip({
       onDragOver={(e) => { if (hasFiles(e)) e.preventDefault(); }}
       onDragLeave={() => onFileLeave?.()}
       onDrop={(e) => { if (hasFiles(e)) { e.preventDefault(); e.stopPropagation(); onFileDrop?.(e.dataTransfer.files); } }}
+      title={hidden ? 'Hidden from clients' : undefined}
       className={`group/chip inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold origin-center transition-all duration-200 ease-out ${
         isDropTarget ? 'scale-110 bg-accent text-accent-ink border-accent ring-4 ring-accent/40 shadow-[0_6px_20px_rgba(0,0,0,0.18)]'
           : active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
-      }`}
+      } ${dim}`}
     >
       <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 focus-visible:outline-none">
+        {hidden && (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>
+        )}
         {label}<span className={`tabular-nums text-xs ${active || isDropTarget ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
       </button>
+      {onToggleHidden && (
+        <button type="button" onClick={onToggleHidden} title={hidden ? 'Show to clients' : 'Hide from clients'} className={`opacity-0 group-hover/chip:opacity-100 ${iconTint}`}>
+          {hidden ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z" /><circle cx="12" cy="12" r="3" /></svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>
+          )}
+        </button>
+      )}
       {onRename && (
         <button type="button" onClick={onRename} title="Rename" className={`opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-ink-strong'}`}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>

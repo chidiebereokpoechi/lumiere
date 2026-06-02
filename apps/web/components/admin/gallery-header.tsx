@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Topnav } from "@/components/admin/topnav";
 
-type TabKey = "settings" | "media" | "comments" | "analytics";
+type TabKey = "settings" | "media" | "comments" | "lists" | "analytics";
 
 interface Props {
   galleryId: string;
@@ -72,6 +72,12 @@ export function GalleryHeader({
           active={active === "comments"}
         >
           Comments
+        </Tab>
+        <Tab
+          href={`/admin/galleries/${galleryId}/lists`}
+          active={active === "lists"}
+        >
+          Lists
         </Tab>
         <Tab
           href={`/admin/galleries/${galleryId}/analytics`}
