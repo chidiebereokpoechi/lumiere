@@ -37,9 +37,8 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
     return list;
   }, [allFiles, folder, favsOnly, favorites]);
 
-  // Lightbox steps through images only.
-  const images = useMemo(() => files.filter((f) => f.type === 'image'), [files]);
-  const openIndex = openId === null ? -1 : images.findIndex((f) => f.id === openId);
+  // Lightbox steps through every item, of any type.
+  const openIndex = openId === null ? -1 : files.findIndex((f) => f.id === openId);
 
   const toggleFavorite = useCallback((id: string) => {
     const wasFav = favorites.has(id);
@@ -90,12 +89,12 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
   const close = useCallback(() => setOpenId(null), []);
   const step = useCallback((dir: number) => {
     setOpenId((cur) => {
-      if (cur === null || images.length === 0) return cur;
-      const i = images.findIndex((f) => f.id === cur);
+      if (cur === null || files.length === 0) return cur;
+      const i = files.findIndex((f) => f.id === cur);
       if (i === -1) return cur;
-      return images[(i + dir + images.length) % images.length]!.id;
+      return files[(i + dir + files.length) % files.length]!.id;
     });
-  }, [images]);
+  }, [files]);
 
   useEffect(() => {
     if (openId === null) return;
@@ -114,7 +113,7 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
   ].filter(Boolean).join(' · '), [gallery.eventType, gallery.eventDate]);
 
   const allSelected = selected.size > 0 && selected.size === files.length;
-  const open = openIndex >= 0 ? images[openIndex] : null;
+  const open = openIndex >= 0 ? files[openIndex] : null;
 
   return (
     <main className="min-h-dvh bg-bg pb-24">
@@ -186,9 +185,9 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
               const isSelected = selected.has(f.id);
               return (
                 <div key={f.id} className="group relative mb-2 break-inside-avoid overflow-hidden rounded-md bg-surface-sunken">
-                  {f.type === 'image' ? (
-                    <button type="button" onClick={() => setOpenId(f.id)} className="block w-full focus-visible:outline-none">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <button type="button" onClick={() => setOpenId(f.id)} className="block w-full text-left focus-visible:outline-none">
+                    {f.type === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={f.thumbUrl ?? ''}
                         alt=""
@@ -196,27 +195,23 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
                         style={f.width && f.height ? { aspectRatio: `${f.width} / ${f.height}` } : undefined}
                         className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? 'brightness-90' : ''}`}
                       />
-                    </button>
-                  ) : f.type === 'video' ? (
-                    // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video controls preload="metadata" src={f.streamUrl ?? ''} className="block w-full h-auto bg-black" />
-                  ) : f.type === 'audio' ? (
-                    <div className="p-3">
-                      <p className="text-xs font-semibold text-ink-strong truncate mb-2">{f.filename}</p>
-                      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                      <audio controls preload="metadata" src={f.streamUrl ?? ''} className="w-full" />
-                    </div>
-                  ) : (
-                    <a href={f.downloadUrl} className="flex items-center gap-3 p-4">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-subtle shrink-0">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" />
-                      </svg>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-semibold text-ink-strong truncate">{f.filename}</span>
-                        <span className="block text-xs text-ink-subtle">{formatBytes(f.fileSize)}</span>
+                    ) : f.type === 'video' ? (
+                      <span className="relative block aspect-video w-full bg-black">
+                        <video src={`${f.streamUrl ?? ''}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-contain" />
+                        <span className="absolute inset-0 flex items-center justify-center"><span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg></span></span>
                       </span>
-                    </a>
-                  )}
+                    ) : (
+                      <span className="flex aspect-video w-full flex-col items-center justify-center gap-2 p-3 text-center">
+                        {f.type === 'audio' ? (
+                          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+                        ) : (
+                          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
+                        )}
+                        <span className="text-xs font-semibold text-ink-strong truncate max-w-full">{f.filename}</span>
+                        <span className="text-[11px] text-ink-subtle">{formatBytes(f.fileSize)}</span>
+                      </span>
+                    )}
+                  </button>
 
                   {canDownload && (
                     <button
@@ -274,19 +269,42 @@ export function ClientGallery({ gallery, folders, files: allFiles, initialFavori
         </div>
       )}
 
-      {/* Lightbox (images) */}
+      {/* Lightbox — any file type plays/views/downloads here */}
       {open && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={close}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={open.previewUrl ?? ''} alt="" className="max-h-[90vh] max-w-[92vw] object-contain" onClick={(e) => e.stopPropagation()} />
+          <div className="max-h-[90vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
+            {open.type === 'image' ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={open.previewUrl ?? ''} alt="" className="max-h-[90vh] max-w-[92vw] object-contain" />
+            ) : open.type === 'video' ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video src={open.streamUrl ?? ''} controls autoPlay className="max-h-[90vh] max-w-[92vw]" />
+            ) : open.type === 'audio' ? (
+              <div className="w-[min(90vw,32rem)] rounded-lg bg-surface p-6 text-center">
+                <p className="text-sm font-semibold text-ink-strong truncate mb-4">{open.filename}</p>
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <audio src={open.streamUrl ?? ''} controls autoPlay className="w-full" />
+              </div>
+            ) : (
+              <div className="w-[min(90vw,28rem)] rounded-lg bg-surface p-8 text-center">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
+                <p className="mt-3 text-sm font-semibold text-ink-strong truncate">{open.filename}</p>
+                <p className="text-xs text-ink-subtle">{formatBytes(open.fileSize)}</p>
+                <a href={open.downloadUrl} className="mt-5 inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                  Download
+                </a>
+              </div>
+            )}
+          </div>
           <button type="button" onClick={close} aria-label="Close" className="absolute top-4 right-4 h-10 w-10 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
-          {images.length > 1 && (
+          {files.length > 1 && (
             <>
               <NavButton side="left" onClick={(e) => { e.stopPropagation(); step(-1); }} />
               <NavButton side="right" onClick={(e) => { e.stopPropagation(); step(1); }} />
-              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs tabular-nums text-white/80">{openIndex + 1} / {images.length}</span>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs tabular-nums text-white/80">{openIndex + 1} / {files.length}</span>
             </>
           )}
         </div>
