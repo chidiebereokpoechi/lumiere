@@ -196,22 +196,18 @@ export function ClientGallery({
   const selectAll = useCallback(() => setSelected(new Set(files.map((f) => f.id))), [files]);
   const clearSelection = useCallback(() => setSelected(new Set()), []);
 
-  // Drag-to-select (iOS Photos style): press a checkbox and drag across tiles.
-  // The starting tile's state sets the mode — drag selects if it was unselected,
-  // deselects if it was selected. A plain tap falls through to toggleSelect.
-  const dragRef = useRef<{ x: number; y: number; mode: boolean; moved: boolean; seen: Set<string> } | null>(null);
+  // Drag-to-select = a live shift-click: press a checkbox and drag to select the
+  // contiguous range from the start tile to the tile under the pointer, added on
+  // top of whatever was already selected. Moving back shrinks the range. A plain
+  // tap falls through to toggleSelect.
+  const dragRef = useRef<{ x: number; y: number; moved: boolean; anchor: number; baseline: Set<string> } | null>(null);
   const suppressClickRef = useRef(false);
   const [dragSelecting, setDragSelecting] = useState(false);
-  const applyMode = useCallback((id: string, mode: boolean) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (mode) next.add(id); else next.delete(id);
-      return next;
-    });
-  }, []);
   const beginDragSelect = useCallback((id: string, e: React.PointerEvent) => {
     if (e.shiftKey) return; // let the click handler do range-select
-    dragRef.current = { x: e.clientX, y: e.clientY, mode: !selected.has(id), moved: false, seen: new Set() };
+    const anchor = files.findIndex((f) => f.id === id);
+    if (anchor === -1) return;
+    dragRef.current = { x: e.clientX, y: e.clientY, moved: false, anchor, baseline: new Set(selected) };
     const onMove = (ev: PointerEvent) => {
       const d = dragRef.current;
       if (!d) return;
@@ -219,12 +215,15 @@ export function ClientGallery({
         if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 6) return;
         d.moved = true;
         setDragSelecting(true);
-        d.seen.add(id);
-        applyMode(id, d.mode);
       }
       const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
       const fid = el?.closest<HTMLElement>('[data-fid]')?.dataset.fid;
-      if (fid && !d.seen.has(fid)) { d.seen.add(fid); applyMode(fid, d.mode); }
+      const cur = fid ? files.findIndex((f) => f.id === fid) : d.anchor;
+      const end = cur === -1 ? d.anchor : cur;
+      const [lo, hi] = d.anchor < end ? [d.anchor, end] : [end, d.anchor];
+      const next = new Set(d.baseline);
+      for (let i = lo; i <= hi; i++) next.add(files[i]!.id);
+      setSelected(next);
     };
     const onUp = () => {
       document.removeEventListener('pointermove', onMove);
@@ -237,7 +236,7 @@ export function ClientGallery({
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
     document.addEventListener('pointercancel', onUp);
-  }, [selected, applyMode]);
+  }, [selected, files]);
 
   const triggerDownload = useCallback((qs: string) => {
     const a = document.createElement('a');
