@@ -41,7 +41,7 @@ export function GalleryHeader({ galleryId, title, slug, passwordProtected, user,
       <nav className="flex items-center gap-2 px-8 pt-6">
         <Tab href={`/admin/galleries/${galleryId}`} active={active === 'settings'}>Settings</Tab>
         <Tab href={`/admin/galleries/${galleryId}/photos`} active={active === 'photos'}>Photos</Tab>
-        <Tab href={`/admin/galleries/${galleryId}/analytics`} disabled>Analytics</Tab>
+        <Tab href={`/admin/galleries/${galleryId}/analytics`} active={active === 'analytics'}>Analytics</Tab>
       </nav>
     </>
   );
