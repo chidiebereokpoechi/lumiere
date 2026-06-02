@@ -82,12 +82,18 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
     if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
     if (gallery.allowFavorites !== 1) { set.status = 403; return { error: 'favorites_disabled' }; }
 
+    // Favoriting requires the client to have identified themselves with an
+    // email (POST /identify) — the favorite is tied to that email so the
+    // creator knows who picked what.
+    if (!gallerySession?.clientEmail) { set.status = 403; return { error: 'email_required' }; }
+
     const file = await db.query.files.findFirst({ where: eq(files.id, input.fileId) });
     if (!file || file.galleryId !== gallery.id) { set.status = 404; return { error: 'file_not_found' }; }
 
     const tokenResult = resolveSessionToken(gallery, gallerySession, clientIp, cookie);
     if (!tokenResult.ok) { set.status = tokenResult.status; return { error: tokenResult.error }; }
     const token = tokenResult.token;
+    const clientEmail = gallerySession.clientEmail;
 
     const existing = await db.query.favorites.findFirst({
       where: and(
@@ -108,7 +114,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
       galleryId: gallery.id,
       fileId: input.fileId,
       sessionToken: token,
-      clientEmail: input.clientEmail ?? null,
+      clientEmail,
       note: input.note ?? null,
       createdAt: now(),
     });
