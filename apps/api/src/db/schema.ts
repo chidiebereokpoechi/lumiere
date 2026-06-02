@@ -78,6 +78,9 @@ export const files = sqliteTable('files', {
   position: integer('position').default(0),
   uploadStatus: text('upload_status').default('ready'),
   errorMessage: text('error_message'),
+  // Set while a multipart direct-to-storage upload is in flight; cleared on
+  // complete. Lets the reaper abort orphaned S3 multipart uploads.
+  s3UploadId: text('s3_upload_id'),
   createdAt: integer('created_at').notNull(),
 }, (t) => ({
   byGallery: index('idx_files_gallery').on(t.galleryId),

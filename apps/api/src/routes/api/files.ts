@@ -1,13 +1,19 @@
 import { Elysia, t } from 'elysia';
-import { eq, and, asc, inArray } from 'drizzle-orm';
+import { eq, and, asc, ne, inArray } from 'drizzle-orm';
 import { Readable } from 'node:stream';
-import { FileMoveInput, FileReorderInput, FilePatchInput } from '@lumiere/types';
+import {
+  FileMoveInput, FileReorderInput, FilePatchInput,
+  UploadInitInput, PartUrlsInput, UploadCompleteInput, UploadAbortInput,
+} from '@lumiere/types';
 import { db } from '../../db';
 import { galleries, galleryFolders, files } from '../../db/schema';
 import type { FileType } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
-import { uploadObject, uploadStream, deleteObject } from '../../services/storage';
+import {
+  uploadObject, uploadStream, deleteObject,
+  createMultipartUpload, presignUploadPart, completeMultipartUpload, abortMultipartUpload,
+} from '../../services/storage';
 import { enqueue } from '../../services/queue';
 import { emit, trackBatch } from '../../services/events';
 import { ensureDefaultFolder } from '../../services/folders';
@@ -21,9 +27,16 @@ const MAX_IMAGE_BYTES = (env.NODE_ENV === 'production' ? Number(process.env.MAX_
 const MAX_FILE_BYTES = env.MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
 function kindForMime(mime: string | null): FileType {
+  if (mime?.startsWith('image/')) return 'image';
   if (mime?.startsWith('video/')) return 'video';
   if (mime?.startsWith('audio/')) return 'audio';
   return 'file';
+}
+
+const MIN_PART = 64 * 1024 * 1024; // 64 MiB
+const MAX_PARTS = 9000;            // headroom under S3's 10,000 cap
+function partSizeFor(total: number): number {
+  return Math.max(MIN_PART, Math.ceil(total / MAX_PARTS / MIN_PART) * MIN_PART);
 }
 
 function extOf(filename: string): string {
@@ -47,8 +60,9 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
     if (auth) return auth;
     const gallery = await ownedGallery(ctx.params.galleryId, ctx.currentPhotographer!.id);
     if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+    // Exclude rows still mid multipart upload — the client tracks those itself.
     return db.query.files.findMany({
-      where: eq(files.galleryId, gallery.id),
+      where: and(eq(files.galleryId, gallery.id), ne(files.uploadStatus, 'uploading')),
       orderBy: [asc(files.position), asc(files.createdAt)],
     });
   })
@@ -156,6 +170,135 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
   }, {
     query: t.Object({ folderId: t.Optional(t.String()) }),
     body: t.Object({ files: t.Union([t.File(), t.Array(t.File())]) }),
+  })
+
+  // POST /upload/init — begin a multipart direct-to-storage upload. Browser
+  // PUTs parts straight to RustFS; we only broker create/sign/complete/abort.
+  .post('/upload/init', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const gallery = await ownedGallery(ctx.params.galleryId, ctx.currentPhotographer!.id);
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, UploadInitInput);
+    if (!parsed.ok) return parsed.error;
+    const { filename, mimeType, size } = parsed.data;
+
+    let folderId = parsed.data.folderId ?? null;
+    if (folderId) {
+      const folder = await db.query.galleryFolders.findFirst({
+        where: and(eq(galleryFolders.id, folderId), eq(galleryFolders.galleryId, gallery.id)),
+      });
+      if (!folder) { ctx.set.status = 404; return { error: 'folder_not_found' }; }
+    } else {
+      folderId = await ensureDefaultFolder(gallery.id);
+    }
+
+    const mime = mimeType || 'application/octet-stream';
+    const type = kindForMime(mime);
+    const fileId = newId();
+    const ext = type === 'image' ? extForMime(mime as 'image/jpeg' | 'image/png' | 'image/webp') : extOf(filename);
+    const key = type === 'image'
+      ? `originals/${gallery.id}/${fileId}.${ext || 'bin'}`
+      : `files/${gallery.id}/${fileId}${ext ? '.' + ext : ''}`;
+
+    const uploadId = await createMultipartUpload(key, mime);
+    await db.insert(files).values({
+      id: fileId, galleryId: gallery.id, folderId, type,
+      filenameOriginal: filename, mimeType: mime, fileSize: size,
+      s3KeyOriginal: key, s3UploadId: uploadId, uploadStatus: 'uploading', createdAt: now(),
+    });
+
+    return { fileId, key, uploadId, partSize: partSizeFor(size) };
+  })
+
+  // POST /upload/part-urls — presign a batch of part PUT URLs.
+  .post('/upload/part-urls', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const gallery = await ownedGallery(ctx.params.galleryId, ctx.currentPhotographer!.id);
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, PartUrlsInput);
+    if (!parsed.ok) return parsed.error;
+
+    const file = await db.query.files.findFirst({
+      where: and(eq(files.id, parsed.data.fileId), eq(files.galleryId, gallery.id)),
+    });
+    if (!file || !file.s3UploadId || !file.s3KeyOriginal) {
+      ctx.set.status = 404; return { error: 'upload_not_found' };
+    }
+    const urls = await Promise.all(parsed.data.partNumbers.map(async (n) => ({
+      partNumber: n,
+      url: await presignUploadPart(file.s3KeyOriginal!, file.s3UploadId!, n),
+    })));
+    return { urls };
+  })
+
+  // POST /upload/complete — finalize the multipart upload.
+  .post('/upload/complete', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const gallery = await ownedGallery(ctx.params.galleryId, ctx.currentPhotographer!.id);
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, UploadCompleteInput);
+    if (!parsed.ok) return parsed.error;
+
+    const file = await db.query.files.findFirst({
+      where: and(eq(files.id, parsed.data.fileId), eq(files.galleryId, gallery.id)),
+    });
+    if (!file || !file.s3UploadId || !file.s3KeyOriginal) {
+      ctx.set.status = 404; return { error: 'upload_not_found' };
+    }
+
+    try {
+      await completeMultipartUpload(file.s3KeyOriginal, file.s3UploadId, parsed.data.parts);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error('upload.complete_failed', { fileId: file.id, msg });
+      ctx.set.status = 502; return { error: 'complete_failed' };
+    }
+
+    if (file.type === 'image') {
+      await db.update(files).set({ uploadStatus: 'processing', s3UploadId: null }).where(eq(files.id, file.id));
+      await enqueue('process_photo', {
+        photoId: file.id, galleryId: gallery.id, batchId: newId(),
+        s3KeyOriginal: file.s3KeyOriginal, filename: file.filenameOriginal,
+      }, gallery.id);
+    } else {
+      await db.update(files).set({ uploadStatus: 'ready', s3UploadId: null }).where(eq(files.id, file.id));
+    }
+    return { ok: true, fileId: file.id, type: file.type };
+  })
+
+  // POST /upload/abort — cancel an in-flight upload and drop the row.
+  .post('/upload/abort', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const gallery = await ownedGallery(ctx.params.galleryId, ctx.currentPhotographer!.id);
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, UploadAbortInput);
+    if (!parsed.ok) return parsed.error;
+
+    const file = await db.query.files.findFirst({
+      where: and(eq(files.id, parsed.data.fileId), eq(files.galleryId, gallery.id)),
+    });
+    if (!file) return { ok: true };
+    if (file.s3UploadId && file.s3KeyOriginal) {
+      await abortMultipartUpload(file.s3KeyOriginal, file.s3UploadId).catch(() => { /* best-effort */ });
+    }
+    await db.delete(files).where(eq(files.id, file.id));
+    return { ok: true };
   })
 
   // POST /move — bulk-assign files to a folder.

@@ -5,6 +5,10 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   ListObjectsV2Command,
+  CreateMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -117,6 +121,53 @@ export function presignDownload(
     }),
     { expiresIn },
   );
+}
+
+// ---- Multipart direct-to-storage uploads (huge files) -----------------
+// The browser PUTs parts straight to RustFS via presigned URLs; the app only
+// brokers create/sign/complete/abort. Presign against the PUBLIC endpoint.
+
+export async function createMultipartUpload(key: string, contentType: string): Promise<string> {
+  const res = await s3.send(new CreateMultipartUploadCommand({
+    Bucket: env.S3_BUCKET, Key: key, ContentType: contentType,
+  }));
+  if (!res.UploadId) throw new Error('no upload id returned');
+  return res.UploadId;
+}
+
+export function presignUploadPart(
+  key: string,
+  uploadId: string,
+  partNumber: number,
+  expiresIn = 6 * 3600,
+): Promise<string> {
+  return getSignedUrl(
+    s3Public,
+    new UploadPartCommand({ Bucket: env.S3_BUCKET, Key: key, UploadId: uploadId, PartNumber: partNumber }),
+    { expiresIn },
+  );
+}
+
+export async function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: { partNumber: number; etag: string }[],
+): Promise<void> {
+  await s3.send(new CompleteMultipartUploadCommand({
+    Bucket: env.S3_BUCKET,
+    Key: key,
+    UploadId: uploadId,
+    MultipartUpload: {
+      Parts: parts
+        .slice()
+        .sort((a, b) => a.partNumber - b.partNumber)
+        .map((p) => ({ PartNumber: p.partNumber, ETag: p.etag })),
+    },
+  }));
+}
+
+export async function abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+  await s3.send(new AbortMultipartUploadCommand({ Bucket: env.S3_BUCKET, Key: key, UploadId: uploadId }));
 }
 
 /** Fetch an object's body as a Node Readable — used by the ZIP builder. */

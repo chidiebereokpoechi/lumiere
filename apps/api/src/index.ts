@@ -18,6 +18,7 @@ import { commentRoutes } from './routes/api/comments';
 import { eventsRoutes } from './routes/events';
 import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
+import { startUploadReaper } from './services/upload-reaper';
 import { handleProcessPhoto } from './services/image-processor';
 import { handleSendEmail } from './services/email-job';
 import { handleApplyWatermark } from './services/watermark-job';
@@ -31,6 +32,8 @@ registerHandler('send_email', handleSendEmail);
 registerHandler('apply_watermark', handleApplyWatermark);
 startWorker({ concurrency });
 startReaper({ intervalMs: 60_000, staleAfterMs: 5 * 60_000 });
+// Abort multipart uploads abandoned for >12h (tab closed mid-upload, etc).
+startUploadReaper({ intervalMs: 30 * 60_000, staleAfterMs: 12 * 3600_000 });
 log.info('worker.started', { concurrency });
 
 const app = new Elysia({
