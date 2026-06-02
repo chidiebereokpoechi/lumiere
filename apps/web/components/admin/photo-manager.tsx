@@ -1,15 +1,20 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, apiClientMutation, ApiError } from '@/lib/api-client';
 import type { Photo } from '@/lib/api/photos';
+import type { Folder } from '@/lib/api/folders';
 
 interface Props {
   galleryId: string;
   initialPhotos: Photo[];
+  initialFolders: Folder[];
   initialCoverPhotoId: string | null;
 }
+
+// null = all photos, 'unfiled' = photos with no folder, otherwise a folder id.
+type FolderFilter = 'all' | 'unfiled' | string;
 
 type UploadState = 'uploading' | 'processing' | 'ready' | 'error';
 interface UploadTile {
@@ -36,9 +41,12 @@ async function getCsrfToken(): Promise<string> {
   return token;
 }
 
-export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: Props) {
+export function PhotoManager({ galleryId, initialPhotos, initialFolders, initialCoverPhotoId }: Props) {
   const router = useRouter();
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
+  const [folders, setFolders] = useState<Folder[]>(initialFolders);
+  const [filter, setFilter] = useState<FolderFilter>('all');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cover, setCover] = useState<string | null>(initialCoverPhotoId);
   const [tiles, setTiles] = useState<UploadTile[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -55,6 +63,12 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
       router.refresh();
     }
   }, [galleryId, router]);
+
+  const refreshFolders = useCallback(async () => {
+    try {
+      setFolders(await apiClient<Folder[]>(`/api/galleries/${galleryId}/folders`));
+    } catch { /* non-critical */ }
+  }, [galleryId]);
 
   const updateTile = useCallback((key: string, patch: Partial<UploadTile>) => {
     setTiles((prev) => prev.map((t) => (t.key === key ? { ...t, ...patch } : t)));
@@ -191,6 +205,80 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
     }
   }
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  async function createFolder() {
+    const name = window.prompt('Folder name')?.trim();
+    if (!name) return;
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/folders`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      await refreshFolders();
+    } catch (err) {
+      setError(err instanceof ApiError ? `Could not create folder (${err.status})` : 'Network error');
+    }
+  }
+
+  async function renameFolder(folder: Folder) {
+    const name = window.prompt('Rename folder', folder.name)?.trim();
+    if (!name || name === folder.name) return;
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      await refreshFolders();
+    } catch (err) {
+      setError(err instanceof ApiError ? `Could not rename folder (${err.status})` : 'Network error');
+    }
+  }
+
+  async function deleteFolder(folder: Folder) {
+    if (!confirm(`Delete folder "${folder.name}"? Its photos move back to the gallery (they are not deleted).`)) return;
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, { method: 'DELETE' });
+      if (filter === folder.id) setFilter('all');
+      await Promise.all([refreshFolders(), refreshPhotos()]);
+    } catch (err) {
+      setError(err instanceof ApiError ? `Could not delete folder (${err.status})` : 'Network error');
+    }
+  }
+
+  async function moveSelected(folderId: string | null) {
+    if (selected.size === 0) return;
+    const photoIds = [...selected];
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/photos/move`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ photoIds, folderId }),
+      });
+      // Optimistic local update + refresh folder counts.
+      setPhotos((prev) => prev.map((p) => (selected.has(p.id) ? { ...p, folderId } : p)));
+      setSelected(new Set());
+      await refreshFolders();
+    } catch (err) {
+      setError(err instanceof ApiError ? `Could not move photos (${err.status})` : 'Network error');
+    }
+  }
+
+  const visiblePhotos = useMemo(() => {
+    if (filter === 'all') return photos;
+    if (filter === 'unfiled') return photos.filter((p) => !p.folderId);
+    return photos.filter((p) => p.folderId === filter);
+  }, [photos, filter]);
+
+  const unfiledCount = useMemo(() => photos.filter((p) => !p.folderId).length, [photos]);
   const isEmpty = photos.length === 0 && tiles.length === 0;
 
   return (
@@ -230,6 +318,33 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
 
       {tiles.length > 0 && <UploadSummary tiles={tiles} />}
 
+      {/* Folder rail */}
+      <div className="flex flex-wrap items-center gap-2">
+        <FolderChip active={filter === 'all'} onClick={() => setFilter('all')} label="All photos" count={photos.length} />
+        {folders.length > 0 && (
+          <FolderChip active={filter === 'unfiled'} onClick={() => setFilter('unfiled')} label="Unfiled" count={unfiledCount} />
+        )}
+        {folders.map((f) => (
+          <FolderChip
+            key={f.id}
+            active={filter === f.id}
+            onClick={() => setFilter(f.id)}
+            label={f.name}
+            count={f.photoCount}
+            onRename={() => renameFolder(f)}
+            onDelete={() => deleteFolder(f)}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={createFolder}
+          className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-1.5 text-sm font-semibold text-ink-muted hover:border-border-strong hover:text-ink-strong transition-colors"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          New folder
+        </button>
+      </div>
+
       {isEmpty ? (
         <p className="text-sm text-ink-muted">No photos yet. Upload some to get started.</p>
       ) : (
@@ -256,21 +371,79 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
             </div>
           ))}
 
-          {/* Persisted photos */}
-          {photos.map((photo) => (
+          {/* Persisted photos (filtered by folder) */}
+          {visiblePhotos.map((photo) => (
             <PhotoTile
               key={photo.id}
               photo={photo}
               galleryId={galleryId}
               isCover={cover === photo.id}
+              selected={selected.has(photo.id)}
               busy={busyId === photo.id}
+              onToggleSelect={() => toggleSelect(photo.id)}
               onDelete={() => onDelete(photo)}
               onSetCover={() => onSetCover(photo)}
             />
           ))}
         </div>
       )}
+
+      {/* Selection move bar */}
+      {selected.size > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+          <span className="text-sm font-semibold text-ink-strong tabular-nums">{selected.size} selected</span>
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-ink-muted">Move to</label>
+            <select
+              defaultValue=""
+              onChange={(e) => { const v = e.target.value; if (v) { void moveSelected(v === 'root' ? null : v); e.target.value = ''; } }}
+              className="rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong focus:border-accent transition-colors"
+            >
+              <option value="" disabled>Choose folder…</option>
+              <option value="root">Gallery root (unfiled)</option>
+              {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+            <button type="button" onClick={() => setSelected(new Set())} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function FolderChip({
+  active, onClick, label, count, onRename, onDelete,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  onRename?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <span
+      className={`group/chip inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+        active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
+      }`}
+    >
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 focus-visible:outline-none">
+        {label}
+        <span className={`tabular-nums text-xs ${active ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
+      </button>
+      {onRename && (
+        <button type="button" onClick={onRename} title="Rename" className={`opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-ink-strong'}`}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+        </button>
+      )}
+      {onDelete && (
+        <button type="button" onClick={onDelete} title="Delete folder" className={`opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-negative'}`}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -298,12 +471,14 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 }
 
 function PhotoTile({
-  photo, galleryId, isCover, busy, onDelete, onSetCover,
+  photo, galleryId, isCover, selected, busy, onToggleSelect, onDelete, onSetCover,
 }: {
   photo: Photo;
   galleryId: string;
   isCover: boolean;
+  selected: boolean;
   busy: boolean;
+  onToggleSelect: () => void;
   onDelete: () => void;
   onSetCover: () => void;
 }) {
@@ -316,7 +491,7 @@ function PhotoTile({
         <img
           src={`/img/${galleryId}/${photo.id}/thumb`}
           alt={photo.filenameOriginal}
-          className="h-full w-full object-cover"
+          className={`h-full w-full object-cover ${selected ? 'brightness-90' : ''}`}
         />
       ) : (
         <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-center p-3">
@@ -332,10 +507,27 @@ function PhotoTile({
       )}
 
       {isCover && (
-        <span className="absolute top-2 left-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">
+        <span className="absolute top-2 right-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">
           Cover
         </span>
       )}
+
+      {/* Selection checkbox */}
+      <button
+        type="button"
+        onClick={onToggleSelect}
+        aria-pressed={selected}
+        aria-label={selected ? 'Deselect' : 'Select'}
+        className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+          selected
+            ? 'bg-accent border-accent text-accent-ink opacity-100'
+            : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'
+        }`}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+      </button>
+
+      {selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-lg" />}
 
       <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-t from-black/50 to-transparent">
         {ready && !isCover && (
