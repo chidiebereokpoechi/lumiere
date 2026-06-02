@@ -30,6 +30,31 @@ interface JobEvent {
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
 
+// Keep each upload request well under the server body limit (256MB) and bound
+// server-side memory — the photo route buffers every file in the request.
+const CHUNK_BYTES = 80 * 1024 * 1024;
+const CHUNK_COUNT = 20;
+
+// Greedily pack files into batches that stay under both the byte and count
+// caps. A single file larger than CHUNK_BYTES still goes out alone (the server
+// enforces the per-file size limit and will reject it cleanly).
+function chunkFiles(files: File[]): File[][] {
+  const chunks: File[][] = [];
+  let current: File[] = [];
+  let bytes = 0;
+  for (const f of files) {
+    if (current.length > 0 && (bytes + f.size > CHUNK_BYTES || current.length >= CHUNK_COUNT)) {
+      chunks.push(current);
+      current = [];
+      bytes = 0;
+    }
+    current.push(f);
+    bytes += f.size;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
 export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: Props) {
   const router = useRouter();
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
@@ -39,6 +64,16 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pendingBatches = useRef(0);
+
+  const refreshPhotos = useCallback(async () => {
+    try {
+      const fresh = await apiClient<Photo[]>(`/api/galleries/${galleryId}/photos`);
+      setPhotos(fresh);
+    } catch {
+      router.refresh();
+    }
+  }, [galleryId, router]);
 
   const upload = useCallback(async (fileList: FileList | File[]) => {
     const files = Array.from(fileList).filter((f) => ACCEPT.includes(f.type));
@@ -54,65 +89,68 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
     }));
     setTiles((prev) => [...seeded, ...prev]);
 
-    const form = new FormData();
-    for (const f of files) form.append('files', f);
+    // Split into batches that stay under the request-body limit. Each batch is
+    // an independent POST + SSE stream; tiles only clear once every batch ends.
+    const chunks = chunkFiles(files);
+    pendingBatches.current += chunks.length;
 
-    let batchId: string;
-    try {
-      const res = await apiClientMutation<{ batchId: string; photoIds: string[] }>(
-        `/api/galleries/${galleryId}/photos`,
-        { method: 'POST', body: form },
-      );
-      batchId = res.batchId;
-    } catch (err) {
-      setError(err instanceof ApiError ? `Upload failed (${err.status})` : 'Network error during upload');
-      setTiles((prev) => prev.map((t) => (seeded.some((s) => s.key === t.key) ? { ...t, status: 'error' } : t)));
-      return;
-    }
-
-    // Stream processing progress. Match events to seeded tiles by filename;
-    // first matching tile that isn't terminal wins (handles duplicate names).
-    const es = new EventSource(`/events?batch=${batchId}`);
-    es.onmessage = (ev) => {
-      let data: JobEvent;
-      try { data = JSON.parse(ev.data); } catch { return; }
-
-      if (data.type === 'done') {
-        es.close();
-        // Reconcile with the server: re-fetch the authoritative photo list,
-        // then drop the transient tiles.
-        void refreshPhotos();
-        setTiles([]);
-        return;
-      }
-      if (!data.filename) return;
-      const next: UploadState | null =
-        data.type === 'queued' ? 'queued'
-        : data.type === 'processing' ? 'processing'
-        : data.type === 'ready' ? 'ready'
-        : data.type === 'error' ? 'error' : null;
-      if (!next) return;
-      setTiles((prev) => {
-        const idx = prev.findIndex((t) => t.filename === data.filename && t.status !== 'ready' && t.status !== 'error');
-        const current = prev[idx];
-        if (!current) return prev;
-        const copy = [...prev];
-        copy[idx] = { ...current, status: next, reason: data.reason };
-        return copy;
-      });
+    const finishBatch = () => {
+      pendingBatches.current -= 1;
+      void refreshPhotos();
+      if (pendingBatches.current <= 0) setTiles([]);
     };
-    es.onerror = () => { es.close(); void refreshPhotos(); setTiles([]); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [galleryId]);
 
-  const refreshPhotos = useCallback(async () => {
-    try {
-      const fresh = await apiClient<Photo[]>(`/api/galleries/${galleryId}/photos`);
-      setPhotos(fresh);
-    } catch {
-      router.refresh();
+    for (const chunk of chunks) {
+      const chunkNames = new Set(chunk.map((f) => f.name));
+      const form = new FormData();
+      for (const f of chunk) form.append('files', f);
+
+      let batchId: string;
+      try {
+        const res = await apiClientMutation<{ batchId: string; photoIds: string[] }>(
+          `/api/galleries/${galleryId}/photos`,
+          { method: 'POST', body: form },
+        );
+        batchId = res.batchId;
+      } catch (err) {
+        setError(err instanceof ApiError ? `Upload failed (${err.status})` : 'Network error during upload');
+        setTiles((prev) => prev.map((t) => (chunkNames.has(t.filename) && t.status === 'uploading' ? { ...t, status: 'error' } : t)));
+        pendingBatches.current -= 1;
+        if (pendingBatches.current <= 0) void refreshPhotos();
+        continue;
+      }
+
+      // Stream processing progress for this batch. Match events to seeded tiles
+      // by filename; first matching tile that isn't terminal wins.
+      const es = new EventSource(`/events?batch=${batchId}`);
+      es.onmessage = (ev) => {
+        let data: JobEvent;
+        try { data = JSON.parse(ev.data); } catch { return; }
+
+        if (data.type === 'done') {
+          es.close();
+          finishBatch();
+          return;
+        }
+        if (!data.filename) return;
+        const next: UploadState | null =
+          data.type === 'queued' ? 'queued'
+          : data.type === 'processing' ? 'processing'
+          : data.type === 'ready' ? 'ready'
+          : data.type === 'error' ? 'error' : null;
+        if (!next) return;
+        setTiles((prev) => {
+          const idx = prev.findIndex((t) => t.filename === data.filename && t.status !== 'ready' && t.status !== 'error');
+          const current = prev[idx];
+          if (!current) return prev;
+          const copy = [...prev];
+          copy[idx] = { ...current, status: next, reason: data.reason };
+          return copy;
+        });
+      };
+      es.onerror = () => { es.close(); finishBatch(); };
     }
-  }, [galleryId, router]);
+  }, [galleryId, refreshPhotos]);
 
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
