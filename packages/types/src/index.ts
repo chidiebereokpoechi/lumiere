@@ -4,4 +4,5 @@ export * from './favorite';
 export * from './folder';
 export * from './gallery';
 export * from './health';
+export * from './list';
 export * from './watermark';

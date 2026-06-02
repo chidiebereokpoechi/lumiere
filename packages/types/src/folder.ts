@@ -8,6 +8,7 @@ export type FolderCreateInput = z.infer<typeof FolderCreateInput>;
 export const FolderPatchInput = z.object({
   name: z.string().min(1).max(120),
   position: z.number().int().min(0),
+  hidden: z.union([z.boolean(), z.literal(0), z.literal(1)]).transform((v) => (v ? 1 : 0)),
   coverFileId: z.string().nullable(),
 }).partial().strict();
 export type FolderPatchInput = z.infer<typeof FolderPatchInput>;
