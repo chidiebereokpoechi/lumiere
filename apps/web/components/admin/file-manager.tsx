@@ -199,11 +199,40 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     } catch (err) { setError(err instanceof ApiError ? `Could not move (${err.status})` : 'Network error'); void refreshFiles(); }
   }, [galleryId, refreshFolders, refreshFiles]);
 
+  // Create a folder then move the given files into it (used by the move bar
+  // action and by dropping a drag onto the New-folder target).
+  const createFolderAndMove = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const name = window.prompt('New folder name')?.trim();
+    if (!name) return;
+    try {
+      const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }),
+      });
+      await refreshFolders();
+      await moveFiles(ids, created.id);
+      setActiveFolder(created.id);
+    } catch (err) { setError(err instanceof ApiError ? `Could not create folder (${err.status})` : 'Network error'); }
+  }, [galleryId, refreshFolders, moveFiles]);
+
   async function moveSelected(folderId: string) {
     if (selected.size === 0) return;
     const ids = [...selected];
     setSelected(new Set());
     await moveFiles(ids, folderId);
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} item${selected.size > 1 ? 's' : ''}? Cannot be undone.`)) return;
+    const ids = [...selected];
+    setSelected(new Set());
+    setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
+    setCover((c) => (c && ids.includes(c) ? null : c));
+    await Promise.all(ids.map((id) =>
+      apiClientMutation(`/api/galleries/${galleryId}/files/${id}`, { method: 'DELETE' }).catch(() => { /* best-effort */ }),
+    ));
+    void refreshFolders();
   }
 
   async function onDelete(file: GalleryFile) {
@@ -254,11 +283,15 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
   const [dragId, setDragId] = useState<string | null>(null);
   const [overlayId, setOverlayId] = useState<string | null>(null);
   const [dropFolderId, setDropFolderId] = useState<string | null>(null);
+  const [dropNew, setDropNew] = useState(false);
+  const [draggingIds, setDraggingIds] = useState<Set<string>>(new Set());
   const [order, setOrder] = useState<string[]>([]);
   const orderRef = useRef<string[]>([]);
   const dragIdRef = useRef<string | null>(null);
   const dragPayload = useRef<string[]>([]);
+  const draggingIdsRef = useRef<Set<string>>(new Set());
   const dropFolderRef = useRef<string | null>(null);
+  const dropNewRef = useRef(false);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const dragInfo = useRef<{ offsetX: number; offsetY: number; w: number; h: number; startX: number; startY: number } | null>(null);
   const canDrag = tiles.length === 0;
@@ -288,7 +321,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     const newRects = new Map<string, DOMRect>();
     nodes.forEach((node, id) => newRects.set(id, node.getBoundingClientRect()));
     nodes.forEach((node, id) => {
-      if (id === dragIdRef.current) return;
+      if (draggingIdsRef.current.has(id)) return;
       const prev = prevRects.current.get(id);
       const next = newRects.get(id);
       if (!prev || !next) return;
@@ -315,15 +348,43 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     if (!dragging) return;
     positionOverlay(e.clientX, e.clientY);
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+
+    // Over the "New folder" drop target?
+    if (el?.closest<HTMLElement>('[data-newfolder]')) {
+      if (!dropNewRef.current) { dropNewRef.current = true; setDropNew(true); }
+      if (dropFolderRef.current !== null) { dropFolderRef.current = null; setDropFolderId(null); }
+      return;
+    }
+    if (dropNewRef.current) { dropNewRef.current = false; setDropNew(false); }
+
+    // Over a folder chip?
     const overFolder = el?.closest<HTMLElement>('[data-folder]')?.dataset.folder ?? null;
     if (overFolder && overFolder !== activeFolder) {
       if (dropFolderRef.current !== overFolder) { dropFolderRef.current = overFolder; setDropFolderId(overFolder); }
       return;
     }
     if (dropFolderRef.current !== null) { dropFolderRef.current = null; setDropFolderId(null); }
-    if (dragPayload.current.length > 1) return;
+
     const overId = el?.closest<HTMLElement>('[data-mid]')?.dataset.mid;
-    if (!overId || overId === dragging) return;
+    if (!overId) return;
+    const payload = dragPayload.current;
+    if (payload.length > 1) {
+      // Bulk reorder: move the whole selected block to the drop position,
+      // preserving the block's internal order.
+      const sel = new Set(payload);
+      if (sel.has(overId)) return; // hovering within the moving group
+      setOrder((prev) => {
+        const block = prev.filter((id) => sel.has(id));
+        const rest = prev.filter((id) => !sel.has(id));
+        const to = rest.indexOf(overId);
+        if (to === -1) return prev;
+        const next = [...rest.slice(0, to), ...block, ...rest.slice(to)];
+        orderRef.current = next;
+        return next;
+      });
+      return;
+    }
+    if (overId === dragging) return;
     setOrder((prev) => {
       const from = prev.indexOf(dragging);
       const to = prev.indexOf(overId);
@@ -342,9 +403,16 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     document.body.style.userSelect = '';
     const payload = dragPayload.current;
     const targetFolder = dropFolderRef.current;
-    dragIdRef.current = null; dragInfo.current = null; dragPayload.current = []; dropFolderRef.current = null;
-    setDragId(null); setOverlayId(null); setDropFolderId(null);
+    const toNew = dropNewRef.current;
+    dragIdRef.current = null; dragInfo.current = null; dragPayload.current = []; dropFolderRef.current = null; dropNewRef.current = false;
+    draggingIdsRef.current = new Set();
+    setDragId(null); setOverlayId(null); setDropFolderId(null); setDropNew(false); setDraggingIds(new Set());
 
+    if (toNew) {
+      void createFolderAndMove(payload);
+      setSelected(new Set());
+      return;
+    }
     if (targetFolder) {
       void moveFiles(payload, targetFolder);
       setSelected(new Set());
@@ -356,7 +424,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     void apiClientMutation(`/api/galleries/${galleryId}/files/reorder`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ fileIds: finalOrder }),
     }).catch((err) => { setError(err instanceof ApiError ? `Reorder failed (${err.status})` : 'Network error'); void refreshFiles(); });
-  }, [galleryId, refreshFiles, onPointerMove, moveFiles]);
+  }, [galleryId, refreshFiles, onPointerMove, moveFiles, createFolderAndMove]);
 
   const beginDrag = useCallback((id: string, e: React.PointerEvent<HTMLElement>) => {
     if (!canDrag || e.button !== 0) return;
@@ -364,7 +432,10 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     const rect = e.currentTarget.getBoundingClientRect();
     dragInfo.current = { offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, w: rect.width, h: rect.height, startX: e.clientX, startY: e.clientY };
     dragIdRef.current = id;
-    dragPayload.current = selected.has(id) && selected.size > 0 ? [...selected] : [id];
+    const payload = selected.has(id) && selected.size > 0 ? [...selected] : [id];
+    dragPayload.current = payload;
+    draggingIdsRef.current = new Set(payload);
+    setDraggingIds(new Set(payload));
     setDragId(id); setOverlayId(id);
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', onPointerMove);
@@ -404,7 +475,29 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
             onFileDrop={(fl) => { setFileOverFolder(null); handleFiles(fl, f.id); }}
           />
         ))}
-        <button type="button" onClick={createFolder} className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-1.5 text-sm font-semibold text-ink-muted hover:border-border-strong hover:text-ink-strong transition-colors">
+        <button
+          type="button"
+          data-newfolder
+          onClick={createFolder}
+          onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDropNew(true); } }}
+          onDragLeave={() => setDropNew(false)}
+          onDrop={(e) => {
+            if (!e.dataTransfer.types.includes('Files')) return;
+            e.preventDefault(); e.stopPropagation(); setDropNew(false);
+            const fl = e.dataTransfer.files;
+            const name = window.prompt('New folder name')?.trim();
+            if (!name || !fl.length) return;
+            void (async () => {
+              try {
+                const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }) });
+                await refreshFolders();
+                setActiveFolder(created.id);
+                handleFiles(fl, created.id);
+              } catch (err) { setError(err instanceof ApiError ? `Could not create folder (${err.status})` : 'Network error'); }
+            })();
+          }}
+          className={`inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-sm font-semibold transition-all duration-150 ${dropNew ? 'scale-110 bg-accent text-accent-ink border-accent ring-4 ring-accent/40' : 'border-border text-ink-muted hover:border-border-strong hover:text-ink-strong'}`}
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           New folder
         </button>
@@ -467,7 +560,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
                   selected={selected.has(file.id)}
                   busy={busyId === file.id}
                   reorderable={canDrag}
-                  dragging={dragId === file.id}
+                  dragging={draggingIds.has(file.id)}
                   onRef={(n) => registerTile(file.id, n)}
                   onPointerDownReorder={(e) => beginDrag(file.id, e)}
                   onToggleSelect={(shift) => toggleSelect(file.id, shift)}
@@ -486,26 +579,48 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
           <span className="text-sm font-semibold text-ink-strong tabular-nums">{selected.size} selected</span>
           <div className="flex items-center gap-3">
             <label className="text-sm text-ink-muted">Move to</label>
-            <select defaultValue="" onChange={(e) => { const v = e.target.value; if (v) { void moveSelected(v); e.target.value = ''; } }} className="rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong focus:border-accent transition-colors">
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === '__new__') void createFolderAndMove([...selected]);
+                else if (v) void moveSelected(v);
+                e.target.value = '';
+              }}
+              className="rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong focus:border-accent transition-colors"
+            >
               <option value="" disabled>Choose folder…</option>
               {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              <option value="__new__">+ New folder…</option>
             </select>
+            <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1.5 rounded-md border border-negative/40 px-3 py-2 text-sm font-semibold text-negative hover:bg-negative/10 transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+              Delete
+            </button>
             <button type="button" onClick={() => setSelected(new Set())} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">Clear</button>
           </div>
         </div>
       )}
 
-      {/* Drag overlay */}
+      {/* Drag overlay — clumped stack when dragging multiple */}
       {overlayFile && dragInfo.current && (
         <div ref={overlayRef} className="fixed top-0 left-0 z-50 pointer-events-none" style={{ width: dragInfo.current.w, height: dragInfo.current.h, willChange: 'transform', transform: `translate(${dragInfo.current.startX - dragInfo.current.offsetX}px, ${dragInfo.current.startY - dragInfo.current.offsetY}px)` }}>
-          <div className={`relative h-full w-full origin-center overflow-hidden rounded-lg ring-2 ring-accent shadow-[0_12px_32px_rgba(0,0,0,0.35)] transition-transform duration-200 ease-out ${dropFolderId ? 'scale-[0.35]' : 'scale-[1.04]'}`}>
-            {overlayFile.type === 'image' ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/img/${galleryId}/${overlayFile.id}/thumb`} alt="" draggable={false} className="h-full w-full object-contain bg-surface" />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center bg-surface-sunken text-ink-muted"><TypeIcon type={overlayFile.type} /></div>
+          <div className={`relative h-full w-full origin-center transition-transform duration-200 ease-out ${dropFolderId || dropNew ? 'scale-[0.35]' : 'scale-[1.04]'}`}>
+            {draggingIds.size > 1 && (
+              <>
+                <div className="absolute inset-0 rounded-lg bg-surface-sunken border border-border ring-2 ring-accent/50 rotate-6 translate-x-1.5 translate-y-1.5" />
+                <div className="absolute inset-0 rounded-lg bg-surface-sunken border border-border ring-2 ring-accent/60 -rotate-3 -translate-x-1 translate-y-0.5" />
+              </>
             )}
-            {dragPayload.current.length > 1 && <span className="absolute top-1 right-1 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums">{dragPayload.current.length}</span>}
+            <div className="relative h-full w-full overflow-hidden rounded-lg ring-2 ring-accent shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+              {overlayFile.type === 'image' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/img/${galleryId}/${overlayFile.id}/thumb`} alt="" draggable={false} className="h-full w-full object-contain bg-surface" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-surface-sunken text-ink-muted"><TypeIcon type={overlayFile.type} /></div>
+              )}
+            </div>
+            {draggingIds.size > 1 && <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums ring-2 ring-surface">{draggingIds.size}</span>}
           </div>
         </div>
       )}
