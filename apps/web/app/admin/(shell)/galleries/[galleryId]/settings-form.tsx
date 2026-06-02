@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { GalleryPatchInput } from '@lumiere/types';
 import { apiClientMutation, ApiError } from '@/lib/api-client';
@@ -11,12 +11,13 @@ interface Props {
   gallery: GalleryDetail;
 }
 
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
 export function SettingsForm({ gallery }: Props) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [saving, setSaving] = useState(false);
+  const [, startTransition] = useTransition();
+  const [saveState, setSaveState] = useState<SaveState>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   // Local form state mirrors the row but maps integer booleans to real bools.
   const [title, setTitle] = useState(gallery.title);
@@ -36,14 +37,13 @@ export function SettingsForm({ gallery }: Props) {
   const [notifyOnView, setNotifyOnView] = useState(gallery.notifyOnView === 1);
   const [customCss, setCustomCss] = useState(gallery.customCss ?? '');
 
-  // Password: undefined = unchanged. '' = clear. string = set.
+  // Password: changed explicitly (not auto-saved) so typing can't accidentally
+  // lock the gallery. '' on apply = clear.
   const [passwordEdit, setPasswordEdit] = useState(false);
   const [newPassword, setNewPassword] = useState('');
 
-  async function onSave(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
+  // The auto-saved fields (everything except the password). Persisted on change.
+  const save = useCallback(async () => {
     const patch: Record<string, unknown> = {
       title,
       subtitle: emptyToNull(subtitle),
@@ -62,31 +62,57 @@ export function SettingsForm({ gallery }: Props) {
       notifyOnView,
       customCss: emptyToNull(customCss),
     };
-    if (passwordEdit) {
-      patch.password = newPassword === '' ? null : newPassword;
-    }
-
     const parsed = GalleryPatchInput.safeParse(patch);
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? 'Invalid input');
+      setSaveState('error');
       return;
     }
-
-    setSaving(true);
+    setError(null);
+    setSaveState('saving');
     try {
       await apiClientMutation(`/api/galleries/${gallery.id}`, {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(parsed.data),
       });
-      setSavedAt(Date.now());
+      setSaveState('saved');
+    } catch (err) {
+      setError(err instanceof ApiError ? `Save failed (${err.status})` : 'Network error');
+      setSaveState('error');
+    }
+  }, [gallery.id, title, subtitle, status, downloadMode, layout, clientName, clientEmail,
+      eventDate, eventType, expiresAt, gracePeriodDays, allowFavorites, allowComments,
+      allowDownload, notifyOnView, customCss]);
+
+  // Debounced auto-save: persist ~600ms after the last change. Skip the initial
+  // mount so loading the form doesn't fire a save.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    if (title.trim().length === 0) { setError('Title is required'); setSaveState('error'); return; }
+    const t = setTimeout(() => { void save(); }, 600);
+    return () => clearTimeout(t);
+  }, [save, title]);
+
+  // Password is applied on demand, then we refresh to update the "currently set" hint.
+  async function applyPassword() {
+    const parsed = GalleryPatchInput.safeParse({ password: newPassword === '' ? null : newPassword });
+    if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? 'Invalid password'); return; }
+    setSaveState('saving');
+    try {
+      await apiClientMutation(`/api/galleries/${gallery.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(parsed.data),
+      });
       setPasswordEdit(false);
       setNewPassword('');
+      setSaveState('saved');
       startTransition(() => router.refresh());
     } catch (err) {
       setError(err instanceof ApiError ? `Save failed (${err.status})` : 'Network error');
-    } finally {
-      setSaving(false);
+      setSaveState('error');
     }
   }
 
@@ -104,7 +130,7 @@ export function SettingsForm({ gallery }: Props) {
   }
 
   return (
-    <form onSubmit={onSave} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
       <Section title="Basics">
         <Field id="title" label="Title" required>
           <TextInput id="title" required value={title} onChange={setTitle} />
@@ -155,10 +181,10 @@ export function SettingsForm({ gallery }: Props) {
             <div className="space-y-2">
               <TextInput id="password" type="password" autoComplete="new-password" value={newPassword} onChange={setNewPassword} placeholder="leave blank to remove the password" />
               <div className="flex items-center gap-3">
+                <Button type="button" onClick={applyPassword}>Apply</Button>
                 <Button type="button" variant="ghost" onClick={() => { setPasswordEdit(false); setNewPassword(''); }}>
                   Cancel
                 </Button>
-                <p className="text-xs text-ink-muted">Save changes to apply.</p>
               </div>
             </div>
           ) : (
@@ -205,19 +231,36 @@ export function SettingsForm({ gallery }: Props) {
 
       <div className="flex items-center justify-between gap-3 pt-2">
         <Button type="button" variant="danger" onClick={onDelete}>Delete gallery</Button>
-        <div className="flex items-center gap-4">
-          {savedAt && !saving && (
-            <span className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-              Saved · {new Date(savedAt).toLocaleTimeString()}
-            </span>
-          )}
-          <Button type="submit" disabled={saving || pending || title.trim().length === 0}>
-            {saving ? 'Saving…' : 'Save changes'}
-          </Button>
-        </div>
+        <SaveStatus state={saveState} />
       </div>
     </form>
   );
+}
+
+// Inline auto-save indicator — replaces the Save button. Changes persist
+// automatically as fields change.
+function SaveStatus({ state }: { state: SaveState }) {
+  const base = 'inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest';
+  if (state === 'saving') {
+    return (
+      <span className={`${base} text-ink-muted`}>
+        <span className="h-3 w-3 rounded-full border-2 border-ink-subtle border-t-transparent animate-spin" />
+        Saving…
+      </span>
+    );
+  }
+  if (state === 'error') {
+    return <span className={`${base} text-negative`}>Not saved</span>;
+  }
+  if (state === 'saved') {
+    return (
+      <span className={`${base} text-ink-muted`}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        All changes saved
+      </span>
+    );
+  }
+  return <span className={`${base} text-ink-subtle`}>Changes save automatically</span>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
