@@ -7,6 +7,7 @@ import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { hashPassword } from '../../services/auth';
 import { uniqueGallerySlug } from '../../services/slug';
+import { ensureDefaultFolder } from '../../services/folders';
 import { deletePrefix } from '../../services/storage';
 import { enqueue } from '../../services/queue';
 import { parseBody } from '../../lib/validation';
@@ -61,6 +62,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
       createdAt: now(),
       updatedAt: now(),
     });
+    await ensureDefaultFolder(id);
     return db.query.galleries.findFirst({ where: eq(galleries.id, id) });
   })
 

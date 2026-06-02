@@ -9,6 +9,7 @@ import { uploadObject } from '../../services/storage';
 import { enqueue } from '../../services/queue';
 import { emit, trackBatch } from '../../services/events';
 import { detectImageMime, extForMime } from '../../lib/mime';
+import { ensureDefaultFolder } from '../../services/folders';
 import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
@@ -58,6 +59,17 @@ export const photoRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/photo
       return { error: 'gallery_not_found' };
     }
 
+    // Target folder: explicit ?folderId= (validated) or the gallery's default.
+    let folderId = ctx.query.folderId ?? null;
+    if (folderId) {
+      const folder = await db.query.galleryFolders.findFirst({
+        where: and(eq(galleryFolders.id, folderId), eq(galleryFolders.galleryId, gallery.id)),
+      });
+      if (!folder) { ctx.set.status = 404; return { error: 'folder_not_found' }; }
+    } else {
+      folderId = await ensureDefaultFolder(gallery.id);
+    }
+
     // Elysia parses multipart for us; `files` is a File | File[] depending on count.
     const incoming = ctx.body.files;
     const files: File[] = Array.isArray(incoming) ? incoming : [incoming];
@@ -87,6 +99,7 @@ export const photoRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/photo
       await db.insert(photos).values({
         id: photoId,
         galleryId: gallery.id,
+        folderId,
         filenameOriginal: filename,
         mimeType: mime,
         fileSize: bytes.byteLength,
@@ -130,6 +143,7 @@ export const photoRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/photo
 
     return { batchId, photoIds };
   }, {
+    query: t.Object({ folderId: t.Optional(t.String()) }),
     body: t.Object({
       files: t.Union([
         t.File(),

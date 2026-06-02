@@ -6,6 +6,7 @@ import { galleries, galleryFolders, photos } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { parseBody } from '../../lib/validation';
+import { ensureDefaultFolder } from '../../services/folders';
 import { newId } from '../../lib/ids';
 
 // Admin folder CRUD. Folders group photos within a gallery; photos.folderId
@@ -24,6 +25,9 @@ export const folderRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/fold
       where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
     });
     if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    // Guarantee at least one folder (and migrate any unfiled content into it).
+    await ensureDefaultFolder(gallery.id);
 
     const rows = await db.query.galleryFolders.findMany({
       where: eq(galleryFolders.galleryId, gallery.id),

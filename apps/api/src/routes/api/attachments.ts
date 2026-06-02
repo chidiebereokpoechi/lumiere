@@ -3,7 +3,7 @@ import { eq, and, asc } from 'drizzle-orm';
 import { Readable } from 'node:stream';
 import { AttachmentPatchInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, attachments } from '../../db/schema';
+import { galleries, attachments, galleryFolders } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
@@ -11,6 +11,7 @@ import { checkCsrf } from '../../middleware/csrf';
 import { checkRateLimit } from '../../middleware/rate-limit';
 import { uploadStream, deleteObject, presignDownload } from '../../services/storage';
 import { notifyPhotographer } from '../../services/notify';
+import { ensureDefaultFolder } from '../../services/folders';
 import { parseBody } from '../../lib/validation';
 import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
@@ -76,6 +77,17 @@ export const attachmentRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/
     });
     if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
 
+    // Target folder: explicit ?folderId= (validated) or the gallery's default.
+    let folderId = ctx.query.folderId ?? null;
+    if (folderId) {
+      const folder = await db.query.galleryFolders.findFirst({
+        where: and(eq(galleryFolders.id, folderId), eq(galleryFolders.galleryId, gallery.id)),
+      });
+      if (!folder) { ctx.set.status = 404; return { error: 'folder_not_found' }; }
+    } else {
+      folderId = await ensureDefaultFolder(gallery.id);
+    }
+
     const incoming = ctx.body.files;
     const files: File[] = Array.isArray(incoming) ? incoming : [incoming];
 
@@ -104,6 +116,7 @@ export const attachmentRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/
         await db.insert(attachments).values({
           id,
           galleryId: gallery.id,
+          folderId,
           filenameOriginal: filename,
           s3Key: key,
           mimeType: mime,
@@ -122,6 +135,7 @@ export const attachmentRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/
 
     return { attachments: created, rejected };
   }, {
+    query: t.Object({ folderId: t.Optional(t.String()) }),
     body: t.Object({
       files: t.Union([t.File(), t.Array(t.File())]),
     }),
