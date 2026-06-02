@@ -7,9 +7,10 @@ import type { GalleryFile } from '@/lib/api/files';
 import type { Folder } from '@/lib/api/folders';
 import { uploadMultipart } from '@/lib/upload/multipart';
 
-// Files larger than this upload directly to storage via presigned multipart
-// (bypassing the app); smaller ones go through the single-request endpoint.
-const MULTIPART_THRESHOLD = 50 * 1024 * 1024;
+// Anything above this uploads directly to storage via presigned multipart
+// (bypassing the app + the dev rewrite proxy, which caps bodies at 10MB).
+// Kept under that cap so the single-request path never hits the proxy limit.
+const MULTIPART_THRESHOLD = 8 * 1024 * 1024;
 
 interface Props {
   galleryId: string;
