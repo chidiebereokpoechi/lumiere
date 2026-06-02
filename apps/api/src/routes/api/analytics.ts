@@ -15,6 +15,34 @@ function dayCutoff(days: number): number {
 export const analyticsRoutes = new Elysia()
   .use(authContext)
 
+  // GET /api/galleries/:galleryId/favorites — admin view of client favorites,
+  // grouped by the client's email so the creator can export a per-client pick
+  // list (e.g. for Lightroom). Ungrouped (no-email) favorites collapse under a
+  // null email bucket.
+  .get('/api/galleries/:galleryId/favorites', async (ctx) => {
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'not_found' }; }
+
+    const rows = await db.query.favorites.findMany({
+      where: eq(favorites.galleryId, gallery.id),
+      orderBy: [desc(favorites.createdAt)],
+    });
+    const byEmail = new Map<string | null, string[]>();
+    for (const r of rows) {
+      const key = r.clientEmail ?? null;
+      const arr = byEmail.get(key) ?? [];
+      arr.push(r.fileId);
+      byEmail.set(key, arr);
+    }
+    return [...byEmail.entries()].map(([clientEmail, fileIds]) => ({ clientEmail, fileIds }));
+  })
+
   // GET /api/galleries/:galleryId/analytics — full per-gallery breakdown for
   // the admin dashboard's per-gallery analytics tab.
   .get('/api/galleries/:galleryId/analytics', async (ctx) => {
