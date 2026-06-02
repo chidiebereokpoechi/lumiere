@@ -25,19 +25,27 @@ export const folderRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/fold
     });
     if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
 
-    const rows = await db
-      .select({
-        id: galleryFolders.id,
-        name: galleryFolders.name,
-        position: galleryFolders.position,
-        coverPhotoId: galleryFolders.coverPhotoId,
-        photoCount: sql<number>`(SELECT COUNT(*) FROM photos WHERE photos.folder_id = ${galleryFolders.id})`.as('photoCount'),
-      })
-      .from(galleryFolders)
-      .where(eq(galleryFolders.galleryId, gallery.id))
-      .orderBy(asc(galleryFolders.position), asc(galleryFolders.name));
+    const rows = await db.query.galleryFolders.findMany({
+      where: eq(galleryFolders.galleryId, gallery.id),
+      orderBy: [asc(galleryFolders.position), asc(galleryFolders.name)],
+    });
 
-    return rows.map((r) => ({ ...r, photoCount: Number(r.photoCount) }));
+    // Count photos per folder in one grouped query, then merge in JS — more
+    // reliable than a correlated subquery through the query builder.
+    const counts = await db
+      .select({ folderId: photos.folderId, c: sql<number>`COUNT(*)`.as('c') })
+      .from(photos)
+      .where(eq(photos.galleryId, gallery.id))
+      .groupBy(photos.folderId);
+    const countMap = new Map(counts.map((r) => [r.folderId, Number(r.c)]));
+
+    return rows.map((f) => ({
+      id: f.id,
+      name: f.name,
+      position: f.position,
+      coverPhotoId: f.coverPhotoId,
+      photoCount: countMap.get(f.id) ?? 0,
+    }));
   })
 
   // POST / — create a folder (appended after the last position).
