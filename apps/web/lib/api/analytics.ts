@@ -22,6 +22,16 @@ export interface GalleryAnalytics {
     desktop: number;
     unknown: number;
   };
+  clients: ClientActivity[];
+}
+
+// Per-client activity, keyed by the email clients provide before favoriting.
+export interface ClientActivity {
+  email: string;
+  favorites: number;
+  lists: number;
+  downloads: number;
+  lastAt: number;
 }
 
 export function fetchGalleryAnalytics(galleryId: string) {

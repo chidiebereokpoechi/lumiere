@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { eq, and, gte, desc, sql, inArray } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries, files, galleryViews, downloads, favorites } from '../../db/schema';
+import { galleries, files, galleryViews, downloads, favorites, lists } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { classifyUserAgent } from '../../lib/user-agent';
 import { now } from '../../lib/ids';
@@ -105,6 +105,31 @@ export const analyticsRoutes = new Elysia()
       deviceCounts[kind] = (deviceCounts[kind] ?? 0) + 1;
     }
 
+    // Per-client activity, keyed by the email clients now provide before
+    // favoriting/listing. Favorites & lists always carry an email; downloads
+    // carry one when the client identified before downloading.
+    const clientMap = new Map<string, { favorites: number; lists: number; downloads: number; lastAt: number }>();
+    const bump = (email: string | null, field: 'favorites' | 'lists' | 'downloads', at: number) => {
+      if (!email) return;
+      const c = clientMap.get(email) ?? { favorites: 0, lists: 0, downloads: 0, lastAt: 0 };
+      c[field] += 1;
+      if (at > c.lastAt) c.lastAt = at;
+      clientMap.set(email, c);
+    };
+    const favRows = await db.select({ email: favorites.clientEmail, at: favorites.createdAt })
+      .from(favorites).where(eq(favorites.galleryId, gallery.id));
+    for (const r of favRows) bump(r.email, 'favorites', r.at);
+    const listRows = await db.select({ email: lists.clientEmail, at: lists.createdAt })
+      .from(lists).where(eq(lists.galleryId, gallery.id));
+    for (const r of listRows) bump(r.email, 'lists', r.at);
+    const dlRows = await db.select({ email: downloads.clientEmail, at: downloads.createdAt })
+      .from(downloads).where(eq(downloads.galleryId, gallery.id));
+    for (const r of dlRows) bump(r.email, 'downloads', r.at);
+
+    const clients = [...clientMap.entries()]
+      .map(([email, c]) => ({ email, ...c }))
+      .sort((a, b) => b.lastAt - a.lastAt);
+
     return {
       galleryId: gallery.id,
       since,
@@ -119,6 +144,7 @@ export const analyticsRoutes = new Elysia()
       downloadsByDay: downloadTimeline.map((r) => ({ day: r.day, count: Number(r.count) })),
       favoritesByFile: favoritesByFile.map((r) => ({ fileId: r.fileId, count: Number(r.count) })),
       deviceSplit: deviceCounts,
+      clients,
     };
   })
 

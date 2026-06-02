@@ -20,8 +20,12 @@ function dayAxis(since: number): string[] {
   return days;
 }
 
+function whenDay(epoch: number): string {
+  return new Date(epoch * 1000).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export function AnalyticsView({ galleryId, analytics }: Props) {
-  const { totals, viewsByDay, downloadsByDay, favoritesByFile, deviceSplit, since } = analytics;
+  const { totals, viewsByDay, downloadsByDay, favoritesByFile, deviceSplit, since, clients } = analytics;
 
   const days = dayAxis(since);
   const viewMap = new Map(viewsByDay.map((d) => [d.day, d.count]));
@@ -124,6 +128,38 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
           )}
         </Card>
       </div>
+
+      {/* Client activity — who did what (clients identify by email to fav/list) */}
+      <Card title="Client activity">
+        {clients.length === 0 ? (
+          <Empty>No identified client activity yet.</Empty>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-extrabold uppercase tracking-wider text-ink-subtle border-b border-border">
+                  <th className="py-2 pr-4 font-extrabold">Client</th>
+                  <th className="py-2 px-4 font-extrabold tabular-nums">Favorites</th>
+                  <th className="py-2 px-4 font-extrabold tabular-nums">Lists</th>
+                  <th className="py-2 px-4 font-extrabold tabular-nums">Downloads</th>
+                  <th className="py-2 pl-4 font-extrabold">Last active</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c) => (
+                  <tr key={c.email} className="border-b border-border last:border-0">
+                    <td className="py-2.5 pr-4 text-ink-strong font-semibold break-all">{c.email}</td>
+                    <td className="py-2.5 px-4 tabular-nums text-ink-muted">{c.favorites}</td>
+                    <td className="py-2.5 px-4 tabular-nums text-ink-muted">{c.lists}</td>
+                    <td className="py-2.5 px-4 tabular-nums text-ink-muted">{c.downloads}</td>
+                    <td className="py-2.5 pl-4 text-ink-muted tabular-nums">{whenDay(c.lastAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
