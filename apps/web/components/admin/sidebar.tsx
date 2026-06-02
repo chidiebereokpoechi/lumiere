@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -17,14 +18,46 @@ const NAV: NavItem[] = [
   { href: '/admin/settings', label: 'Settings', icon: <IconGear />, disabled: true },
 ];
 
+const STORAGE_KEY = 'lumiere_sidebar_collapsed';
+
 export function Sidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Restore the persisted collapse state after mount (avoids SSR mismatch).
+  useEffect(() => {
+    if (localStorage.getItem(STORAGE_KEY) === '1') setCollapsed(true);
+  }, []);
+
+  function toggle() {
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
+      return next;
+    });
+  }
+
   return (
-    <aside className="hidden md:flex md:w-52 flex-col bg-surface-2 border-r border-border px-3 py-6">
-      <div className="px-2 pb-5">
-        <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
-          Lumière
-        </p>
+    <aside
+      className={`hidden md:flex md:flex-col shrink-0 sticky top-0 h-dvh overflow-y-auto bg-surface-2 border-r border-border py-4 transition-[width] duration-200 ease-out ${
+        collapsed ? 'md:w-16 px-2' : 'md:w-56 px-3'
+      }`}
+    >
+      <div className={`flex items-center pb-4 ${collapsed ? 'justify-center' : 'justify-between px-2'}`}>
+        {!collapsed && (
+          <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">Lumière</p>
+        )}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand' : 'Collapse'}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink-strong transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`}>
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
       </div>
 
       <nav className="flex-1 space-y-2">
@@ -32,51 +65,46 @@ export function Sidebar() {
           const active =
             pathname === item.href ||
             (item.href !== '/admin' && pathname.startsWith(item.href));
-          return (
-            <NavLink key={item.href} item={item} active={active} />
-          );
+          return <NavLink key={item.href} item={item} active={active} collapsed={collapsed} />;
         })}
       </nav>
     </aside>
   );
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
   const base =
-    "flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-semibold uppercase tracking-wider font-[family-name:'Ika_Compact'] transition-colors";
+    `flex items-center rounded-md text-sm font-semibold uppercase tracking-wider font-[family-name:'Ika_Compact'] transition-colors ${
+      collapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2.5'
+    }`;
+  const label = item.label;
 
   if (item.disabled) {
     return (
       <span
         aria-disabled
+        title={collapsed ? label : undefined}
         className={`${base} bg-surface-2 text-ink-subtle border border-border cursor-not-allowed`}
       >
         <span className="opacity-50">{item.icon}</span>
-        {item.label}
+        {!collapsed && label}
       </span>
     );
   }
 
-  if (active) {
-    return (
-      <Link
-        href={item.href}
-        className={`${base} bg-surface-strong text-ink-inverse border border-surface-strong`}
-        style={{ boxShadow: 'var(--ring-accent)' }}
-      >
-        {item.icon}
-        {item.label}
-      </Link>
-    );
-  }
+  const tone = active
+    ? 'bg-surface-strong text-ink-inverse border border-surface-strong'
+    : 'bg-surface text-ink-muted border border-border hover:bg-surface-sunken hover:text-ink-strong';
 
   return (
     <Link
       href={item.href}
-      className={`${base} bg-surface text-ink-muted border border-border hover:bg-surface-sunken hover:text-ink-strong`}
+      title={collapsed ? label : undefined}
+      className={`${base} ${tone}`}
+      style={active ? { boxShadow: 'var(--ring-accent)' } : undefined}
     >
       {item.icon}
-      {item.label}
+      {!collapsed && label}
     </Link>
   );
 }
