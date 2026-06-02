@@ -7,7 +7,7 @@ import { clientIp } from './middleware/client-ip';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/api/auth';
 import { galleryRoutes } from './routes/api/galleries';
-import { photoRoutes } from './routes/api/photos';
+import { fileRoutes } from './routes/api/files';
 import { folderRoutes } from './routes/api/folders';
 import { clientGalleryRoutes } from './routes/api/gallery';
 import { favoriteRoutes } from './routes/api/favorites';
@@ -15,7 +15,6 @@ import { downloadRoutes } from './routes/api/downloads';
 import { analyticsRoutes } from './routes/api/analytics';
 import { watermarkPresetRoutes } from './routes/api/watermark-presets';
 import { commentRoutes } from './routes/api/comments';
-import { attachmentRoutes, clientAttachmentRoutes } from './routes/api/attachments';
 import { eventsRoutes } from './routes/events';
 import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
@@ -62,7 +61,7 @@ const app = new Elysia({
   .use(healthRoutes)
   .use(authRoutes)
   .use(galleryRoutes)
-  .use(photoRoutes)
+  .use(fileRoutes)
   .use(folderRoutes)
   .use(clientGalleryRoutes)
   .use(favoriteRoutes)
@@ -70,8 +69,6 @@ const app = new Elysia({
   .use(analyticsRoutes)
   .use(watermarkPresetRoutes)
   .use(commentRoutes)
-  .use(attachmentRoutes)
-  .use(clientAttachmentRoutes)
   .use(eventsRoutes)
   .use(imageRoutes)
   .listen({ port: env.PORT, hostname: '0.0.0.0' });

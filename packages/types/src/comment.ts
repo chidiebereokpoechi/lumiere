@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const CommentInput = z.object({
   body: z.string().min(1).max(2000),
-  photoId: z.string().min(1).optional(),
+  fileId: z.string().min(1).optional(),
   clientName: z.string().min(1).max(120).optional(),
   clientEmail: z.string().email().optional(),
 }).strict();

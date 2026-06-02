@@ -2,12 +2,12 @@ import { Elysia, t } from 'elysia';
 import { eq, and, asc } from 'drizzle-orm';
 import { Readable } from 'node:stream';
 import { db } from '../../db';
-import { galleries, photos, favorites, downloads, attachments } from '../../db/schema';
+import { galleries, files, favorites, downloads } from '../../db/schema';
 import { authContext } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
-import { presignDownload } from '../../services/storage';
+import { presignDownload, presignGet } from '../../services/storage';
 import { buildZipStream, type ZipEntry } from '../../services/zip-builder';
 import { slugify } from '../../services/slug';
 import { notifyPhotographer } from '../../services/notify';
@@ -25,11 +25,6 @@ interface AuthContext {
   gallerySession: { token: string; galleryId: string } | null;
 }
 
-/**
- * Resolves whether the caller is allowed to access the gallery contents.
- * Admin owner always yes. Otherwise: public/un-expired, or a valid
- * gallery_session scoped to this gallery.
- */
 function hasGalleryAccess(g: typeof galleries.$inferSelect, ctx: AuthContext): boolean {
   if (ctx.currentPhotographer && g.photographerId === ctx.currentPhotographer.id) return true;
   if (isExpired(g)) return false;
@@ -38,49 +33,43 @@ function hasGalleryAccess(g: typeof galleries.$inferSelect, ctx: AuthContext): b
 }
 
 /**
- * Per v1.2 §5: `downloadMode` controls which derivative the client gets when
- * they hit /download. Admin always gets the original.
- *   none        → never (403)
- *   watermarked → watermarked derivative, falling back to preview
- *   full        → original
- *   selected    → original only if THIS session has favorited the photo;
- *                 otherwise fall back to watermarked/preview
+ * `downloadMode` controls which derivative the client gets. Admin always gets
+ * the original. Non-image files have no derivatives, so they always serve the
+ * original (subject to downloads being enabled).
  */
 async function resolveDownloadKey(
   gallery: typeof galleries.$inferSelect,
-  photo: typeof photos.$inferSelect,
+  file: typeof files.$inferSelect,
   ctx: AuthContext,
 ): Promise<{ ok: true; key: string } | { ok: false; status: number; error: string }> {
   if (ctx.currentPhotographer && gallery.photographerId === ctx.currentPhotographer.id) {
-    if (!photo.s3KeyOriginal) return { ok: false, status: 404, error: 'derivative_not_ready' };
-    return { ok: true, key: photo.s3KeyOriginal };
+    if (!file.s3KeyOriginal) return { ok: false, status: 404, error: 'not_ready' };
+    return { ok: true, key: file.s3KeyOriginal };
   }
 
   if (gallery.allowDownload !== 1) return { ok: false, status: 403, error: 'downloads_disabled' };
   const mode = gallery.downloadMode ?? 'watermarked';
   if (mode === 'none') return { ok: false, status: 403, error: 'downloads_disabled' };
 
-  if (mode === 'full') {
-    if (!photo.s3KeyOriginal) return { ok: false, status: 404, error: 'derivative_not_ready' };
-    return { ok: true, key: photo.s3KeyOriginal };
+  // Non-image media has no watermark/preview ladder — serve the original.
+  if (file.type !== 'image' || mode === 'full') {
+    if (!file.s3KeyOriginal) return { ok: false, status: 404, error: 'not_ready' };
+    return { ok: true, key: file.s3KeyOriginal };
   }
 
-  if (mode === 'selected') {
-    if (ctx.gallerySession) {
-      const fav = await db.query.favorites.findFirst({
-        where: and(
-          eq(favorites.galleryId, gallery.id),
-          eq(favorites.photoId, photo.id),
-          eq(favorites.sessionToken, ctx.gallerySession.token),
-        ),
-      });
-      if (fav && photo.s3KeyOriginal) return { ok: true, key: photo.s3KeyOriginal };
-    }
-    // fall through to watermarked/preview
+  if (mode === 'selected' && ctx.gallerySession) {
+    const fav = await db.query.favorites.findFirst({
+      where: and(
+        eq(favorites.galleryId, gallery.id),
+        eq(favorites.fileId, file.id),
+        eq(favorites.sessionToken, ctx.gallerySession.token),
+      ),
+    });
+    if (fav && file.s3KeyOriginal) return { ok: true, key: file.s3KeyOriginal };
   }
 
-  const fallback = photo.s3KeyWatermarked ?? photo.s3KeyPreview;
-  if (!fallback) return { ok: false, status: 404, error: 'derivative_not_ready' };
+  const fallback = file.s3KeyWatermarked ?? file.s3KeyPreview;
+  if (!fallback) return { ok: false, status: 404, error: 'not_ready' };
   return { ok: true, key: fallback };
 }
 
@@ -89,11 +78,30 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
   .use(gallerySessionContext)
   .use(clientIp)
 
-  // GET /api/gallery/:slug/download/:photoId — single-photo download (302 to
-  // presigned URL with attachment Content-Disposition).
-  .get('/:slug/download/:photoId', async (ctx) => {
-    const { params, currentPhotographer, gallerySession, clientIp, set } = ctx;
+  // GET /api/gallery/:slug/files/:fileId/stream — inline playback URL (no
+  // attachment disposition; S3 Range handles seeking). Long TTL.
+  .get('/:slug/files/:fileId/stream', async (ctx) => {
+    const { params, currentPhotographer, gallerySession, set } = ctx;
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { error: 'not_found' }; }
+    if (!hasGalleryAccess(gallery, { currentPhotographer, gallerySession })) {
+      set.status = isExpired(gallery) ? 410 : 401;
+      return { error: isExpired(gallery) ? 'expired' : 'unauthenticated' };
+    }
+    const file = await db.query.files.findFirst({ where: eq(files.id, params.fileId) });
+    if (!file || file.galleryId !== gallery.id || !file.s3KeyOriginal) {
+      set.status = 404; return { error: 'file_not_found' };
+    }
+    const url = await presignGet(file.s3KeyOriginal, 6 * 3600);
+    set.status = 302;
+    set.headers['location'] = url;
+    return '';
+  })
 
+  // GET /api/gallery/:slug/files/:fileId/download — single-file download (302 to
+  // presigned URL with attachment Content-Disposition).
+  .get('/:slug/files/:fileId/download', async (ctx) => {
+    const { params, currentPhotographer, gallerySession, clientIp, set } = ctx;
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) { set.status = 404; return { error: 'not_found' }; }
     if (!hasGalleryAccess(gallery, { currentPhotographer, gallerySession })) {
@@ -101,48 +109,33 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       return { error: isExpired(gallery) ? 'expired' : 'unauthenticated' };
     }
 
-    const photo = await db.query.photos.findFirst({ where: eq(photos.id, params.photoId) });
-    if (!photo || photo.galleryId !== gallery.id) {
-      set.status = 404;
-      return { error: 'photo_not_found' };
-    }
+    const file = await db.query.files.findFirst({ where: eq(files.id, params.fileId) });
+    if (!file || file.galleryId !== gallery.id) { set.status = 404; return { error: 'file_not_found' }; }
 
-    const resolved = await resolveDownloadKey(gallery, photo, { currentPhotographer, gallerySession });
+    const resolved = await resolveDownloadKey(gallery, file, { currentPhotographer, gallerySession });
     if (!resolved.ok) { set.status = resolved.status; return { error: resolved.error }; }
 
     await db.insert(downloads).values({
-      id: newId(),
-      galleryId: gallery.id,
-      photoId: photo.id,
-      clientIp: clientIp ?? null,
-      createdAt: now(),
+      id: newId(), galleryId: gallery.id, fileId: file.id, clientIp: clientIp ?? null, createdAt: now(),
     });
 
-    // Don't notify on admin downloads (they're the photographer themselves)
-    // and rate-limit non-admin notifications to one email per hour per gallery
-    // per IP — clients often re-download multiple times.
     const isOwner = currentPhotographer && gallery.photographerId === currentPhotographer.id;
-    if (!isOwner && checkRateLimit(
-      'email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600,
-    )) {
+    if (!isOwner && checkRateLimit('email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600)) {
       await notifyPhotographer(gallery.id, 'download', {
-        isZip: false,
-        clientName: gallery.clientName ?? null,
-        filename: photo.filenameOriginal,
+        isZip: false, clientName: gallery.clientName ?? null,
+        filename: file.displayName ?? file.filenameOriginal,
       });
     }
 
-    const url = await presignDownload(resolved.key, photo.filenameOriginal);
-    log.info('download.single', { galleryId: gallery.id, photoId: photo.id });
+    const url = await presignDownload(resolved.key, file.displayName ?? file.filenameOriginal);
+    log.info('download.single', { galleryId: gallery.id, fileId: file.id });
     set.status = 302;
     set.headers['location'] = url;
     return '';
   })
 
-  // GET /api/gallery/:slug/download?scope=all|favorites|selected — streaming ZIP
-  // of the chosen photo set. `scope=selected` (or any request with an `ids`
-  // list) zips just those photo ids. Uses store (level 0); inputs are already-
-  // compressed JPEG/WebP so deflate would burn CPU for ~0% gain (v1.2 §9).
+  // GET /api/gallery/:slug/download?scope=all|favorites|selected[&ids=…] —
+  // streaming ZIP of the chosen file set (store level 0).
   .get('/:slug/download', async (ctx) => {
     const { params, query, currentPhotographer, gallerySession, clientIp, set } = ctx;
     const selectedIds = query.ids
@@ -157,17 +150,15 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       return { error: isExpired(gallery) ? 'expired' : 'unauthenticated' };
     }
 
-    // v1.2 §14: 3 ZIP initiations per IP per gallery per hour. Admin bypass —
-    // photographers downloading their own galleries shouldn't be throttled.
     const isAdmin = currentPhotographer && gallery.photographerId === currentPhotographer.id;
     if (!isAdmin && !checkRateLimit(`zip:${gallery.id}`, clientIp ?? 'unknown', 3, 3600)) {
       set.status = 429;
       return { error: 'too_many_zip_downloads' };
     }
 
-    let photoRows = await db.query.photos.findMany({
-      where: and(eq(photos.galleryId, gallery.id), eq(photos.uploadStatus, 'ready')),
-      orderBy: [asc(photos.position), asc(photos.createdAt)],
+    let fileRows = await db.query.files.findMany({
+      where: and(eq(files.galleryId, gallery.id), eq(files.uploadStatus, 'ready')),
+      orderBy: [asc(files.position), asc(files.createdAt)],
     });
 
     if (scope === 'favorites') {
@@ -175,60 +166,29 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       const favs = await db.query.favorites.findMany({
         where: and(eq(favorites.galleryId, gallery.id), eq(favorites.sessionToken, gallerySession.token)),
       });
-      const favIds = new Set(favs.map((f) => f.photoId));
-      photoRows = photoRows.filter((p) => favIds.has(p.id));
+      const favIds = new Set(favs.map((f) => f.fileId));
+      fileRows = fileRows.filter((f) => favIds.has(f.id));
     } else if (selectedIds) {
-      photoRows = photoRows.filter((p) => selectedIds.has(p.id));
+      fileRows = fileRows.filter((f) => selectedIds.has(f.id));
     }
 
-    if (photoRows.length === 0) {
-      set.status = 404;
-      return { error: 'no_photos_in_scope' };
-    }
+    if (fileRows.length === 0) { set.status = 404; return { error: 'no_files_in_scope' }; }
 
     const entries: ZipEntry[] = [];
-    for (const photo of photoRows) {
-      const resolved = await resolveDownloadKey(gallery, photo, { currentPhotographer, gallerySession });
-      if (!resolved.ok) continue; // skip photos without a usable derivative
-      entries.push({ key: resolved.key, filename: `photos/${photo.filenameOriginal}` });
+    for (const file of fileRows) {
+      const resolved = await resolveDownloadKey(gallery, file, { currentPhotographer, gallerySession });
+      if (!resolved.ok) continue;
+      entries.push({ key: resolved.key, filename: file.displayName ?? file.filenameOriginal });
     }
-
-    // Include gallery attachments alongside photos under a separate prefix.
-    // Skip for per-photo scopes (favorites / explicit selection).
-    if (scope === 'all') {
-      const attRows = await db.query.attachments.findMany({
-        where: eq(attachments.galleryId, gallery.id),
-        orderBy: [asc(attachments.position), asc(attachments.createdAt)],
-      });
-      for (const att of attRows) {
-        entries.push({
-          key: att.s3Key,
-          filename: `files/${att.displayName ?? att.filenameOriginal}`,
-        });
-      }
-    }
-
-    if (entries.length === 0) {
-      set.status = 403;
-      return { error: 'no_downloadable_photos' };
-    }
+    if (entries.length === 0) { set.status = 403; return { error: 'no_downloadable_files' }; }
 
     await db.insert(downloads).values({
-      id: newId(),
-      galleryId: gallery.id,
-      photoId: null,
-      clientIp: clientIp ?? null,
-      createdAt: now(),
+      id: newId(), galleryId: gallery.id, fileId: null, clientIp: clientIp ?? null, createdAt: now(),
     });
 
-    if (!isAdmin && checkRateLimit(
-      'email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600,
-    )) {
+    if (!isAdmin && checkRateLimit('email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600)) {
       await notifyPhotographer(gallery.id, 'download', {
-        isZip: true,
-        scope,
-        photoCount: entries.length,
-        one: entries.length === 1,
+        isZip: true, scope, photoCount: entries.length, one: entries.length === 1,
         clientName: gallery.clientName ?? null,
       });
     }

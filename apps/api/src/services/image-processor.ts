@@ -7,7 +7,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { eq } from 'drizzle-orm';
 import { WatermarkConfig } from '@lumiere/types';
 import { db } from '../db';
-import { photos, galleries, watermarkPresets } from '../db/schema';
+import { files, galleries, watermarkPresets } from '../db/schema';
 import { uploadObject } from './storage';
 import { applyWatermark } from './watermark';
 import { env } from '../lib/config';
@@ -121,7 +121,7 @@ export async function handleProcessPhoto(rawPayload: Record<string, unknown>, _j
     // sees in the lightbox.
     const watermarkedKey = await maybeBuildWatermarked(galleryId, photoId, previewBuf);
 
-    await db.update(photos).set({
+    await db.update(files).set({
       s3KeyThumbnail: thumbKey,
       s3KeyPreview: previewKey,
       s3KeyWatermarked: watermarkedKey,
@@ -130,7 +130,7 @@ export async function handleProcessPhoto(rawPayload: Record<string, unknown>, _j
       fileSize: original.byteLength,
       colorPalette: JSON.stringify(palette),
       uploadStatus: 'ready',
-    }).where(eq(photos.id, photoId));
+    }).where(eq(files.id, photoId));
 
     emit(batchId, {
       type: 'ready',
@@ -141,10 +141,10 @@ export async function handleProcessPhoto(rawPayload: Record<string, unknown>, _j
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error('process_photo failed', { photoId, msg });
-    await db.update(photos).set({
+    await db.update(files).set({
       uploadStatus: 'error',
       errorMessage: msg,
-    }).where(eq(photos.id, photoId));
+    }).where(eq(files.id, photoId));
     emit(batchId, { type: 'error', photoId, filename, reason: msg });
     throw err;
   }

@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { eq, asc, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries, photos, galleryViews, galleryFolders } from '../../db/schema';
+import { galleries, files, galleryViews, galleryFolders } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
@@ -25,7 +25,7 @@ interface MinimalGallery {
   slug: string;
   title: string;
   subtitle: string | null;
-  coverPhotoId: string | null;
+  coverFileId: string | null;
   layout: string;
   colorTheme: string;
   customCss: string | null;
@@ -46,7 +46,7 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
     slug: g.slug,
     title: g.title,
     subtitle: g.subtitle,
-    coverPhotoId: g.coverPhotoId,
+    coverFileId: g.coverFileId,
     layout: g.layout ?? 'grid',
     colorTheme: g.colorTheme ?? 'light',
     customCss: g.customCss,
@@ -136,9 +136,10 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     body: t.Object({ password: t.String({ minLength: 1 }) }),
   })
 
-  // GET /api/gallery/:slug/photos — public photo list with placeholder data
-  // (frontend plan §14: include colorPalette, width, height, theme, customCss).
-  .get('/:slug/photos', async ({ params, gallerySession, set }) => {
+  // GET /api/gallery/:slug/files — public, unified media list. Every item is a
+  // file with a `type`; images carry thumb/preview URLs, video/audio/file carry
+  // a stream + download URL.
+  .get('/:slug/files', async ({ params, gallerySession, set }) => {
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) {
       set.status = 404;
@@ -153,9 +154,9 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
       return { error: 'locked' };
     }
 
-    const rows = await db.query.photos.findMany({
-      where: and(eq(photos.galleryId, gallery.id), eq(photos.uploadStatus, 'ready')),
-      orderBy: [asc(photos.position), asc(photos.createdAt)],
+    const rows = await db.query.files.findMany({
+      where: and(eq(files.galleryId, gallery.id), eq(files.uploadStatus, 'ready')),
+      orderBy: [asc(files.position), asc(files.createdAt)],
     });
 
     const folderRows = await db.query.galleryFolders.findMany({
@@ -165,16 +166,23 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
 
     return {
       gallery: toMinimal(gallery),
-      folders: folderRows.map((f) => ({ id: f.id, name: f.name, coverPhotoId: f.coverPhotoId })),
-      photos: rows.map((p) => ({
+      folders: folderRows.map((f) => ({ id: f.id, name: f.name, coverFileId: f.coverFileId })),
+      files: rows.map((p) => ({
         id: p.id,
         folderId: p.folderId,
+        type: p.type,
+        filename: p.displayName ?? p.filenameOriginal,
+        mimeType: p.mimeType,
+        fileSize: p.fileSize,
         width: p.width,
         height: p.height,
         colorPalette: p.colorPalette ? JSON.parse(p.colorPalette) as string[] : null,
         position: p.position,
-        thumbUrl: `/img/${gallery.id}/${p.id}/thumb`,
-        previewUrl: `/img/${gallery.id}/${p.id}/preview`,
+        // Images use the /img derivative proxy; other media stream inline.
+        thumbUrl: p.type === 'image' ? `/img/${gallery.id}/${p.id}/thumb` : null,
+        previewUrl: p.type === 'image' ? `/img/${gallery.id}/${p.id}/preview` : null,
+        streamUrl: p.type === 'image' ? null : `/api/gallery/${gallery.slug}/files/${p.id}/stream`,
+        downloadUrl: `/api/gallery/${gallery.slug}/files/${p.id}/download`,
       })),
     };
   })

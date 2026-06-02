@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { eq, and, desc } from 'drizzle-orm';
 import { CommentInput, CommentModerationInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, photos, comments } from '../../db/schema';
+import { galleries, files, comments } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
@@ -39,10 +39,10 @@ export const commentRoutes = new Elysia()
     }
 
     // Validate photo ownership when commenting on a specific photo.
-    if (input.photoId) {
-      const photo = await db.query.photos.findFirst({ where: eq(photos.id, input.photoId) });
-      if (!photo || photo.galleryId !== gallery.id) {
-        set.status = 404; return { error: 'photo_not_found' };
+    if (input.fileId) {
+      const file = await db.query.files.findFirst({ where: eq(files.id, input.fileId) });
+      if (!file || file.galleryId !== gallery.id) {
+        set.status = 404; return { error: 'file_not_found' };
       }
     }
 
@@ -54,7 +54,7 @@ export const commentRoutes = new Elysia()
     await db.insert(comments).values({
       id,
       galleryId: gallery.id,
-      photoId: input.photoId ?? null,
+      fileId: input.fileId ?? null,
       clientName: input.clientName ?? null,
       clientEmail: input.clientEmail ?? null,
       body: input.body,
@@ -62,7 +62,7 @@ export const commentRoutes = new Elysia()
       createdAt: now(),
     });
     // Don't leak server-side metadata back; return enough for optimistic UI.
-    return { id, status: 'pending', body: input.body, photoId: input.photoId ?? null };
+    return { id, status: 'pending', body: input.body, fileId: input.fileId ?? null };
   })
 
   // GET /api/gallery/:slug/comments?photoId=... — only approved comments are
@@ -76,7 +76,7 @@ export const commentRoutes = new Elysia()
       set.status = 401; return { error: 'locked' };
     }
 
-    const photoFilter = query.photoId ? and(eq(comments.photoId, query.photoId), eq(comments.galleryId, gallery.id))
+    const photoFilter = query.fileId ? and(eq(comments.fileId, query.fileId), eq(comments.galleryId, gallery.id))
                                        : eq(comments.galleryId, gallery.id);
     const rows = await db.query.comments.findMany({
       where: and(photoFilter, eq(comments.isApproved, 1)),
@@ -85,14 +85,14 @@ export const commentRoutes = new Elysia()
     return {
       comments: rows.map((c) => ({
         id: c.id,
-        photoId: c.photoId,
+        fileId: c.fileId,
         clientName: c.clientName,
         body: c.body,
         createdAt: c.createdAt,
       })),
     };
   }, {
-    query: t.Object({ photoId: t.Optional(t.String()) }),
+    query: t.Object({ fileId: t.Optional(t.String()) }),
   })
 
   // GET /api/galleries/:galleryId/comments — admin: every comment for the
@@ -113,7 +113,7 @@ export const commentRoutes = new Elysia()
     });
     return rows.map((c) => ({
       id: c.id,
-      photoId: c.photoId,
+      fileId: c.fileId,
       clientName: c.clientName,
       clientEmail: c.clientEmail,
       body: c.body,

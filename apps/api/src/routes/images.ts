@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { photos, galleries } from '../db/schema';
+import { files, galleries } from '../db/schema';
 import { authContext } from '../middleware/auth';
 import { gallerySessionContext } from '../middleware/gallery-session';
 import { presignGet } from '../services/storage';
@@ -19,7 +19,7 @@ import { now } from '../lib/ids';
 
 type Size = 'thumb' | 'preview' | 'original';
 
-const SIZE_CONFIG: Record<Size, { keyField: keyof typeof photos.$inferSelect; ttl: number; adminOnly: boolean }> = {
+const SIZE_CONFIG: Record<Size, { keyField: keyof typeof files.$inferSelect; ttl: number; adminOnly: boolean }> = {
   thumb:    { keyField: 's3KeyThumbnail', ttl: 3600,                       adminOnly: false },
   preview:  { keyField: 's3KeyPreview',   ttl: env.PRESIGN_TTL_SECONDS,    adminOnly: false },
   original: { keyField: 's3KeyOriginal',  ttl: 60,                         adminOnly: true  },
@@ -44,7 +44,7 @@ export const imageRoutes = new Elysia()
       return { error: 'invalid_size' };
     }
 
-    const photo = await db.query.photos.findFirst({ where: eq(photos.id, photoId) });
+    const photo = await db.query.files.findFirst({ where: eq(files.id, photoId) });
     if (!photo || photo.galleryId !== galleryId) {
       ctx.set.status = 404;
       return { error: 'not_found' };

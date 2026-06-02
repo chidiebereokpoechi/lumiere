@@ -2,7 +2,7 @@ import { Elysia } from 'elysia';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { GalleryCreateInput, GalleryPatchInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, photos } from '../../db/schema';
+import { galleries, files } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { hashPassword } from '../../services/auth';
@@ -28,10 +28,10 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
     if (rows.length === 0) return [];
 
     const counts = await db
-      .select({ galleryId: photos.galleryId, c: sql<number>`COUNT(*)`.as('c') })
-      .from(photos)
-      .where(inArray(photos.galleryId, rows.map((r) => r.id)))
-      .groupBy(photos.galleryId);
+      .select({ galleryId: files.galleryId, c: sql<number>`COUNT(*)`.as('c') })
+      .from(files)
+      .where(inArray(files.galleryId, rows.map((r) => r.id)))
+      .groupBy(files.galleryId);
     const countById = new Map(counts.map((r) => [r.galleryId, Number(r.c)]));
     return rows.map((g) => ({ ...g, photoCount: countById.get(g.id) ?? 0 }));
   })
@@ -120,9 +120,9 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
     await db.update(galleries).set(patch).where(eq(galleries.id, ctx.params.galleryId));
 
     if (watermarkChanged) {
-      const photoRows = await db.select({ id: photos.id }).from(photos)
-        .where(eq(photos.galleryId, existing.id));
-      for (const p of photoRows) {
+      const imageRows = await db.select({ id: files.id }).from(files)
+        .where(and(eq(files.galleryId, existing.id), eq(files.type, 'image')));
+      for (const p of imageRows) {
         await enqueue('apply_watermark', { photoId: p.id, galleryId: existing.id }, existing.id);
       }
     }
@@ -152,7 +152,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
       deletePrefix(`previews/${ctx.params.galleryId}/`),
       deletePrefix(`thumbnails/${ctx.params.galleryId}/`),
       deletePrefix(`watermarked/${ctx.params.galleryId}/`),
-      deletePrefix(`attachments/${ctx.params.galleryId}/`),
+      deletePrefix(`files/${ctx.params.galleryId}/`),
     ]);
     return { ok: true };
   });

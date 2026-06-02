@@ -2,7 +2,7 @@ import { Elysia } from 'elysia';
 import { eq, and, sql } from 'drizzle-orm';
 import { FavoriteInput, UnfavoriteInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, photos, favorites } from '../../db/schema';
+import { galleries, files, favorites } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
@@ -66,7 +66,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
       where: and(eq(favorites.galleryId, gallery.id), eq(favorites.sessionToken, gallerySession.token)),
     });
     return {
-      favorites: rows.map((f) => ({ photoId: f.photoId, note: f.note, createdAt: f.createdAt })),
+      favorites: rows.map((f) => ({ fileId: f.fileId, note: f.note, createdAt: f.createdAt })),
     };
   })
 
@@ -82,8 +82,8 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
     if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
     if (gallery.allowFavorites !== 1) { set.status = 403; return { error: 'favorites_disabled' }; }
 
-    const photo = await db.query.photos.findFirst({ where: eq(photos.id, input.photoId) });
-    if (!photo || photo.galleryId !== gallery.id) { set.status = 404; return { error: 'photo_not_found' }; }
+    const file = await db.query.files.findFirst({ where: eq(files.id, input.fileId) });
+    if (!file || file.galleryId !== gallery.id) { set.status = 404; return { error: 'file_not_found' }; }
 
     const tokenResult = resolveSessionToken(gallery, gallerySession, clientIp, cookie);
     if (!tokenResult.ok) { set.status = tokenResult.status; return { error: tokenResult.error }; }
@@ -92,7 +92,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
     const existing = await db.query.favorites.findFirst({
       where: and(
         eq(favorites.galleryId, gallery.id),
-        eq(favorites.photoId, input.photoId),
+        eq(favorites.fileId, input.fileId),
         eq(favorites.sessionToken, token),
       ),
     });
@@ -106,7 +106,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
     await db.insert(favorites).values({
       id: newId(),
       galleryId: gallery.id,
-      photoId: input.photoId,
+      fileId: input.fileId,
       sessionToken: token,
       clientEmail: input.clientEmail ?? null,
       note: input.note ?? null,
@@ -144,7 +144,7 @@ export const favoriteRoutes = new Elysia({ prefix: '/api/gallery' })
     await db.delete(favorites).where(
       and(
         eq(favorites.galleryId, gallery.id),
-        eq(favorites.photoId, parsed.data.photoId),
+        eq(favorites.fileId, parsed.data.fileId),
         eq(favorites.sessionToken, gallerySession.token),
       ),
     );

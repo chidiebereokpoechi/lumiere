@@ -7,7 +7,7 @@
 import { eq } from 'drizzle-orm';
 import { WatermarkConfig } from '@lumiere/types';
 import { db } from '../db';
-import { photos, galleries, watermarkPresets } from '../db/schema';
+import { files, galleries, watermarkPresets } from '../db/schema';
 import { uploadObject, getObjectStream, deleteObject } from './storage';
 import { applyWatermark } from './watermark';
 import { log } from '../lib/logger';
@@ -36,7 +36,7 @@ async function bufferOf(key: string): Promise<Buffer> {
 export async function handleApplyWatermark(rawPayload: Record<string, unknown>, _job: JobRow): Promise<void> {
   const { photoId, galleryId } = narrow(rawPayload);
 
-  const photo = await db.query.photos.findFirst({ where: eq(photos.id, photoId) });
+  const photo = await db.query.files.findFirst({ where: eq(files.id, photoId) });
   if (!photo || photo.galleryId !== galleryId) {
     log.warn('apply_watermark: photo not found', { photoId, galleryId });
     return;
@@ -53,7 +53,7 @@ export async function handleApplyWatermark(rawPayload: Record<string, unknown>, 
   if (!gallery.watermarkPresetId) {
     if (photo.s3KeyWatermarked) {
       await deleteObject(photo.s3KeyWatermarked).catch(() => { /* best-effort */ });
-      await db.update(photos).set({ s3KeyWatermarked: null }).where(eq(photos.id, photoId));
+      await db.update(files).set({ s3KeyWatermarked: null }).where(eq(files.id, photoId));
     }
     return;
   }
@@ -72,6 +72,6 @@ export async function handleApplyWatermark(rawPayload: Record<string, unknown>, 
   const watermarked = await applyWatermark(preview, cfg.data);
   const key = `watermarked/${galleryId}/${photoId}.webp`;
   await uploadObject(key, watermarked, 'image/webp');
-  await db.update(photos).set({ s3KeyWatermarked: key }).where(eq(photos.id, photoId));
+  await db.update(files).set({ s3KeyWatermarked: key }).where(eq(files.id, photoId));
   log.info('apply_watermark.done', { photoId });
 }

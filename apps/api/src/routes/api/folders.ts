@@ -2,7 +2,7 @@ import { Elysia } from 'elysia';
 import { eq, and, asc, sql, max } from 'drizzle-orm';
 import { FolderCreateInput, FolderPatchInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, galleryFolders, photos } from '../../db/schema';
+import { galleries, galleryFolders, files } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { parseBody } from '../../lib/validation';
@@ -37,17 +37,17 @@ export const folderRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/fold
     // Count photos per folder in one grouped query, then merge in JS — more
     // reliable than a correlated subquery through the query builder.
     const counts = await db
-      .select({ folderId: photos.folderId, c: sql<number>`COUNT(*)`.as('c') })
-      .from(photos)
-      .where(eq(photos.galleryId, gallery.id))
-      .groupBy(photos.folderId);
+      .select({ folderId: files.folderId, c: sql<number>`COUNT(*)`.as('c') })
+      .from(files)
+      .where(eq(files.galleryId, gallery.id))
+      .groupBy(files.folderId);
     const countMap = new Map(counts.map((r) => [r.folderId, Number(r.c)]));
 
     return rows.map((f) => ({
       id: f.id,
       name: f.name,
       position: f.position,
-      coverPhotoId: f.coverPhotoId,
+      coverFileId: f.coverFileId,
       photoCount: countMap.get(f.id) ?? 0,
     }));
   })
@@ -123,7 +123,7 @@ export const folderRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/fold
     if (!existing) { ctx.set.status = 404; return { error: 'folder_not_found' }; }
 
     // Defensive: also clear folderId on photos in case FK cascade is off.
-    await db.update(photos).set({ folderId: null }).where(eq(photos.folderId, existing.id));
+    await db.update(files).set({ folderId: null }).where(eq(files.folderId, existing.id));
     await db.delete(galleryFolders).where(eq(galleryFolders.id, existing.id));
     return { ok: true };
   });

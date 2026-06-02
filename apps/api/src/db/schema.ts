@@ -1,6 +1,7 @@
-// Mirrors v1.2 §5 verbatim, plus a refresh_tokens table for rotating refresh sessions.
-// The hand-written SQL migration is the source of truth — this file is for typed queries.
-import { sqliteTable, text, integer, uniqueIndex, index, primaryKey } from 'drizzle-orm/sqlite-core';
+// Unified media model: every item in a folder is a `files` row with a `type`
+// enum (image|video|audio|file). The hand-written SQL migration is the source
+// of truth — this file is for typed queries.
+import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 export const photographers = sqliteTable('photographers', {
@@ -20,7 +21,7 @@ export const galleries = sqliteTable('galleries', {
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
   subtitle: text('subtitle'),
-  coverPhotoId: text('cover_photo_id').references((): AnySQLiteColumn => photos.id, { onDelete: 'set null' }),
+  coverFileId: text('cover_file_id').references((): AnySQLiteColumn => files.id, { onDelete: 'set null' }),
   passwordHash: text('password_hash'),
   status: text('status').default('active'),
   downloadMode: text('download_mode').default('watermarked'),
@@ -49,29 +50,39 @@ export const galleryFolders = sqliteTable('gallery_folders', {
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   position: integer('position').default(0),
-  coverPhotoId: text('cover_photo_id').references((): AnySQLiteColumn => photos.id, { onDelete: 'set null' }),
+  coverFileId: text('cover_file_id').references((): AnySQLiteColumn => files.id, { onDelete: 'set null' }),
 });
 
-export const photos = sqliteTable('photos', {
+// Unified media. `type` is the canonical kind; image-pipeline columns
+// (thumbnail/preview/watermarked, dimensions, palette) are only populated for
+// type='image'. Non-images are uploadStatus='ready' immediately.
+export type FileType = 'image' | 'video' | 'audio' | 'file';
+export const files = sqliteTable('files', {
   id: text('id').primaryKey(),
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
   folderId: text('folder_id').references(() => galleryFolders.id, { onDelete: 'set null' }),
+  type: text('type').notNull().default('file').$type<FileType>(),
   filenameOriginal: text('filename_original').notNull(),
+  displayName: text('display_name'),
+  description: text('description'),
+  mimeType: text('mime_type'),
+  fileSize: integer('file_size'),
   s3KeyOriginal: text('s3_key_original'),
   s3KeyPreview: text('s3_key_preview'),
   s3KeyThumbnail: text('s3_key_thumbnail'),
   s3KeyWatermarked: text('s3_key_watermarked'),
   width: integer('width'),
   height: integer('height'),
-  fileSize: integer('file_size'),
-  mimeType: text('mime_type'),
   exifData: text('exif_data'),
   colorPalette: text('color_palette'),
   position: integer('position').default(0),
-  uploadStatus: text('upload_status').default('processing'),
+  uploadStatus: text('upload_status').default('ready'),
   errorMessage: text('error_message'),
   createdAt: integer('created_at').notNull(),
-});
+}, (t) => ({
+  byGallery: index('idx_files_gallery').on(t.galleryId),
+  byFolder: index('idx_files_folder').on(t.folderId),
+}));
 
 export const jobs = sqliteTable('jobs', {
   id: text('id').primaryKey(),
@@ -98,19 +109,19 @@ export const gallerySessions = sqliteTable('gallery_sessions', {
 export const favorites = sqliteTable('favorites', {
   id: text('id').primaryKey(),
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
-  photoId: text('photo_id').notNull().references(() => photos.id, { onDelete: 'cascade' }),
+  fileId: text('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
   sessionToken: text('session_token'),
   clientEmail: text('client_email'),
   note: text('note'),
   createdAt: integer('created_at').notNull(),
 }, (t) => ({
-  unq: uniqueIndex('uniq_fav').on(t.galleryId, t.photoId, t.sessionToken),
+  unq: uniqueIndex('uniq_fav').on(t.galleryId, t.fileId, t.sessionToken),
 }));
 
 export const downloads = sqliteTable('downloads', {
   id: text('id').primaryKey(),
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
-  photoId: text('photo_id').references(() => photos.id, { onDelete: 'set null' }),
+  fileId: text('file_id').references(() => files.id, { onDelete: 'set null' }),
   clientIp: text('client_ip'),
   clientEmail: text('client_email'),
   createdAt: integer('created_at').notNull(),
@@ -145,33 +156,13 @@ export const watermarkPresets = sqliteTable('watermark_presets', {
 export const comments = sqliteTable('comments', {
   id: text('id').primaryKey(),
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
-  photoId: text('photo_id').references(() => photos.id, { onDelete: 'cascade' }),
+  fileId: text('file_id').references(() => files.id, { onDelete: 'cascade' }),
   clientName: text('client_name'),
   clientEmail: text('client_email'),
   body: text('body').notNull(),
   isApproved: integer('is_approved').default(0),
   createdAt: integer('created_at').notNull(),
 });
-
-// Generic file attachments — PDFs, contracts, ZIPs of raws, anything non-image
-// the photographer wants to deliver alongside the photo set. Separate from
-// `photos` so the image pipeline stays single-purpose. Added after v1.2 §5.
-export const attachments = sqliteTable('attachments', {
-  id: text('id').primaryKey(),
-  galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
-  folderId: text('folder_id').references(() => galleryFolders.id, { onDelete: 'set null' }),
-  filenameOriginal: text('filename_original').notNull(),
-  displayName: text('display_name'),
-  s3Key: text('s3_key').notNull(),
-  mimeType: text('mime_type'),
-  fileSize: integer('file_size'),
-  description: text('description'),
-  position: integer('position').default(0),
-  createdAt: integer('created_at').notNull(),
-}, (t) => ({
-  byGallery: index('idx_attachments_gallery').on(t.galleryId),
-  byFolder: index('idx_attachments_folder').on(t.folderId),
-}));
 
 // Extension to v1.2 §5: rotating refresh tokens, stored hashed.
 export const refreshTokens = sqliteTable('refresh_tokens', {

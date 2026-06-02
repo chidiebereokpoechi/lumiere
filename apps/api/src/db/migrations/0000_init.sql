@@ -1,5 +1,6 @@
--- Lumière v1 initial schema (v1.2 §5 verbatim + refresh_tokens extension)
--- FKs require `PRAGMA foreign_keys = ON;` to be set on the connection (see src/db/index.ts).
+-- Lumière v1 schema. Unified media model: every item in a folder is a `files`
+-- row with a `type` enum (image|video|audio|file) — see v1 redesign.
+-- FKs require `PRAGMA foreign_keys = ON;` on the connection (see src/db/index.ts).
 
 CREATE TABLE photographers (
   id            TEXT PRIMARY KEY,
@@ -18,7 +19,7 @@ CREATE TABLE galleries (
   slug                TEXT UNIQUE NOT NULL,
   title               TEXT NOT NULL,
   subtitle            TEXT,
-  cover_photo_id      TEXT REFERENCES photos(id) ON DELETE SET NULL,
+  cover_file_id       TEXT REFERENCES files(id) ON DELETE SET NULL,
   password_hash       TEXT,
   status              TEXT DEFAULT 'active',
   download_mode       TEXT DEFAULT 'watermarked',
@@ -47,32 +48,39 @@ CREATE TABLE gallery_folders (
   gallery_id     TEXT NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
   name           TEXT NOT NULL,
   position       INTEGER DEFAULT 0,
-  cover_photo_id TEXT REFERENCES photos(id) ON DELETE SET NULL
+  cover_file_id  TEXT REFERENCES files(id) ON DELETE SET NULL
 );
 
-CREATE TABLE photos (
+-- Unified media: photos, video, audio, and other files all live here. `type`
+-- is the canonical kind (enum image|video|audio|file); the image-pipeline
+-- columns (thumbnail/preview/watermarked, dimensions, palette) are only
+-- populated for type='image'. Non-images are 'ready' immediately.
+CREATE TABLE files (
   id                 TEXT PRIMARY KEY,
   gallery_id         TEXT NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
   folder_id          TEXT REFERENCES gallery_folders(id) ON DELETE SET NULL,
+  type               TEXT NOT NULL DEFAULT 'file',
   filename_original  TEXT NOT NULL,
+  display_name       TEXT,
+  description        TEXT,
+  mime_type          TEXT,
+  file_size          INTEGER,
   s3_key_original    TEXT,
   s3_key_preview     TEXT,
   s3_key_thumbnail   TEXT,
   s3_key_watermarked TEXT,
   width              INTEGER,
   height             INTEGER,
-  file_size          INTEGER,
-  mime_type          TEXT,
   exif_data          TEXT,
   color_palette      TEXT,
   position           INTEGER DEFAULT 0,
-  upload_status      TEXT DEFAULT 'processing',
+  upload_status      TEXT DEFAULT 'ready',
   error_message      TEXT,
   created_at         INTEGER NOT NULL
 );
 
-CREATE INDEX idx_photos_gallery ON photos(gallery_id);
-CREATE INDEX idx_photos_folder ON photos(folder_id);
+CREATE INDEX idx_files_gallery ON files(gallery_id);
+CREATE INDEX idx_files_folder ON files(folder_id);
 
 CREATE TABLE jobs (
   id           TEXT PRIMARY KEY,
@@ -104,18 +112,18 @@ CREATE INDEX idx_gallery_sessions_expires ON gallery_sessions(expires_at);
 CREATE TABLE favorites (
   id            TEXT PRIMARY KEY,
   gallery_id    TEXT NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
-  photo_id      TEXT NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
+  file_id       TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
   session_token TEXT,
   client_email  TEXT,
   note          TEXT,
   created_at    INTEGER NOT NULL,
-  UNIQUE(gallery_id, photo_id, session_token)
+  UNIQUE(gallery_id, file_id, session_token)
 );
 
 CREATE TABLE downloads (
   id           TEXT PRIMARY KEY,
   gallery_id   TEXT NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
-  photo_id     TEXT REFERENCES photos(id) ON DELETE SET NULL,
+  file_id      TEXT REFERENCES files(id) ON DELETE SET NULL,
   client_ip    TEXT,
   client_email TEXT,
   created_at   INTEGER NOT NULL
@@ -150,7 +158,7 @@ CREATE TABLE watermark_presets (
 CREATE TABLE comments (
   id           TEXT PRIMARY KEY,
   gallery_id   TEXT NOT NULL REFERENCES galleries(id) ON DELETE CASCADE,
-  photo_id     TEXT REFERENCES photos(id) ON DELETE CASCADE,
+  file_id      TEXT REFERENCES files(id) ON DELETE CASCADE,
   client_name  TEXT,
   client_email TEXT,
   body         TEXT NOT NULL,
@@ -178,6 +186,3 @@ CREATE TABLE rate_limit_events (
 );
 
 CREATE INDEX idx_rate_limit ON rate_limit_events(bucket, key, created_at);
--- Note: the _migrations ledger table is created by src/db/migrate.ts before
--- this file runs, so we don't recreate it here.
-

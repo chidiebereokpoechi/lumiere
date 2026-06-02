@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { eq, and, gte, desc, sql, inArray } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries, photos, galleryViews, downloads, favorites } from '../../db/schema';
+import { galleries, files, galleryViews, downloads, favorites } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { classifyUserAgent } from '../../lib/user-agent';
 import { now } from '../../lib/ids';
@@ -52,14 +52,14 @@ export const analyticsRoutes = new Elysia()
       .groupBy(sql`day`)
       .orderBy(sql`day`);
 
-    const favoritesByPhoto = await db
+    const favoritesByFile = await db
       .select({
-        photoId: favorites.photoId,
+        fileId: favorites.fileId,
         count: sql<number>`COUNT(*)`.as('count'),
       })
       .from(favorites)
       .where(eq(favorites.galleryId, gallery.id))
-      .groupBy(favorites.photoId)
+      .groupBy(favorites.fileId)
       .orderBy(desc(sql<number>`COUNT(*)`));
 
     // Device split: pull recent user_agents (cap to last 1000 to keep this cheap)
@@ -89,7 +89,7 @@ export const analyticsRoutes = new Elysia()
       },
       viewsByDay: viewTimeline.map((r) => ({ day: r.day, count: Number(r.count) })),
       downloadsByDay: downloadTimeline.map((r) => ({ day: r.day, count: Number(r.count) })),
-      favoritesByPhoto: favoritesByPhoto.map((r) => ({ photoId: r.photoId, count: Number(r.count) })),
+      favoritesByFile: favoritesByFile.map((r) => ({ fileId: r.fileId, count: Number(r.count) })),
       deviceSplit: deviceCounts,
     };
   })
@@ -121,10 +121,10 @@ export const analyticsRoutes = new Elysia()
       : (await db
           .select({
             count: sql<number>`COUNT(*)`.as('count'),
-            bytes: sql<number>`COALESCE(SUM(${photos.fileSize}), 0)`.as('bytes'),
+            bytes: sql<number>`COALESCE(SUM(${files.fileSize}), 0)`.as('bytes'),
           })
-          .from(photos)
-          .where(inArray(photos.galleryId, galleryIds)))[0] ?? { count: 0, bytes: 0 };
+          .from(files)
+          .where(inArray(files.galleryId, galleryIds)))[0] ?? { count: 0, bytes: 0 };
 
     // Recent activity: three event sources, three queries, merged in app code.
     // Cheaper than a UNION + JOIN here since each query is well-indexed and
@@ -134,7 +134,7 @@ export const analyticsRoutes = new Elysia()
       .select({
         type: sql<'view'>`'view'`.as('type'),
         galleryId: galleryViews.galleryId,
-        photoId: sql<string | null>`NULL`.as('photo_id'),
+        fileId: sql<string | null>`NULL`.as("file_id"),
         createdAt: galleryViews.createdAt,
       })
       .from(galleryViews)
@@ -146,7 +146,7 @@ export const analyticsRoutes = new Elysia()
       .select({
         type: sql<'download'>`'download'`.as('type'),
         galleryId: downloads.galleryId,
-        photoId: downloads.photoId,
+        fileId: downloads.fileId,
         createdAt: downloads.createdAt,
       })
       .from(downloads)
@@ -158,7 +158,7 @@ export const analyticsRoutes = new Elysia()
       .select({
         type: sql<'favorite'>`'favorite'`.as('type'),
         galleryId: favorites.galleryId,
-        photoId: favorites.photoId,
+        fileId: favorites.fileId,
         createdAt: favorites.createdAt,
       })
       .from(favorites)
@@ -175,7 +175,7 @@ export const analyticsRoutes = new Elysia()
         galleryId: e.galleryId,
         gallerySlug: titleById.get(e.galleryId)?.slug ?? null,
         galleryTitle: titleById.get(e.galleryId)?.title ?? null,
-        photoId: e.photoId,
+        fileId: e.fileId,
         at: e.createdAt,
       }));
 
