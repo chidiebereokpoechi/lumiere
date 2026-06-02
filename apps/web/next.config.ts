@@ -1,26 +1,21 @@
 import type { NextConfig } from 'next';
 
-// Single knob for the API base the web server talks to (RSC fetch in
-// lib/api-client uses INTERNAL_API_URL; the rewrites below proxy the browser's
-// same-origin /api,/events,/img,/health here). Set it to the internal compose
-// host (http://api:3000) or the public API URL (https://lumiere-api.domain.com).
-const API_ORIGIN =
-  process.env.NEXT_PUBLIC_API_ORIGIN ??
-  process.env.INTERNAL_API_URL ??
-  'http://localhost:3200';
+// In dev, the Bun/Elysia backend is a separate process on :3200 and we proxy
+// /api, /events, /img, /health through Next so the browser sees one origin
+// (cookies/CSRF work without CORS gymnastics). In production NPM/nginx fronts
+// both services at the same origin and routes those paths to the api container
+// directly — Next never sees them.
+const DEV_API_ORIGIN = process.env.INTERNAL_API_URL ?? 'http://localhost:3200';
 
 const config: NextConfig = {
-  // The Bun/Elysia backend at /api, /events, and /img is a separate process in
-  // dev (port 3200). In production nginx fronts both at the same origin; in
-  // dev we proxy via Next rewrites so the browser sees one origin and cookies
-  // work without CORS gymnastics.
   async rewrites() {
+    if (process.env.NODE_ENV !== 'development') return [];
     return [
-      { source: '/api/:path*', destination: `${API_ORIGIN}/api/:path*` },
-      { source: '/events/:path*', destination: `${API_ORIGIN}/events/:path*` },
-      { source: '/events', destination: `${API_ORIGIN}/events` },
-      { source: '/img/:path*', destination: `${API_ORIGIN}/img/:path*` },
-      { source: '/health', destination: `${API_ORIGIN}/health` },
+      { source: '/api/:path*', destination: `${DEV_API_ORIGIN}/api/:path*` },
+      { source: '/events/:path*', destination: `${DEV_API_ORIGIN}/events/:path*` },
+      { source: '/events', destination: `${DEV_API_ORIGIN}/events` },
+      { source: '/img/:path*', destination: `${DEV_API_ORIGIN}/img/:path*` },
+      { source: '/health', destination: `${DEV_API_ORIGIN}/health` },
     ];
   },
 

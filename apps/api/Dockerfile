@@ -2,6 +2,7 @@ FROM oven/bun:1 AS builder
 WORKDIR /app
 COPY package.json bun.lock* ./
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
 COPY packages/types/package.json ./packages/types/
 RUN bun install --frozen-lockfile
 COPY . .

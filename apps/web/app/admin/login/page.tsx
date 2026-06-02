@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LoginInput } from '@lumiere/types';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { Field, TextInput, Button, FormError } from '@/components/admin/form';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const from = params.get('from') ?? '/admin';
