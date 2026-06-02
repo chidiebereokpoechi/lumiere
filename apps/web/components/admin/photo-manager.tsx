@@ -213,11 +213,18 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     });
   }, []);
 
+  // ---- Pointer-based sortable (custom, not HTML5 DnD) -------------------
+  // A dragged photo lifts into an opaque overlay that follows the cursor; its
+  // grid slot becomes a placeholder; neighbours reflow via FLIP. Reordering
+  // operates on the global photo array (move dragged photo adjacent to whatever
+  // tile is under the cursor), so it works the same in folder views and lets
+  // you freely move a photo back to where it started.
   const [dragId, setDragId] = useState<string | null>(null);
+  const [overlayPhoto, setOverlayPhoto] = useState<Photo | null>(null);
   const dragIdRef = useRef<string | null>(null);
-  // Reordering writes global positions, so only allow it in the unfiltered
-  // view with nothing selected and no uploads in flight.
-  const canReorder = filter === 'all' && selected.size === 0 && tiles.length === 0;
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const dragInfo = useRef<{ offsetX: number; offsetY: number; w: number; h: number; startX: number; startY: number } | null>(null);
+  const canReorder = selected.size === 0 && tiles.length === 0;
 
   const tileNodes = useRef(new Map<string, HTMLElement>());
   const prevRects = useRef(new Map<string, DOMRect>());
@@ -226,23 +233,22 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     else tileNodes.current.delete(id);
   }, []);
 
-  const lastOverId = useRef<string | null>(null);
-
-  const startDrag = useCallback((id: string) => {
-    dragIdRef.current = id;
-    lastOverId.current = id;
-    setDragId(id);
+  const positionOverlay = useCallback((clientX: number, clientY: number) => {
+    const ov = overlayRef.current;
+    const info = dragInfo.current;
+    if (!ov || !info) return;
+    ov.style.transform = `translate(${clientX - info.offsetX}px, ${clientY - info.offsetY}px) scale(1.04)`;
   }, []);
 
-  // Live reorder as the dragged tile enters another — re-renders trigger the
-  // FLIP pass, so neighbours slide out of the way while dragging. Dedupe by the
-  // last-entered id so bubbled child dragenter events and animation-induced
-  // re-entries don't thrash the order.
-  const dragOver = useCallback((overId: string) => {
+  const onPointerMove = useCallback((e: PointerEvent) => {
+    if (!dragIdRef.current) return;
+    positionOverlay(e.clientX, e.clientY);
+    // Find the tile under the cursor (overlay is pointer-events:none; tiles
+    // mid-FLIP are too, so we never hit a transiently-positioned one).
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overId = el?.closest<HTMLElement>('[data-pid]')?.dataset.pid;
     const dragging = dragIdRef.current;
-    if (!dragging || dragging === overId) return;
-    if (lastOverId.current === overId) return;
-    lastOverId.current = overId;
+    if (!overId || overId === dragging) return;
     setPhotos((prev) => {
       const from = prev.findIndex((p) => p.id === dragging);
       const to = prev.findIndex((p) => p.id === overId);
@@ -252,13 +258,16 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       copy.splice(to, 0, moved!);
       return copy;
     });
-  }, []);
+  }, [positionOverlay]);
 
-  // Persist the final order once on drop/end.
-  const endDrag = useCallback(() => {
+  const onPointerUp = useCallback(() => {
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+    document.body.style.userSelect = '';
     dragIdRef.current = null;
-    lastOverId.current = null;
+    dragInfo.current = null;
     setDragId(null);
+    setOverlayPhoto(null);
     setPhotos((prev) => {
       const orderedIds = prev.map((p) => p.id);
       void apiClientMutation(`/api/galleries/${galleryId}/photos/reorder`, {
@@ -271,7 +280,23 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       });
       return prev;
     });
-  }, [galleryId, refreshPhotos]);
+  }, [galleryId, refreshPhotos, onPointerMove]);
+
+  const beginDrag = useCallback((photo: Photo, e: React.PointerEvent<HTMLElement>) => {
+    if (!canReorder || e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button')) return; // let checkbox/actions work
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragInfo.current = {
+      offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      w: rect.width, h: rect.height, startX: e.clientX, startY: e.clientY,
+    };
+    dragIdRef.current = photo.id;
+    setDragId(photo.id);
+    setOverlayPhoto(photo);
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }, [canReorder, onPointerMove, onPointerUp]);
 
   async function createFolder() {
     const name = window.prompt('Folder name')?.trim();
@@ -473,12 +498,10 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
               isCover={cover === photo.id}
               selected={selected.has(photo.id)}
               busy={busyId === photo.id}
-              draggable={canReorder}
+              reorderable={canReorder}
               dragging={dragId === photo.id}
               onRef={(n) => registerTile(photo.id, n)}
-              onDragStart={() => startDrag(photo.id)}
-              onDragEnter={() => dragOver(photo.id)}
-              onDragEnd={endDrag}
+              onPointerDownReorder={(e) => beginDrag(photo, e)}
               onToggleSelect={() => toggleSelect(photo.id)}
               onDelete={() => onDelete(photo)}
               onSetCover={() => onSetCover(photo)}
@@ -506,6 +529,23 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
               Clear
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Drag overlay — the lifted, opaque copy that follows the cursor */}
+      {overlayPhoto && dragInfo.current && (
+        <div
+          ref={overlayRef}
+          className="fixed top-0 left-0 z-50 pointer-events-none overflow-hidden rounded-lg ring-2 ring-accent shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
+          style={{
+            width: dragInfo.current.w,
+            height: dragInfo.current.h,
+            willChange: 'transform',
+            transform: `translate(${dragInfo.current.startX - dragInfo.current.offsetX}px, ${dragInfo.current.startY - dragInfo.current.offsetY}px) scale(1.04)`,
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`/img/${galleryId}/${overlayPhoto.id}/thumb`} alt="" draggable={false} className="h-full w-full object-cover" />
         </div>
       )}
     </div>
@@ -570,20 +610,18 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 }
 
 function PhotoTile({
-  photo, galleryId, isCover, selected, busy, draggable, dragging,
-  onRef, onDragStart, onDragEnter, onDragEnd, onToggleSelect, onDelete, onSetCover,
+  photo, galleryId, isCover, selected, busy, reorderable, dragging,
+  onRef, onPointerDownReorder, onToggleSelect, onDelete, onSetCover,
 }: {
   photo: Photo;
   galleryId: string;
   isCover: boolean;
   selected: boolean;
   busy: boolean;
-  draggable: boolean;
+  reorderable: boolean;
   dragging: boolean;
   onRef: (node: HTMLElement | null) => void;
-  onDragStart: () => void;
-  onDragEnter: () => void;
-  onDragEnd: () => void;
+  onPointerDownReorder: (e: React.PointerEvent<HTMLElement>) => void;
   onToggleSelect: () => void;
   onDelete: () => void;
   onSetCover: () => void;
@@ -593,15 +631,15 @@ function PhotoTile({
   return (
     <div
       ref={onRef}
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragEnter={() => { if (draggable) onDragEnter(); }}
-      onDragEnd={onDragEnd}
-      onDragOver={(e) => { if (draggable) e.preventDefault(); }}
-      onDrop={(e) => e.preventDefault()}
-      className={`group relative aspect-square rounded-lg overflow-hidden border border-border bg-surface-sunken ${draggable ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging ? 'opacity-40' : ''}`}
+      data-pid={photo.id}
+      onPointerDown={reorderable ? onPointerDownReorder : undefined}
+      style={reorderable ? { touchAction: 'none' } : undefined}
+      className={`group relative aspect-square rounded-lg overflow-hidden border border-border ${dragging ? 'border-dashed bg-surface-2' : 'bg-surface-sunken'} ${reorderable && !dragging ? 'cursor-grab' : ''}`}
     >
-      {ready ? (
+      {dragging ? (
+        // Placeholder slot while this photo is lifted into the overlay.
+        <div className="h-full w-full" />
+      ) : ready ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`/img/${galleryId}/${photo.id}/thumb`}
@@ -622,30 +660,33 @@ function PhotoTile({
         </div>
       )}
 
-      {isCover && (
+      {!dragging && isCover && (
         <span className="absolute top-2 right-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">
           Cover
         </span>
       )}
 
       {/* Selection checkbox */}
-      <button
-        type="button"
-        onClick={onToggleSelect}
-        aria-pressed={selected}
-        aria-label={selected ? 'Deselect' : 'Select'}
-        className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
-          selected
-            ? 'bg-accent border-accent text-accent-ink opacity-100'
-            : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'
-        }`}
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-      </button>
+      {!dragging && (
+        <button
+          type="button"
+          onClick={onToggleSelect}
+          onPointerDown={(e) => e.stopPropagation()}
+          aria-pressed={selected}
+          aria-label={selected ? 'Deselect' : 'Select'}
+          className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+            selected
+              ? 'bg-accent border-accent text-accent-ink opacity-100'
+              : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'
+          }`}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        </button>
+      )}
 
-      {selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-lg" />}
+      {!dragging && selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-lg" />}
 
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-t from-black/50 to-transparent">
+      <div className={`absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 p-2 transition-opacity bg-linear-to-t from-black/50 to-transparent ${dragging ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
         {ready && !isCover && (
           <button
             type="button"
