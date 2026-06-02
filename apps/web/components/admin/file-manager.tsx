@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import { apiClient, apiClientMutation, ApiError } from '@/lib/api-client';
 import type { GalleryFile } from '@/lib/api/files';
 import type { Folder } from '@/lib/api/folders';
+import { uploadMultipart } from '@/lib/upload/multipart';
+
+// Files larger than this upload directly to storage via presigned multipart
+// (bypassing the app); smaller ones go through the single-request endpoint.
+const MULTIPART_THRESHOLD = 50 * 1024 * 1024;
 
 interface Props {
   galleryId: string;
@@ -118,8 +123,22 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     let token: string;
     try { token = await getCsrfToken(); }
     catch { setError('Could not start upload (auth).'); seeded.forEach((s) => { updateTile(s.key, { status: 'error', reason: 'auth' }); settle(s.key); }); return; }
-    for (const s of seeded) await uploadOne(s.file, s.key, token, folderId);
-  }, [uploadOne, updateTile, settle]);
+    for (const s of seeded) {
+      if (s.file.size > MULTIPART_THRESHOLD) {
+        try {
+          await uploadMultipart({ galleryId, folderId, file: s.file, onProgress: (p) => updateTile(s.key, { status: 'uploading', progress: p }) });
+          updateTile(s.key, { status: 'ready', progress: 100 });
+        } catch (err) {
+          updateTile(s.key, { status: 'error', reason: err instanceof Error ? err.message : 'failed' });
+          setError('Upload failed');
+        } finally {
+          settle(s.key);
+        }
+      } else {
+        await uploadOne(s.file, s.key, token, folderId);
+      }
+    }
+  }, [galleryId, uploadOne, updateTile, settle]);
 
   // ---- folders ---------------------------------------------------------
   async function createFolder() {
