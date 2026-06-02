@@ -196,6 +196,49 @@ export function ClientGallery({
   const selectAll = useCallback(() => setSelected(new Set(files.map((f) => f.id))), [files]);
   const clearSelection = useCallback(() => setSelected(new Set()), []);
 
+  // Drag-to-select (iOS Photos style): press a checkbox and drag across tiles.
+  // The starting tile's state sets the mode — drag selects if it was unselected,
+  // deselects if it was selected. A plain tap falls through to toggleSelect.
+  const dragRef = useRef<{ x: number; y: number; mode: boolean; moved: boolean; seen: Set<string> } | null>(null);
+  const suppressClickRef = useRef(false);
+  const [dragSelecting, setDragSelecting] = useState(false);
+  const applyMode = useCallback((id: string, mode: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (mode) next.add(id); else next.delete(id);
+      return next;
+    });
+  }, []);
+  const beginDragSelect = useCallback((id: string, e: React.PointerEvent) => {
+    if (e.shiftKey) return; // let the click handler do range-select
+    dragRef.current = { x: e.clientX, y: e.clientY, mode: !selected.has(id), moved: false, seen: new Set() };
+    const onMove = (ev: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      if (!d.moved) {
+        if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 6) return;
+        d.moved = true;
+        setDragSelecting(true);
+        d.seen.add(id);
+        applyMode(id, d.mode);
+      }
+      const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+      const fid = el?.closest<HTMLElement>('[data-fid]')?.dataset.fid;
+      if (fid && !d.seen.has(fid)) { d.seen.add(fid); applyMode(fid, d.mode); }
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      if (dragRef.current?.moved) { suppressClickRef.current = true; selectAnchor.current = id; }
+      dragRef.current = null;
+      setDragSelecting(false);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+  }, [selected, applyMode]);
+
   const triggerDownload = useCallback((qs: string) => {
     const a = document.createElement('a');
     a.href = `/api/gallery/${gallery.slug}/download?${qs}`;
@@ -386,11 +429,11 @@ export function ClientGallery({
             {view.kind === 'list' ? 'This list is empty.' : view.kind === 'favorites' ? 'No favorites yet.' : 'Nothing in this folder yet.'}
           </p>
         ) : (
-          <div className="columns-2 md:columns-3 xl:columns-4 gap-1">
+          <div className={`columns-2 md:columns-3 xl:columns-4 gap-1 ${dragSelecting ? 'touch-none select-none' : ''}`}>
             {files.map((f) => {
               const isSelected = selected.has(f.id);
               return (
-                <div key={f.id} className="group relative mb-1 break-inside-avoid overflow-hidden bg-surface-sunken">
+                <div key={f.id} data-fid={f.id} className="group relative mb-1 break-inside-avoid overflow-hidden bg-surface-sunken">
                   <button type="button" onClick={() => setOpenId(f.id)} className="block w-full text-left focus-visible:outline-none">
                     {f.type === 'image' ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -427,9 +470,14 @@ export function ClientGallery({
                   {canDownload && (
                     <button
                       type="button"
-                      onClick={(e) => toggleSelect(f.id, e.shiftKey)}
+                      onPointerDown={(e) => beginDragSelect(f.id, e)}
+                      onClick={(e) => {
+                        if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+                        toggleSelect(f.id, e.shiftKey);
+                      }}
                       aria-pressed={isSelected}
                       aria-label={isSelected ? 'Deselect' : 'Select'}
+                      style={{ touchAction: 'none' }}
                       className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
                         isSelected ? 'bg-accent border-accent text-accent-ink opacity-100' : `border-white text-transparent ${actionVis}`
                       }`}
