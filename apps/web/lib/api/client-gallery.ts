@@ -15,6 +15,7 @@ export interface MinimalGallery {
   allowDownload: boolean;
   downloadMode: string;
   allowFavorites: boolean;
+  allowComments: boolean;
   expiresAt: number | null;
   gracePeriodDays: number;
   eventDate: number | null;

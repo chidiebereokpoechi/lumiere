@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { fetchAccess, fetchClientPhotos, fetchFavorites, fetchClientAttachments } from '@/lib/api/client-gallery';
+import { fetchClientComments } from '@/lib/api/comments';
 import { ApiError } from '@/lib/api-client';
 import { PasswordGate } from '@/components/client/password-gate';
 import { ClientGallery } from '@/components/client/client-gallery';
@@ -38,10 +39,11 @@ export default async function ClientGalleryPage({ params }: Props) {
   }
 
   // Unlocked / public — load photos + this session's favorites + files.
-  const [{ gallery, photos, folders }, favs, atts] = await Promise.all([
+  const [{ gallery, photos, folders }, favs, atts, cmts] = await Promise.all([
     fetchClientPhotos(slug),
     fetchFavorites(slug).catch(() => ({ favorites: [] })),
     fetchClientAttachments(slug).catch(() => ({ attachments: [] })),
+    fetchClientComments(slug).catch(() => ({ comments: [] })),
   ]);
   return (
     <ClientGallery
@@ -50,6 +52,7 @@ export default async function ClientGalleryPage({ params }: Props) {
       folders={folders}
       initialFavorites={favs.favorites.map((f) => f.photoId)}
       attachments={atts.attachments}
+      comments={cmts.comments}
     />
   );
 }

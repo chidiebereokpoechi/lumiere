@@ -33,6 +33,7 @@ interface MinimalGallery {
   allowDownload: boolean;
   downloadMode: string;
   allowFavorites: boolean;
+  allowComments: boolean;
   expiresAt: number | null;
   gracePeriodDays: number;
   eventDate: number | null;
@@ -53,6 +54,7 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
     allowDownload: g.allowDownload === 1,
     downloadMode: g.downloadMode ?? 'watermarked',
     allowFavorites: g.allowFavorites === 1,
+    allowComments: g.allowComments === 1,
     expiresAt: g.expiresAt,
     gracePeriodDays: g.gracePeriodDays ?? 0,
     eventDate: g.eventDate,

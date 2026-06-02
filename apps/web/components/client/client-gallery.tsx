@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import type { ClientAttachment, ClientFolder, ClientPhoto, MinimalGallery } from '@/lib/api/client-gallery';
+import type { ClientComment } from '@/lib/api/comments';
+import { CommentsSection } from '@/components/client/comments-section';
 
 interface Props {
   gallery: MinimalGallery;
@@ -10,6 +12,7 @@ interface Props {
   folders: ClientFolder[];
   initialFavorites: string[];
   attachments: ClientAttachment[];
+  comments: ClientComment[];
 }
 
 function formatBytes(n: number | null): string {
@@ -19,7 +22,7 @@ function formatBytes(n: number | null): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavorites, attachments }: Props) {
+export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavorites, attachments, comments }: Props) {
   const [open, setOpen] = useState<number | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [favorites, setFavorites] = useState<Set<string>>(new Set(initialFavorites));
@@ -269,6 +272,9 @@ export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavo
           </ul>
         </section>
       )}
+
+      {/* Comments */}
+      {gallery.allowComments && <CommentsSection slug={gallery.slug} initialComments={comments} />}
 
       {/* Selection action bar */}
       {canDownload && selected.size > 0 && (
