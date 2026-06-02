@@ -22,7 +22,7 @@ export interface GalleryAnalytics {
     desktop: number;
     unknown: number;
   };
-  clients: ClientActivity[];
+  clients?: ClientActivity[];
 }
 
 // Per-client activity, keyed by the email clients provide before favoriting.

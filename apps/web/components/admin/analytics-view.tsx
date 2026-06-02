@@ -25,7 +25,8 @@ function whenDay(epoch: number): string {
 }
 
 export function AnalyticsView({ galleryId, analytics }: Props) {
-  const { totals, viewsByDay, downloadsByDay, favoritesByFile, deviceSplit, since, clients } = analytics;
+  const { totals, viewsByDay, downloadsByDay, favoritesByFile, deviceSplit, since } = analytics;
+  const clients = analytics.clients ?? [];
 
   const days = dayAxis(since);
   const viewMap = new Map(viewsByDay.map((d) => [d.day, d.count]));
