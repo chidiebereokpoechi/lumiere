@@ -44,9 +44,10 @@ interface TextInputProps {
   autoComplete?: string;
   value: string;
   onChange: (next: string) => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
 }
 export function TextInput({
-  id, name, type = 'text', required, placeholder, autoComplete, value, onChange,
+  id, name, type = 'text', required, placeholder, autoComplete, value, onChange, onKeyDown,
 }: TextInputProps) {
   return (
     <input
@@ -58,6 +59,7 @@ export function TextInput({
       autoComplete={autoComplete}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
       className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
     />
   );

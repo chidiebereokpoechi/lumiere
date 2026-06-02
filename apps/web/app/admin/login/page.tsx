@@ -16,8 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit() {
+    if (pending) return;
     setError(null);
     const parsed = LoginInput.safeParse({ email, password });
     if (!parsed.success) {
@@ -45,6 +45,19 @@ export default function LoginPage() {
     }
   }
 
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void submit();
+  }
+
+  // Some browsers/managers swallow implicit submit; submit explicitly on Enter.
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void submit();
+    }
+  }
+
   return (
     <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
       <div className="w-full max-w-md">
@@ -69,6 +82,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={setEmail}
+                onKeyDown={onKeyDown}
                 placeholder="you@studio.com"
               />
             </Field>
@@ -80,6 +94,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={setPassword}
+                onKeyDown={onKeyDown}
                 placeholder="••••••••"
               />
             </Field>
