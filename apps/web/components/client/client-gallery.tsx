@@ -61,6 +61,12 @@ export function ClientGallery({
   }, []);
   const actionVis = coarse ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
+  // Cover acts as a full-screen intro; "View gallery" scrolls down to the grid.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const scrollToGrid = useCallback(() => gridRef.current?.scrollIntoView({ behavior: 'smooth' }), []);
+  // Comments live behind a toggle in the lightbox to keep it uncluttered.
+  const [showComments, setShowComments] = useState(false);
+
   // The current view — a folder, favorites, or a list — selected from one row.
   // Mutually exclusive: picking any one clears the others.
   type View = { kind: 'folder'; id: string } | { kind: 'favorites' } | { kind: 'list'; id: string };
@@ -250,7 +256,7 @@ export function ClientGallery({
 
   const saveToPhotos = useCallback(() => sharePhotos(selectedImages), [sharePhotos, selectedImages]);
 
-  const close = useCallback(() => setOpenId(null), []);
+  const close = useCallback(() => { setOpenId(null); setShowComments(false); }, []);
   const step = useCallback((dir: number) => {
     setOpenId((cur) => {
       if (cur === null || files.length === 0) return cur;
@@ -281,106 +287,92 @@ export function ClientGallery({
 
   return (
     <main className="min-h-dvh bg-bg pb-24">
-      {/* Cover */}
-      <header className="relative">
+      {/* Cover — full-screen intro with a scroll cue. */}
+      <header className="relative h-svh min-h-136 w-full overflow-hidden">
         {gallery.coverFileId ? (
-          <div className="relative h-[55vh] min-h-80 w-full overflow-hidden bg-surface-sunken">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/img/${gallery.id}/${gallery.coverFileId}/preview`} alt="" className="h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-8 sm:p-12 text-white">
-              {eventLine && <p className="text-xs font-bold uppercase tracking-[0.28em] opacity-90">{eventLine}</p>}
-              <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight">{gallery.title}</h1>
-              {gallery.subtitle && <p className="mt-2 max-w-2xl text-sm sm:text-base opacity-90">{gallery.subtitle}</p>}
-            </div>
-          </div>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={`/img/${gallery.id}/${gallery.coverFileId}/preview`} alt="" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
-          <div className="px-8 sm:px-12 pt-16 pb-8">
-            {eventLine && <p className="text-xs font-bold uppercase tracking-[0.28em] text-ink-muted">{eventLine}</p>}
-            <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight text-ink-strong">{gallery.title}</h1>
-            {gallery.subtitle && <p className="mt-2 max-w-2xl text-sm sm:text-base text-ink-muted">{gallery.subtitle}</p>}
-          </div>
+          <div className="absolute inset-0 bg-surface-sunken" />
         )}
-      </header>
-
-      {/* Unified nav: folders, favorites, and lists in one mutually-exclusive row.
-          Horizontally scrollable on phones, wraps on wider screens. */}
-      {allFiles.length > 0 && (
-        <nav className="px-4 sm:px-8 pt-6 flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-none [&::-webkit-scrollbar]:hidden">
-          {folders.map((f) => (
-            <Chip
-              key={f.id}
-              active={view.kind === 'folder' && view.id === f.id}
-              onClick={() => switchView({ kind: 'folder', id: f.id })}
-              label={f.name}
-              count={folderCounts.get(f.id) ?? 0}
-            />
-          ))}
-          {canFavorite && (
-            <Chip
-              active={view.kind === 'favorites'}
-              onClick={() => switchView({ kind: 'favorites' })}
-              label="Favorites"
-              count={favorites.size}
-              icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>}
-            />
-          )}
-          {lists.map((l) => (
-            <Chip
-              key={l.id}
-              active={view.kind === 'list' && view.id === l.id}
-              onClick={() => switchView({ kind: 'list', id: l.id })}
-              label={l.name}
-              count={l.fileIds.length}
-              icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>}
-              onDelete={() => { if (window.confirm(`Delete list "${l.name}"?`)) deleteList(l.id); }}
-            />
-          ))}
+        {gallery.coverFileId && <div className="absolute inset-0 bg-black/35" />}
+        <div className={`relative h-full flex flex-col items-center justify-center text-center px-6 ${gallery.coverFileId ? 'text-white' : 'text-ink-strong'}`}>
+          {eventLine && <p className="text-xs font-bold uppercase tracking-[0.32em] opacity-90">{eventLine}</p>}
+          <h1 className="mt-4 text-5xl sm:text-6xl font-extrabold uppercase tracking-tight">{gallery.title}</h1>
+          {gallery.subtitle && <p className="mt-4 max-w-xl text-sm sm:text-base opacity-90">{gallery.subtitle}</p>}
           <button
             type="button"
-            onClick={() => requireEmail(async () => { const name = window.prompt('Name your list'); if (name?.trim()) await createList(name.trim()); })}
-            className="shrink-0 h-9 inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
+            onClick={scrollToGrid}
+            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold uppercase tracking-[0.25em] transition-colors ${
+              gallery.coverFileId ? 'border-white/70 text-white hover:bg-white hover:text-black' : 'border-border text-ink-strong hover:bg-surface-strong hover:text-ink-inverse hover:border-surface-strong'
+            }`}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            List
+            View gallery
           </button>
-        </nav>
-      )}
+        </div>
+      </header>
 
-      {/* Toolbar */}
-      {allFiles.length > 0 && (
-        <div className="px-4 sm:px-8 pt-5 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-ink-muted tabular-nums">{files.length} item{files.length !== 1 ? 's' : ''}</p>
+      {/* Sticky chrome: a slim title bar with actions, then the tab row. */}
+      <div ref={gridRef} className="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border">
+        <div className="px-4 sm:px-8 h-14 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold uppercase tracking-wider text-ink-strong">{gallery.title}</p>
+            {gallery.subtitle && <p className="truncate text-xs text-ink-muted">{gallery.subtitle}</p>}
+          </div>
           {canDownload && files.length > 0 && (
-            <div className="flex items-center gap-4">
-              <button type="button" onClick={allSelected ? clearSelection : selectAll} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
-                {allSelected ? 'Clear selection' : 'Select all'}
+            <div className="flex items-center gap-5 shrink-0">
+              <button type="button" onClick={allSelected ? clearSelection : selectAll} className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
+                {allSelected ? 'Clear' : 'Select all'}
               </button>
-              <button
-                type="button"
-                onClick={downloadView}
-                className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                Download {view.kind === 'favorites' ? 'favorites' : view.kind === 'list' ? 'list' : 'folder'}
+              <button type="button" onClick={downloadView} aria-label="Download" title="Download these" className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink-strong">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider">Download</span>
               </button>
             </div>
           )}
         </div>
-      )}
+        {allFiles.length > 0 && (
+          <nav className="px-4 sm:px-8 flex items-center gap-5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+            {folders.map((f) => (
+              <Tab key={f.id} active={view.kind === 'folder' && view.id === f.id} onClick={() => switchView({ kind: 'folder', id: f.id })} label={f.name} count={folderCounts.get(f.id) ?? 0} />
+            ))}
+            {canFavorite && (
+              <Tab active={view.kind === 'favorites'} onClick={() => switchView({ kind: 'favorites' })} label="Favorites" count={favorites.size} />
+            )}
+            {lists.map((l) => (
+              <Tab
+                key={l.id}
+                active={view.kind === 'list' && view.id === l.id}
+                onClick={() => switchView({ kind: 'list', id: l.id })}
+                label={l.name}
+                count={l.fileIds.length}
+                onDelete={() => { if (window.confirm(`Delete list "${l.name}"?`)) deleteList(l.id); }}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={() => requireEmail(async () => { const name = window.prompt('Name your list'); if (name?.trim()) await createList(name.trim()); })}
+              className="shrink-0 inline-flex items-center gap-1 py-3.5 text-xs font-bold uppercase tracking-wider text-ink-subtle hover:text-ink-strong transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              New list
+            </button>
+          </nav>
+        )}
+      </div>
 
-      {/* Mixed-media masonry */}
-      <section className="px-4 sm:px-8 py-6">
+      {/* Edge-to-edge masonry — minimal chrome, photo-forward. */}
+      <section className="px-1 sm:px-2 pt-1">
         {files.length === 0 ? (
-          <p className="text-center text-sm text-ink-muted py-16">
+          <p className="text-center text-sm text-ink-muted py-24">
             {view.kind === 'list' ? 'This list is empty.' : view.kind === 'favorites' ? 'No favorites yet.' : 'Nothing in this folder yet.'}
           </p>
         ) : (
-          <div className="columns-2 sm:columns-3 lg:columns-4 gap-2">
+          <div className="columns-2 md:columns-3 xl:columns-4 gap-1">
             {files.map((f) => {
               const isSelected = selected.has(f.id);
               return (
-                <div key={f.id} className="group relative mb-2 break-inside-avoid overflow-hidden rounded-md bg-surface-sunken">
+                <div key={f.id} className="group relative mb-1 break-inside-avoid overflow-hidden bg-surface-sunken">
                   <button type="button" onClick={() => setOpenId(f.id)} className="block w-full text-left focus-visible:outline-none">
                     {f.type === 'image' ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -389,7 +381,7 @@ export function ClientGallery({
                         alt=""
                         loading="lazy"
                         style={f.width && f.height ? { aspectRatio: `${f.width} / ${f.height}` } : undefined}
-                        className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? 'brightness-90' : ''}`}
+                        className={`block w-full h-auto object-cover transition-[filter,transform] duration-500 ${isSelected ? 'brightness-90' : 'group-hover:scale-[1.02]'}`}
                       />
                     ) : f.type === 'video' ? (
                       <span className="relative block w-full bg-black">
@@ -409,44 +401,38 @@ export function ClientGallery({
                     )}
                   </button>
 
+                  {/* Soft top gradient so the white controls read on any image */}
+                  {(canDownload || canFavorite) && (
+                    <div className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected ? 'opacity-100' : actionVis}`} />
+                  )}
+
                   {canDownload && (
                     <button
                       type="button"
                       onClick={(e) => toggleSelect(f.id, e.shiftKey)}
                       aria-pressed={isSelected}
                       aria-label={isSelected ? 'Deselect' : 'Select'}
-                      className={`absolute top-2 left-2 h-9 w-9 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-full border-2 transition-all ${
-                        isSelected ? 'bg-accent border-accent text-accent-ink opacity-100' : `bg-black/30 border-white/80 text-transparent ${actionVis}`
+                      className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+                        isSelected ? 'bg-accent border-accent text-accent-ink opacity-100' : `border-white text-transparent ${actionVis}`
                       }`}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </button>
                   )}
-                  <div className="absolute top-2 right-2 flex items-center gap-1.5">
-                    {/* Add to a list */}
+                  {canFavorite && (
                     <button
                       type="button"
-                      onClick={() => openPicker([f.id])}
-                      aria-label="Add to list"
-                      className={`h-9 w-9 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50 transition-all ${actionVis}`}
+                      onClick={() => requireEmail(() => toggleFavorite(f.id))}
+                      aria-pressed={favorites.has(f.id)}
+                      aria-label={favorites.has(f.id) ? 'Remove favorite' : 'Add favorite'}
+                      className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all ${
+                        favorites.has(f.id) ? 'text-white opacity-100 drop-shadow' : `text-white/90 drop-shadow ${actionVis}`
+                      }`}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill={favorites.has(f.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
                     </button>
-                    {canFavorite && (
-                      <button
-                        type="button"
-                        onClick={() => requireEmail(() => toggleFavorite(f.id))}
-                        aria-pressed={favorites.has(f.id)}
-                        aria-label={favorites.has(f.id) ? 'Remove favorite' : 'Add favorite'}
-                        className={`h-9 w-9 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-full transition-all ${
-                          favorites.has(f.id) ? 'bg-white/90 text-accent-dark opacity-100' : `bg-black/30 text-white hover:bg-black/50 ${actionVis}`
-                        }`}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill={favorites.has(f.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
-                      </button>
-                    )}
-                  </div>
-                  {isSelected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-md" />}
+                  )}
+                  {isSelected && <div className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-accent" />}
                 </div>
               );
             })}
@@ -500,85 +486,89 @@ export function ClientGallery({
         </div>
       )}
 
-      {/* Lightbox — any file type plays/views/downloads here, with comments */}
+      {/* Lightbox — clean light surface, minimal icon bar, centered filename. */}
       {open && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col lg:flex-row" onClick={close}>
-          <div className="relative flex-1 flex items-center justify-center min-h-0 p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="max-h-full max-w-full">
+        <div className="fixed inset-0 z-50 bg-bg flex flex-col" onClick={close}>
+          {/* Top bar */}
+          <div className="shrink-0 flex items-center justify-between px-3 sm:px-5 h-14" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={close} aria-label="Close" className="h-10 w-10 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+            </button>
+            <div className="flex items-center gap-1">
+              {canFavorite && (
+                <button type="button" onClick={() => requireEmail(() => toggleFavorite(open.id))} aria-label={favorites.has(open.id) ? 'Remove favorite' : 'Add favorite'}
+                  className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${favorites.has(open.id) ? 'text-accent-dark' : 'text-ink-muted'}`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill={favorites.has(open.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
+                </button>
+              )}
+              <button type="button" onClick={() => openPicker([open.id])} aria-label="Add to list" className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+              </button>
+              {gallery.allowComments && (
+                <button type="button" onClick={() => setShowComments((v) => !v)} aria-label="Comments" className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${showComments ? 'text-ink-strong' : 'text-ink-muted'}`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                </button>
+              )}
+              {canDownload && coarse && open.type === 'image' && (
+                <button type="button" onClick={() => sharePhotos([open])} disabled={savingPhotos} aria-label="Save to Photos" className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong disabled:opacity-60">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+                </button>
+              )}
+              {canDownload && (
+                <a href={open.downloadUrl} aria-label="Download" className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Media */}
+          <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12" onClick={close}>
+            <div className="max-h-full max-w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
               {open.type === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={open.previewUrl ?? ''} alt="" className="max-h-[88vh] max-w-full object-contain" />
+                <img src={open.previewUrl ?? ''} alt="" className="max-h-[78svh] max-w-full object-contain" />
               ) : open.type === 'video' ? (
                 // eslint-disable-next-line jsx-a11y/media-has-caption
-                <video src={open.streamUrl ?? ''} controls autoPlay className="max-h-[88vh] max-w-full" />
+                <video src={open.streamUrl ?? ''} controls autoPlay className="max-h-[78svh] max-w-full" />
               ) : open.type === 'audio' ? (
-                <div className="w-[min(90vw,32rem)] rounded-lg bg-surface p-6 text-center">
+                <div className="w-[min(90vw,32rem)] rounded-lg border border-border bg-surface p-6 text-center">
                   <p className="text-sm font-semibold text-ink-strong truncate mb-4">{open.filename}</p>
                   {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                   <audio src={open.streamUrl ?? ''} controls autoPlay className="w-full" />
                 </div>
               ) : (
-                <div className="w-[min(90vw,28rem)] rounded-lg bg-surface p-8 text-center">
+                <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
                   <p className="mt-3 text-sm font-semibold text-ink-strong truncate">{open.filename}</p>
                   <p className="text-xs text-ink-subtle">{formatBytes(open.fileSize)}</p>
-                  <a href={open.downloadUrl} className="mt-5 inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                    Download
-                  </a>
                 </div>
               )}
             </div>
-            {/* Per-item actions */}
-            <div className="absolute top-4 left-4 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => openPicker([open.id])}
-                aria-label="Add to list"
-                className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
-              </button>
-              {canDownload && coarse && open.type === 'image' && (
-                <button
-                  type="button"
-                  onClick={() => sharePhotos([open])}
-                  disabled={savingPhotos}
-                  aria-label="Save to Photos"
-                  className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-60"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
-                </button>
-              )}
-              {canFavorite && (
-                <button
-                  type="button"
-                  onClick={() => requireEmail(() => toggleFavorite(open.id))}
-                  aria-label={favorites.has(open.id) ? 'Remove favorite' : 'Add favorite'}
-                  className={`h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-white/20 ${favorites.has(open.id) ? 'bg-white/90 text-accent-dark' : 'bg-white/10 text-white'}`}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill={favorites.has(open.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
-                </button>
-              )}
-            </div>
-            <button type="button" onClick={close} aria-label="Close" className="absolute top-4 right-4 h-10 w-10 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
             {files.length > 1 && (
               <>
-                <NavButton side="left" onClick={(e) => { e.stopPropagation(); step(-1); }} />
-                <NavButton side="right" onClick={(e) => { e.stopPropagation(); step(1); }} />
-                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs tabular-nums text-white/80">{openIndex + 1} / {files.length}</span>
+                <button type="button" onClick={(e) => { e.stopPropagation(); step(-1); }} aria-label="Previous" className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); step(1); }} aria-label="Next" className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
               </>
             )}
           </div>
-          {gallery.allowComments && (
-            <aside
-              className="w-full lg:w-96 shrink-0 bg-surface border-t lg:border-t-0 lg:border-l border-border overflow-y-auto max-h-[40vh] lg:max-h-none"
-              onClick={(e) => e.stopPropagation()}
-            >
+
+          {/* Filename + position */}
+          <div className="shrink-0 text-center pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+            <p className="text-xs text-ink-muted tabular-nums truncate px-6">
+              {open.filename}{files.length > 1 ? `  ·  ${openIndex + 1} / ${files.length}` : ''}
+            </p>
+          </div>
+
+          {/* Comments drawer (toggled) */}
+          {gallery.allowComments && showComments && (
+            <div className="absolute inset-x-0 bottom-0 z-10 max-h-[70svh] overflow-y-auto bg-surface border-t border-border rounded-t-xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:inset-x-auto sm:right-0 sm:top-14 sm:bottom-0 sm:w-96 sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-none" onClick={(e) => e.stopPropagation()}>
               <ItemComments slug={gallery.slug} fileId={open.id} />
-            </aside>
+            </div>
           )}
         </div>
       )}
@@ -606,34 +596,30 @@ export function ClientGallery({
   );
 }
 
-// Unified nav chip — a folder, favorites, or a list. Carries a count and an
-// optional icon; list chips also expose a hover delete.
-function Chip({ active, onClick, label, count, icon, onDelete }: {
+// Plain text tab — a folder, favorites, or a list. Active gets an accent
+// underline; list tabs reveal a delete affordance when active.
+function Tab({ active, onClick, label, count, onDelete }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
-  icon?: React.ReactNode;
   onDelete?: () => void;
 }) {
   return (
-    <span
-      className={`group/chip shrink-0 h-9 inline-flex items-center gap-1.5 rounded-md border pl-3 text-sm font-semibold whitespace-nowrap transition-colors ${onDelete ? 'pr-1.5' : 'pr-3'} ${
-        active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
-      }`}
-    >
-      <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 min-w-0 focus-visible:outline-none">
-        {icon && <span className="shrink-0">{icon}</span>}
+    <span className="group/tab shrink-0 inline-flex items-center">
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative inline-flex items-center gap-1.5 py-3.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+          active ? 'text-ink-strong' : 'text-ink-muted hover:text-ink-strong'
+        }`}
+      >
         <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
-        <span className={`shrink-0 tabular-nums text-xs ${active ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
+        <span className={`tabular-nums text-[11px] font-semibold ${active ? 'text-ink-muted' : 'text-ink-subtle'}`}>{count}</span>
+        {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />}
       </button>
-      {onDelete && (
-        <button
-          type="button"
-          onClick={onDelete}
-          aria-label="Delete list"
-          className={`h-5 w-5 inline-flex items-center justify-center rounded opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-negative'}`}
-        >
+      {onDelete && active && (
+        <button type="button" onClick={onDelete} aria-label="Delete list" className="ml-1 text-ink-subtle hover:text-negative">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
         </button>
       )}
@@ -828,17 +814,3 @@ function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
   );
 }
 
-function NavButton({ side, onClick }: { side: 'left' | 'right'; onClick: (e: React.MouseEvent) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={side === 'left' ? 'Previous' : 'Next'}
-      className={`absolute top-1/2 -translate-y-1/2 ${side === 'left' ? 'left-4' : 'right-4'} h-11 w-11 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20`}
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {side === 'left' ? <polyline points="15 18 9 12 15 6" /> : <polyline points="9 18 15 12 9 6" />}
-      </svg>
-    </button>
-  );
-}
