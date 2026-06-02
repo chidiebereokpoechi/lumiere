@@ -57,7 +57,7 @@ export default function LoginPage() {
             Sign in
           </h1>
           <p className="mt-2 text-sm text-ink-muted">
-            Access your photographer dashboard.
+            Access your creator dashboard.
           </p>
 
           <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>

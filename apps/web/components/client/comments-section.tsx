@@ -58,7 +58,7 @@ export function CommentsSection({ slug, initialComments }: { slug: string; initi
 
         {posted ? (
           <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm text-ink-muted">
-            Thanks — your comment was submitted and will appear once the photographer approves it.
+            Thanks — your comment was submitted and will appear once the creator approves it.
           </p>
         ) : (
           <form onSubmit={onSubmit} className="space-y-3">

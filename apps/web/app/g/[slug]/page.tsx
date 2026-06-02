@@ -28,7 +28,7 @@ export default async function ClientGalleryPage({ params }: Props) {
         <div className="max-w-sm">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-ink-muted">{access.gallery.title}</p>
           <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-strong">This gallery has expired</h1>
-          <p className="mt-2 text-sm text-ink-muted">Reach out to your photographer to restore access.</p>
+          <p className="mt-2 text-sm text-ink-muted">Reach out to the creator to restore access.</p>
         </div>
       </main>
     );

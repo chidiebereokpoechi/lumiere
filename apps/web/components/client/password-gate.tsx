@@ -41,7 +41,7 @@ export function PasswordGate({ slug, title }: { slug: string; title: string }) {
         <form onSubmit={onSubmit} className="mt-8 rounded-xl bg-surface border border-border p-8 space-y-5">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-ink-strong">Private gallery</h1>
-            <p className="mt-2 text-sm text-ink-muted">Enter the password your photographer shared.</p>
+            <p className="mt-2 text-sm text-ink-muted">Enter the password the creator shared.</p>
           </div>
           <input
             type="password"

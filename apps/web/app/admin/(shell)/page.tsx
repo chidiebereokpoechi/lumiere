@@ -13,7 +13,7 @@ export default async function AdminGalleriesPage() {
         title="Galleries"
         subtitle={
           galleries.length === 0
-            ? 'Start delivering photos to your clients.'
+            ? 'Start delivering your work to clients.'
             : `${galleries.length} ${galleries.length === 1 ? 'gallery' : 'galleries'}`
         }
         user={{ name: me.name, email: me.email }}
@@ -128,8 +128,8 @@ function EmptyState() {
         Create your first gallery
       </h2>
       <p className="mt-3 text-sm text-ink-muted leading-relaxed">
-        Galleries hold photos and attachments and ship to your clients via a
-        password-protected link.
+        Galleries hold photos, video, audio and files, delivered to your
+        clients via a password-protected link.
       </p>
       <div className="mt-6 flex">
         <NewGalleryButton />
