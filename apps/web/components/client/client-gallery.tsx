@@ -339,7 +339,7 @@ export function ClientGallery({
           <button
             type="button"
             onClick={() => requireEmail(async () => { const name = window.prompt('Name your list'); if (name?.trim()) await createList(name.trim()); })}
-            className="shrink-0 inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 py-2 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
+            className="shrink-0 h-9 inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             List
@@ -618,14 +618,14 @@ function Chip({ active, onClick, label, count, icon, onDelete }: {
 }) {
   return (
     <span
-      className={`group/chip inline-flex items-center gap-1.5 rounded-md border pl-3 text-sm font-semibold transition-colors ${onDelete ? 'pr-1.5' : 'pr-3'} py-1.5 ${
+      className={`group/chip shrink-0 h-9 inline-flex items-center gap-1.5 rounded-md border pl-3 text-sm font-semibold whitespace-nowrap transition-colors ${onDelete ? 'pr-1.5' : 'pr-3'} ${
         active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
       }`}
     >
-      <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 focus-visible:outline-none">
-        {icon}
-        {label}
-        <span className={`tabular-nums text-xs ${active ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
+      <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 min-w-0 focus-visible:outline-none">
+        {icon && <span className="shrink-0">{icon}</span>}
+        <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
+        <span className={`shrink-0 tabular-nums text-xs ${active ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
       </button>
       {onDelete && (
         <button
