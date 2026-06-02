@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { eq, and, asc, ne, inArray } from 'drizzle-orm';
+import { eq, and, asc, ne, inArray, max } from 'drizzle-orm';
 import { Readable } from 'node:stream';
 import {
   FileMoveInput, FileReorderInput, FilePatchInput,
@@ -51,6 +51,16 @@ async function ownedGallery(galleryId: string, photographerId: string) {
   });
 }
 
+// Next free position in a folder, so new uploads append at the end in upload
+// order (rather than all defaulting to 0 and shuffling to the front).
+async function nextPosition(galleryId: string, folderId: string): Promise<number> {
+  const rows = await db
+    .select({ m: max(files.position) })
+    .from(files)
+    .where(and(eq(files.galleryId, galleryId), eq(files.folderId, folderId)));
+  return (rows[0]?.m ?? -1) + 1;
+}
+
 export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files' })
   .use(authContext)
 
@@ -92,10 +102,12 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
     const list: File[] = Array.isArray(incoming) ? incoming : [incoming];
 
     const batchId = newId();
+    // Append in upload order: each accepted file takes the next position.
+    let pos = await nextPosition(gallery.id, folderId);
     const fileIds: string[] = [];
     const rejections: { filename: string; reason: string }[] = [];
     const images: { fileId: string; filename: string; mime: SupportedMime; bytes: Uint8Array }[] = [];
-    const others: { fileId: string; filename: string; file: File }[] = [];
+    const others: { fileId: string; filename: string; file: File; position: number }[] = [];
 
     for (const file of list) {
       const filename = file.name || 'upload';
@@ -113,12 +125,12 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
         await db.insert(files).values({
           id: fileId, galleryId: gallery.id, folderId, type: 'image',
           filenameOriginal: filename, mimeType: imgMime, fileSize: bytes.byteLength,
-          uploadStatus: 'processing', createdAt: now(),
+          uploadStatus: 'processing', position: pos++, createdAt: now(),
         });
       } else {
         if (file.size > MAX_FILE_BYTES) { rejections.push({ filename, reason: 'too_large' }); continue; }
         fileIds.push(fileId);
-        others.push({ fileId, filename, file });
+        others.push({ fileId, filename, file, position: pos++ });
       }
     }
 
@@ -162,7 +174,7 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
         await db.insert(files).values({
           id: o.fileId, galleryId: gallery.id, folderId, type: kindForMime(mime),
           filenameOriginal: o.filename, mimeType: mime, fileSize: bytes || o.file.size,
-          s3KeyOriginal: key, uploadStatus: 'ready', createdAt: now(),
+          s3KeyOriginal: key, uploadStatus: 'ready', position: o.position, createdAt: now(),
         });
         emit(batchId, { type: 'ready', photoId: o.fileId, filename: o.filename });
       } catch (err) {
@@ -214,7 +226,8 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
     await db.insert(files).values({
       id: fileId, galleryId: gallery.id, folderId, type,
       filenameOriginal: filename, mimeType: mime, fileSize: size,
-      s3KeyOriginal: key, s3UploadId: uploadId, uploadStatus: 'uploading', createdAt: now(),
+      s3KeyOriginal: key, s3UploadId: uploadId, uploadStatus: 'uploading',
+      position: await nextPosition(gallery.id, folderId), createdAt: now(),
     });
 
     return { fileId, key, uploadId, partSize: partSizeFor(size) };

@@ -73,18 +73,18 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     }
   }, [refreshFiles]);
 
+  // After bytes are uploaded the placeholder is dropped and the real (processing)
+  // row takes its slot; these events just refresh it in place to ready/error.
   const watchBatch = useCallback((batchId: string, key: string) => {
     const es = new EventSource(`/events?batch=${batchId}`);
     es.onmessage = (ev) => {
       let data: JobEvent;
       try { data = JSON.parse(ev.data); } catch { return; }
-      if (data.type === 'processing') updateTile(key, { status: 'processing' });
-      else if (data.type === 'ready') updateTile(key, { status: 'ready' });
-      else if (data.type === 'error') updateTile(key, { status: 'error', reason: data.reason });
+      if (data.type === 'ready' || data.type === 'error') void refreshFiles();
       else if (data.type === 'done') { es.close(); settle(key); }
     };
     es.onerror = () => { es.close(); settle(key); };
-  }, [updateTile, settle]);
+  }, [refreshFiles, settle]);
 
   const uploadOne = useCallback((file: File, key: string, token: string, folderId: string) => {
     return new Promise<void>((resolve) => {
@@ -100,7 +100,10 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
       };
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          updateTile(key, { status: 'processing', progress: 100 });
+          // Bytes are in; the server row now exists (processing/ready) at its end
+          // position. Drop the placeholder and let the real tile show in place.
+          setTiles((prev) => prev.filter((t) => t.key !== key));
+          void refreshFiles();
           let batchId = '';
           try { batchId = JSON.parse(xhr.responseText).batchId; } catch { /* ignore */ }
           if (batchId) watchBatch(batchId, key); else settle(key);
@@ -114,7 +117,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
       xhr.onerror = () => { updateTile(key, { status: 'error', reason: 'network error' }); setError('Network error during upload'); settle(key); resolve(); };
       xhr.send(form);
     });
-  }, [galleryId, updateTile, watchBatch, settle]);
+  }, [galleryId, updateTile, watchBatch, settle, refreshFiles]);
 
   const upload = useCallback(async (fileList: FileList | File[], folderId: string) => {
     const arr = Array.from(fileList);
@@ -131,7 +134,9 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
       if (s.file.size > MULTIPART_THRESHOLD) {
         try {
           await uploadMultipart({ galleryId, folderId, file: s.file, onProgress: (p) => updateTile(s.key, { status: 'uploading', progress: p }) });
-          updateTile(s.key, { status: 'ready', progress: 100 });
+          // Hand off to the real row (processing for images, ready otherwise).
+          setTiles((prev) => prev.filter((t) => t.key !== s.key));
+          void refreshFiles();
         } catch (err) {
           updateTile(s.key, { status: 'error', reason: err instanceof Error ? err.message : 'failed' });
           setError('Upload failed');
@@ -151,7 +156,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
         while (i < seeded.length) await one(seeded[i++]!);
       }),
     );
-  }, [galleryId, uploadOne, updateTile, settle]);
+  }, [galleryId, uploadOne, updateTile, settle, refreshFiles]);
 
   // ---- folders ---------------------------------------------------------
   async function createFolder() {
@@ -541,22 +546,6 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
           <p className="text-sm text-ink-muted">This folder is empty. Drop media here or use Upload.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {tiles.map((t) => (
-              <div key={t.key} className="relative aspect-square rounded-lg border border-border bg-surface-sunken flex flex-col items-center justify-center gap-2 p-3 text-center overflow-hidden">
-                {t.status === 'error' ? (
-                  <span className="text-xs font-semibold text-negative px-1">Failed{t.reason ? `: ${t.reason}` : ''}</span>
-                ) : t.status === 'uploading' ? (
-                  <>
-                    <span className="text-sm font-bold tabular-nums text-ink-strong">{t.progress}%</span>
-                    <div className="w-4/5 h-1.5 rounded-pill bg-surface overflow-hidden"><div className="h-full bg-accent transition-[width] duration-150" style={{ width: `${t.progress}%` }} /></div>
-                  </>
-                ) : (
-                  <><Spinner /><span className="text-xs text-ink-muted">Processing…</span></>
-                )}
-                <span className="text-[11px] text-ink-subtle truncate max-w-full">{t.filename}</span>
-              </div>
-            ))}
-
             {order.map((id) => {
               const file = fileById.get(id);
               if (!file) return null;
@@ -579,6 +568,24 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
                 />
               );
             })}
+
+            {/* Upload placeholders sit at the end (upload order) — the same slot
+                the processed file lands in, so nothing jumps. */}
+            {tiles.map((t) => (
+              <div key={t.key} className="relative aspect-square rounded-lg border border-border bg-surface-sunken flex flex-col items-center justify-center gap-2 p-3 text-center overflow-hidden">
+                {t.status === 'error' ? (
+                  <span className="text-xs font-semibold text-negative px-1">Failed{t.reason ? `: ${t.reason}` : ''}</span>
+                ) : t.status === 'uploading' ? (
+                  <>
+                    <span className="text-sm font-bold tabular-nums text-ink-strong">{t.progress}%</span>
+                    <div className="w-4/5 h-1.5 rounded-pill bg-surface overflow-hidden"><div className="h-full bg-accent transition-[width] duration-150" style={{ width: `${t.progress}%` }} /></div>
+                  </>
+                ) : (
+                  <><Spinner /><span className="text-xs text-ink-muted">Processing…</span></>
+                )}
+                <span className="text-[11px] text-ink-subtle truncate max-w-full">{t.filename}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
