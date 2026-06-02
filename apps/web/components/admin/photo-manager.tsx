@@ -11,11 +11,12 @@ interface Props {
   initialCoverPhotoId: string | null;
 }
 
-type UploadState = 'uploading' | 'queued' | 'processing' | 'ready' | 'error';
+type UploadState = 'uploading' | 'processing' | 'ready' | 'error';
 interface UploadTile {
   key: string;
   filename: string;
   status: UploadState;
+  progress: number; // 0–100, bytes uploaded
   reason?: string;
 }
 
@@ -24,35 +25,15 @@ interface JobEvent {
   photoId?: string;
   filename?: string;
   reason?: string;
-  uploaded?: number;
-  failed?: number;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
 
-// Keep each upload request well under the server body limit (256MB) and bound
-// server-side memory — the photo route buffers every file in the request.
-const CHUNK_BYTES = 80 * 1024 * 1024;
-const CHUNK_COUNT = 20;
-
-// Greedily pack files into batches that stay under both the byte and count
-// caps. A single file larger than CHUNK_BYTES still goes out alone (the server
-// enforces the per-file size limit and will reject it cleanly).
-function chunkFiles(files: File[]): File[][] {
-  const chunks: File[][] = [];
-  let current: File[] = [];
-  let bytes = 0;
-  for (const f of files) {
-    if (current.length > 0 && (bytes + f.size > CHUNK_BYTES || current.length >= CHUNK_COUNT)) {
-      chunks.push(current);
-      current = [];
-      bytes = 0;
-    }
-    current.push(f);
-    bytes += f.size;
-  }
-  if (current.length > 0) chunks.push(current);
-  return chunks;
+async function getCsrfToken(): Promise<string> {
+  const m = document.cookie.match(/(?:^|; )lumiere_csrf=([^;]+)/);
+  if (m) return decodeURIComponent(m[1]!);
+  const { token } = await apiClient<{ token: string }>('/api/auth/csrf');
+  return token;
 }
 
 export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: Props) {
@@ -64,7 +45,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pendingBatches = useRef(0);
+  const inflight = useRef(0);
 
   const refreshPhotos = useCallback(async () => {
     try {
@@ -75,82 +56,102 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
     }
   }, [galleryId, router]);
 
+  const updateTile = useCallback((key: string, patch: Partial<UploadTile>) => {
+    setTiles((prev) => prev.map((t) => (t.key === key ? { ...t, ...patch } : t)));
+  }, []);
+
+  // One file fully accounted for (processing finished or upload failed). When
+  // the last one settles, reconcile with the server and drop the tiles.
+  const settle = useCallback((key: string) => {
+    inflight.current -= 1;
+    void refreshPhotos();
+    if (inflight.current <= 0) {
+      window.setTimeout(() => setTiles((prev) => prev.filter((t) => t.status === 'error')), 800);
+    }
+    void key;
+  }, [refreshPhotos]);
+
+  // Watch a single-file batch's processing through the SSE stream.
+  const watchBatch = useCallback((batchId: string, key: string) => {
+    const es = new EventSource(`/events?batch=${batchId}`);
+    es.onmessage = (ev) => {
+      let data: JobEvent;
+      try { data = JSON.parse(ev.data); } catch { return; }
+      if (data.type === 'processing') updateTile(key, { status: 'processing' });
+      else if (data.type === 'ready') updateTile(key, { status: 'ready' });
+      else if (data.type === 'error') updateTile(key, { status: 'error', reason: data.reason });
+      else if (data.type === 'done') { es.close(); settle(key); }
+    };
+    es.onerror = () => { es.close(); settle(key); };
+  }, [updateTile, settle]);
+
+  // POST a single file, reporting byte progress via XHR. Resolves once the
+  // request completes (success kicks off background processing via SSE).
+  const uploadOne = useCallback((file: File, key: string, token: string) => {
+    return new Promise<void>((resolve) => {
+      const form = new FormData();
+      form.append('files', file);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `/api/galleries/${galleryId}/photos`);
+      xhr.withCredentials = true;
+      xhr.setRequestHeader('X-CSRF-Token', token);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) updateTile(key, { status: 'uploading', progress: Math.round((e.loaded / e.total) * 100) });
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          updateTile(key, { status: 'processing', progress: 100 });
+          let batchId = '';
+          try { batchId = JSON.parse(xhr.responseText).batchId; } catch { /* ignore */ }
+          if (batchId) watchBatch(batchId, key);
+          else settle(key);
+        } else {
+          updateTile(key, { status: 'error', reason: `HTTP ${xhr.status}` });
+          setError(`Upload failed (${xhr.status})`);
+          settle(key);
+        }
+        resolve();
+      };
+      xhr.onerror = () => {
+        updateTile(key, { status: 'error', reason: 'network error' });
+        setError('Network error during upload');
+        settle(key);
+        resolve();
+      };
+      xhr.send(form);
+    });
+  }, [galleryId, updateTile, watchBatch, settle]);
+
   const upload = useCallback(async (fileList: FileList | File[]) => {
     const files = Array.from(fileList).filter((f) => ACCEPT.includes(f.type));
     if (files.length === 0) return;
     setError(null);
 
-    // Seed a tile per file so the user sees immediate feedback before the
-    // server responds; SSE events update each tile's status by filename.
-    const seeded: UploadTile[] = files.map((f, i) => ({
+    const seeded = files.map((f, i) => ({
       key: `${Date.now()}-${i}-${f.name}`,
-      filename: f.name,
-      status: 'uploading',
+      file: f,
     }));
-    setTiles((prev) => [...seeded, ...prev]);
+    setTiles((prev) => [
+      ...seeded.map((s) => ({ key: s.key, filename: s.file.name, status: 'uploading' as UploadState, progress: 0 })),
+      ...prev,
+    ]);
+    inflight.current += seeded.length;
 
-    // Split into batches that stay under the request-body limit. Each batch is
-    // an independent POST + SSE stream; tiles only clear once every batch ends.
-    const chunks = chunkFiles(files);
-    pendingBatches.current += chunks.length;
-
-    const finishBatch = () => {
-      pendingBatches.current -= 1;
-      void refreshPhotos();
-      if (pendingBatches.current <= 0) setTiles([]);
-    };
-
-    for (const chunk of chunks) {
-      const chunkNames = new Set(chunk.map((f) => f.name));
-      const form = new FormData();
-      for (const f of chunk) form.append('files', f);
-
-      let batchId: string;
-      try {
-        const res = await apiClientMutation<{ batchId: string; photoIds: string[] }>(
-          `/api/galleries/${galleryId}/photos`,
-          { method: 'POST', body: form },
-        );
-        batchId = res.batchId;
-      } catch (err) {
-        setError(err instanceof ApiError ? `Upload failed (${err.status})` : 'Network error during upload');
-        setTiles((prev) => prev.map((t) => (chunkNames.has(t.filename) && t.status === 'uploading' ? { ...t, status: 'error' } : t)));
-        pendingBatches.current -= 1;
-        if (pendingBatches.current <= 0) void refreshPhotos();
-        continue;
-      }
-
-      // Stream processing progress for this batch. Match events to seeded tiles
-      // by filename; first matching tile that isn't terminal wins.
-      const es = new EventSource(`/events?batch=${batchId}`);
-      es.onmessage = (ev) => {
-        let data: JobEvent;
-        try { data = JSON.parse(ev.data); } catch { return; }
-
-        if (data.type === 'done') {
-          es.close();
-          finishBatch();
-          return;
-        }
-        if (!data.filename) return;
-        const next: UploadState | null =
-          data.type === 'queued' ? 'queued'
-          : data.type === 'processing' ? 'processing'
-          : data.type === 'ready' ? 'ready'
-          : data.type === 'error' ? 'error' : null;
-        if (!next) return;
-        setTiles((prev) => {
-          const idx = prev.findIndex((t) => t.filename === data.filename && t.status !== 'ready' && t.status !== 'error');
-          const current = prev[idx];
-          if (!current) return prev;
-          const copy = [...prev];
-          copy[idx] = { ...current, status: next, reason: data.reason };
-          return copy;
-        });
-      };
-      es.onerror = () => { es.close(); finishBatch(); };
+    let token: string;
+    try {
+      token = await getCsrfToken();
+    } catch {
+      setError('Could not start upload (auth).');
+      seeded.forEach((s) => { updateTile(s.key, { status: 'error', reason: 'auth' }); settle(s.key); });
+      return;
     }
-  }, [galleryId, refreshPhotos]);
+
+    // One file at a time: the next upload starts only after the previous
+    // request finishes sending. Processing runs in the background per file.
+    for (const s of seeded) {
+      await uploadOne(s.file, s.key, token);
+    }
+  }, [uploadOne, updateTile, settle]);
 
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -227,19 +228,28 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
         />
       </div>
 
+      {tiles.length > 0 && <UploadSummary tiles={tiles} />}
+
       {isEmpty ? (
         <p className="text-sm text-ink-muted">No photos yet. Upload some to get started.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {/* In-flight upload tiles */}
           {tiles.map((t) => (
-            <div key={t.key} className="relative aspect-square rounded-lg border border-border bg-surface-sunken flex flex-col items-center justify-center gap-2 p-3 text-center">
+            <div key={t.key} className="relative aspect-square rounded-lg border border-border bg-surface-sunken flex flex-col items-center justify-center gap-2 p-3 text-center overflow-hidden">
               {t.status === 'error' ? (
-                <span className="text-xs font-semibold text-negative">Failed{t.reason ? `: ${t.reason}` : ''}</span>
+                <span className="text-xs font-semibold text-negative px-1">Failed{t.reason ? `: ${t.reason}` : ''}</span>
+              ) : t.status === 'uploading' ? (
+                <>
+                  <span className="text-sm font-bold tabular-nums text-ink-strong">{t.progress}%</span>
+                  <div className="w-4/5 h-1.5 rounded-pill bg-surface overflow-hidden">
+                    <div className="h-full bg-accent transition-[width] duration-150" style={{ width: `${t.progress}%` }} />
+                  </div>
+                </>
               ) : (
                 <>
                   <Spinner />
-                  <span className="text-xs text-ink-muted capitalize">{t.status}</span>
+                  <span className="text-xs text-ink-muted">Processing…</span>
                 </>
               )}
               <span className="text-[11px] text-ink-subtle truncate max-w-full">{t.filename}</span>
@@ -260,6 +270,29 @@ export function PhotoManager({ galleryId, initialPhotos, initialCoverPhotoId }: 
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
+  const total = tiles.length;
+  const ready = tiles.filter((t) => t.status === 'ready').length;
+  const failed = tiles.filter((t) => t.status === 'error').length;
+  const done = ready + failed;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4 space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-semibold text-ink-strong">
+          Uploading {total} photo{total !== 1 ? 's' : ''} — one at a time
+        </span>
+        <span className="tabular-nums text-ink-muted">
+          {done}/{total}{failed ? ` · ${failed} failed` : ''}
+        </span>
+      </div>
+      <div className="h-2 rounded-pill bg-surface-sunken overflow-hidden">
+        <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
