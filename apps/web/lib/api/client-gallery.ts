@@ -68,6 +68,7 @@ export function fetchFavorites(slug: string) {
 
 export interface ClientAttachment {
   id: string;
+  folderId: string | null;
   filename: string;
   mimeType: string | null;
   fileSize: number | null;

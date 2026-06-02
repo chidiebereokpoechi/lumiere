@@ -22,6 +22,18 @@ function formatBytes(n: number | null): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+type MediaKind = 'video' | 'audio' | 'file';
+function mediaKind(mime: string | null): MediaKind {
+  if (mime?.startsWith('video/')) return 'video';
+  if (mime?.startsWith('audio/')) return 'audio';
+  return 'file';
+}
+
+// A single ordered stream of mixed media for the grid.
+type GridItem =
+  | { key: string; pos: number; kind: 'photo'; photo: ClientPhoto; index: number }
+  | { key: string; pos: number; kind: MediaKind; att: ClientAttachment };
+
 export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavorites, attachments, comments }: Props) {
   const [open, setOpen] = useState<number | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -34,6 +46,21 @@ export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavo
     if (favsOnly) list = list.filter((p) => favorites.has(p.id));
     return list;
   }, [allPhotos, folder, favsOnly, favorites]);
+
+  // Merge photos + media attachments into one position-ordered stream so video,
+  // audio, images and files appear inline with each other.
+  const items = useMemo<GridItem[]>(() => {
+    const out: GridItem[] = photos.map((p, index) => ({
+      key: `p:${p.id}`, pos: p.position ?? 0, kind: 'photo', photo: p, index,
+    }));
+    if (!favsOnly) {
+      const atts = folder === null ? attachments : attachments.filter((a) => a.folderId === folder);
+      for (const a of atts) {
+        out.push({ key: `a:${a.id}`, pos: a.position ?? 0, kind: mediaKind(a.mimeType), att: a });
+      }
+    }
+    return out.sort((x, y) => x.pos - y.pos);
+  }, [photos, attachments, folder, favsOnly]);
 
   const canDownload = gallery.allowDownload && gallery.downloadMode !== 'none';
   const canFavorite = gallery.allowFavorites;
@@ -177,105 +204,98 @@ export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavo
         </div>
       )}
 
-      {/* Grid */}
+      {/* Mixed-media grid: photos, video, audio and files inline */}
       <section className="px-4 sm:px-8 py-6">
-        {photos.length === 0 ? (
-          <p className="text-center text-sm text-ink-muted py-16">No photos in this gallery yet.</p>
+        {items.length === 0 ? (
+          <p className="text-center text-sm text-ink-muted py-16">Nothing in this gallery yet.</p>
         ) : (
           <div className="columns-2 sm:columns-3 lg:columns-4 gap-2">
-            {photos.map((p, i) => {
-              const isSelected = selected.has(p.id);
-              const ratio = p.width && p.height ? p.height / p.width : undefined;
+            {items.map((it) => {
+              if (it.kind === 'photo') {
+                const p = it.photo;
+                const isSelected = selected.has(p.id);
+                const ratio = p.width && p.height ? `${p.width} / ${p.height}` : undefined;
+                return (
+                  <div key={it.key} className="group relative mb-2 break-inside-avoid overflow-hidden rounded-md bg-surface-sunken">
+                    <button type="button" onClick={() => setOpen(it.index)} className="block w-full focus-visible:outline-none">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.thumbUrl}
+                        alt=""
+                        loading="lazy"
+                        style={ratio ? { aspectRatio: ratio } : undefined}
+                        className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? 'brightness-90' : ''}`}
+                      />
+                    </button>
+                    {canDownload && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSelect(p.id)}
+                        aria-pressed={isSelected}
+                        aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
+                        className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+                          isSelected ? 'bg-accent border-accent text-accent-ink opacity-100' : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'
+                        }`}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </button>
+                    )}
+                    {canFavorite && (
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(p.id)}
+                        aria-pressed={favorites.has(p.id)}
+                        aria-label={favorites.has(p.id) ? 'Remove favorite' : 'Add favorite'}
+                        className={`absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-full transition-all ${
+                          favorites.has(p.id) ? 'bg-white/90 text-accent-dark opacity-100' : 'bg-black/30 text-white opacity-0 group-hover:opacity-100 hover:bg-black/50'
+                        }`}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill={favorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
+                      </button>
+                    )}
+                    {isSelected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-md" />}
+                  </div>
+                );
+              }
+
+              const a = it.att;
+              const streamUrl = `/api/gallery/${gallery.slug}/attachments/${a.id}/stream`;
+              const downloadUrl = `/api/gallery/${gallery.slug}/attachments/${a.id}/download`;
+
+              if (it.kind === 'video') {
+                return (
+                  <div key={it.key} className="mb-2 break-inside-avoid overflow-hidden rounded-md bg-black">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video controls preload="metadata" src={streamUrl} className="block w-full h-auto" />
+                  </div>
+                );
+              }
+              if (it.kind === 'audio') {
+                return (
+                  <div key={it.key} className="mb-2 break-inside-avoid rounded-md border border-border bg-surface p-3">
+                    <p className="text-xs font-semibold text-ink-strong truncate mb-2">{a.filename}</p>
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <audio controls preload="metadata" src={streamUrl} className="w-full" />
+                  </div>
+                );
+              }
+              // generic file → download card
               return (
-                <div key={p.id} className="group relative mb-2 break-inside-avoid overflow-hidden rounded-md bg-surface-sunken">
-                  <button type="button" onClick={() => setOpen(i)} className="block w-full focus-visible:outline-none">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.thumbUrl}
-                      alt=""
-                      loading="lazy"
-                      // Reserve space from known dimensions so the masonry doesn't
-                      // reflow as images load.
-                      style={ratio ? { aspectRatio: `${p.width} / ${p.height}` } : undefined}
-                      className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? 'brightness-90' : ''}`}
-                    />
-                  </button>
-
-                  {canDownload && (
-                    <button
-                      type="button"
-                      onClick={() => toggleSelect(p.id)}
-                      aria-pressed={isSelected}
-                      aria-label={isSelected ? 'Deselect photo' : 'Select photo'}
-                      className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
-                        isSelected
-                          ? 'bg-accent border-accent text-accent-ink opacity-100'
-                          : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'
-                      }`}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </button>
-                  )}
-
-                  {canFavorite && (
-                    <button
-                      type="button"
-                      onClick={() => toggleFavorite(p.id)}
-                      aria-pressed={favorites.has(p.id)}
-                      aria-label={favorites.has(p.id) ? 'Remove favorite' : 'Add favorite'}
-                      className={`absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-full transition-all ${
-                        favorites.has(p.id)
-                          ? 'bg-white/90 text-accent-dark opacity-100'
-                          : 'bg-black/30 text-white opacity-0 group-hover:opacity-100 hover:bg-black/50'
-                      }`}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill={favorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" />
-                      </svg>
-                    </button>
-                  )}
-
-                  {isSelected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-md" />}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Files / attachments */}
-      {attachments.length > 0 && (
-        <section className="px-4 sm:px-8 pb-10">
-          <h2 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted mb-4">Files</h2>
-          <ul className="space-y-2 max-w-2xl">
-            {attachments.map((a) => (
-              <li key={a.id}>
-                <a
-                  href={`/api/gallery/${gallery.slug}/attachments/${a.id}/download`}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 hover:border-border-strong transition-colors"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-subtle shrink-0">
+                <a key={it.key} href={downloadUrl} className="mb-2 break-inside-avoid flex items-center gap-3 rounded-md border border-border bg-surface p-4 hover:border-border-strong transition-colors">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-subtle shrink-0">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-semibold text-ink-strong truncate">{a.filename}</span>
-                    {a.description && <span className="block text-xs text-ink-muted truncate">{a.description}</span>}
+                    <span className="block text-xs text-ink-subtle">{formatBytes(a.fileSize)}</span>
                   </span>
-                  <span className="text-xs tabular-nums text-ink-subtle shrink-0">{formatBytes(a.fileSize)}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted shrink-0">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
                 </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Comments */}
       {gallery.allowComments && <CommentsSection slug={gallery.slug} initialComments={comments} />}
