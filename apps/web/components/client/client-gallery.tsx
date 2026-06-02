@@ -2,16 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import type { ClientFolder, ClientPhoto, MinimalGallery } from '@/lib/api/client-gallery';
+import type { ClientAttachment, ClientFolder, ClientPhoto, MinimalGallery } from '@/lib/api/client-gallery';
 
 interface Props {
   gallery: MinimalGallery;
   photos: ClientPhoto[];
   folders: ClientFolder[];
   initialFavorites: string[];
+  attachments: ClientAttachment[];
 }
 
-export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavorites }: Props) {
+function formatBytes(n: number | null): string {
+  if (!n) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavorites, attachments }: Props) {
   const [open, setOpen] = useState<number | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [favorites, setFavorites] = useState<Set<string>>(new Set(initialFavorites));
@@ -229,6 +237,38 @@ export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavo
           </div>
         )}
       </section>
+
+      {/* Files / attachments */}
+      {attachments.length > 0 && (
+        <section className="px-4 sm:px-8 pb-10">
+          <h2 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted mb-4">Files</h2>
+          <ul className="space-y-2 max-w-2xl">
+            {attachments.map((a) => (
+              <li key={a.id}>
+                <a
+                  href={`/api/gallery/${gallery.slug}/attachments/${a.id}/download`}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 hover:border-border-strong transition-colors"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-subtle shrink-0">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-ink-strong truncate">{a.filename}</span>
+                    {a.description && <span className="block text-xs text-ink-muted truncate">{a.description}</span>}
+                  </span>
+                  <span className="text-xs tabular-nums text-ink-subtle shrink-0">{formatBytes(a.fileSize)}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted shrink-0">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Selection action bar */}
       {canDownload && selected.size > 0 && (

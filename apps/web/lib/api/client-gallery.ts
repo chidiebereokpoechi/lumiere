@@ -64,3 +64,16 @@ export interface FavoritesResponse {
 export function fetchFavorites(slug: string) {
   return apiServer<FavoritesResponse>(`/api/gallery/${slug}/favorites`);
 }
+
+export interface ClientAttachment {
+  id: string;
+  filename: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  description: string | null;
+  position: number | null;
+}
+
+export function fetchClientAttachments(slug: string) {
+  return apiServer<{ attachments: ClientAttachment[] }>(`/api/gallery/${slug}/attachments`);
+}
