@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { eq, and, asc } from 'drizzle-orm';
 import { Readable } from 'node:stream';
 import { db } from '../../db';
-import { galleries, files, favorites, downloads } from '../../db/schema';
+import { galleries, files, favorites, downloads, galleryFolders } from '../../db/schema';
 import { authContext } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
@@ -116,7 +116,8 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     if (!resolved.ok) { set.status = resolved.status; return { error: resolved.error }; }
 
     await db.insert(downloads).values({
-      id: newId(), galleryId: gallery.id, fileId: file.id, clientIp: clientIp ?? null, createdAt: now(),
+      id: newId(), galleryId: gallery.id, fileId: file.id, clientIp: clientIp ?? null,
+      clientEmail: gallerySession?.clientEmail ?? null, createdAt: now(),
     });
 
     const isOwner = currentPhotographer && gallery.photographerId === currentPhotographer.id;
@@ -141,7 +142,7 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     const selectedIds = query.ids
       ? new Set(query.ids.split(',').map((s) => s.trim()).filter(Boolean))
       : null;
-    const scope = selectedIds ? 'selected' : (query.scope ?? 'all');
+    const scope = selectedIds ? 'selected' : query.folderId ? 'folder' : (query.scope ?? 'all');
 
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) { set.status = 404; return { error: 'not_found' }; }
@@ -151,6 +152,15 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     }
 
     const isAdmin = currentPhotographer && gallery.photographerId === currentPhotographer.id;
+
+    // Folder download: validate ownership; non-admins can't grab a hidden folder.
+    let folderName: string | null = null;
+    if (query.folderId) {
+      const folder = await db.query.galleryFolders.findFirst({ where: eq(galleryFolders.id, query.folderId) });
+      if (!folder || folder.galleryId !== gallery.id) { set.status = 404; return { error: 'folder_not_found' }; }
+      if (!isAdmin && folder.hidden) { set.status = 404; return { error: 'folder_not_found' }; }
+      folderName = folder.name;
+    }
     if (!isAdmin && !checkRateLimit(`zip:${gallery.id}`, clientIp ?? 'unknown', 3, 3600)) {
       set.status = 429;
       return { error: 'too_many_zip_downloads' };
@@ -170,6 +180,8 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       fileRows = fileRows.filter((f) => favIds.has(f.id));
     } else if (selectedIds) {
       fileRows = fileRows.filter((f) => selectedIds.has(f.id));
+    } else if (query.folderId) {
+      fileRows = fileRows.filter((f) => f.folderId === query.folderId);
     }
 
     if (fileRows.length === 0) { set.status = 404; return { error: 'no_files_in_scope' }; }
@@ -183,7 +195,8 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     if (entries.length === 0) { set.status = 403; return { error: 'no_downloadable_files' }; }
 
     await db.insert(downloads).values({
-      id: newId(), galleryId: gallery.id, fileId: null, clientIp: clientIp ?? null, createdAt: now(),
+      id: newId(), galleryId: gallery.id, fileId: null, clientIp: clientIp ?? null,
+      clientEmail: gallerySession?.clientEmail ?? null, createdAt: now(),
     });
 
     if (!isAdmin && checkRateLimit('email:download', `${gallery.id}:${clientIp ?? 'unknown'}`, 1, 3600)) {
@@ -194,7 +207,10 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     }
 
     const { archive } = buildZipStream(entries);
-    const suffix = scope === 'favorites' ? '-favorites' : scope === 'selected' ? '-selected' : '';
+    const suffix = scope === 'favorites' ? '-favorites'
+      : scope === 'selected' ? '-selected'
+      : scope === 'folder' ? `-${slugify(folderName ?? 'folder')}`
+      : '';
     const zipName = `${slugify(gallery.title) || 'gallery'}${suffix}.zip`;
     log.info('download.zip', { galleryId: gallery.id, scope, count: entries.length });
 
@@ -212,5 +228,6 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     query: t.Object({
       scope: t.Optional(t.Union([t.Literal('all'), t.Literal('favorites'), t.Literal('selected')])),
       ids: t.Optional(t.String()),
+      folderId: t.Optional(t.String()),
     }),
   });
