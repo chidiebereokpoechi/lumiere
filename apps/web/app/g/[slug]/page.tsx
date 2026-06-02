@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { fetchAccess, fetchClientPhotos } from '@/lib/api/client-gallery';
+import { fetchAccess, fetchClientPhotos, fetchFavorites } from '@/lib/api/client-gallery';
 import { ApiError } from '@/lib/api-client';
 import { PasswordGate } from '@/components/client/password-gate';
 import { ClientGallery } from '@/components/client/client-gallery';
@@ -37,7 +37,17 @@ export default async function ClientGalleryPage({ params }: Props) {
     return <PasswordGate slug={slug} title={access.gallery.title} />;
   }
 
-  // Unlocked / public — load photos.
-  const { gallery, photos, folders } = await fetchClientPhotos(slug);
-  return <ClientGallery gallery={gallery} photos={photos} folders={folders} />;
+  // Unlocked / public — load photos + this session's favorites.
+  const [{ gallery, photos, folders }, favs] = await Promise.all([
+    fetchClientPhotos(slug),
+    fetchFavorites(slug).catch(() => ({ favorites: [] })),
+  ]);
+  return (
+    <ClientGallery
+      gallery={gallery}
+      photos={photos}
+      folders={folders}
+      initialFavorites={favs.favorites.map((f) => f.photoId)}
+    />
+  );
 }

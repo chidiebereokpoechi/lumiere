@@ -56,3 +56,11 @@ export function fetchAccess(slug: string) {
 export function fetchClientPhotos(slug: string) {
   return apiServer<ClientPhotosResponse>(`/api/gallery/${slug}/photos`);
 }
+
+export interface FavoritesResponse {
+  favorites: { photoId: string; note: string | null; createdAt: number }[];
+}
+
+export function fetchFavorites(slug: string) {
+  return apiServer<FavoritesResponse>(`/api/gallery/${slug}/favorites`);
+}

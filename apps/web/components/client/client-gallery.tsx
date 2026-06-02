@@ -8,19 +8,45 @@ interface Props {
   gallery: MinimalGallery;
   photos: ClientPhoto[];
   folders: ClientFolder[];
+  initialFavorites: string[];
 }
 
-export function ClientGallery({ gallery, photos: allPhotos, folders }: Props) {
+export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavorites }: Props) {
   const [open, setOpen] = useState<number | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [favorites, setFavorites] = useState<Set<string>>(new Set(initialFavorites));
   const [folder, setFolder] = useState<string | null>(null); // null = all
+  const [favsOnly, setFavsOnly] = useState(false);
 
-  const photos = useMemo(
-    () => (folder === null ? allPhotos : allPhotos.filter((p) => p.folderId === folder)),
-    [allPhotos, folder],
-  );
+  const photos = useMemo(() => {
+    let list = folder === null ? allPhotos : allPhotos.filter((p) => p.folderId === folder);
+    if (favsOnly) list = list.filter((p) => favorites.has(p.id));
+    return list;
+  }, [allPhotos, folder, favsOnly, favorites]);
 
   const canDownload = gallery.allowDownload && gallery.downloadMode !== 'none';
+  const canFavorite = gallery.allowFavorites;
+
+  const toggleFavorite = useCallback((id: string) => {
+    const wasFav = favorites.has(id);
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (wasFav) next.delete(id); else next.add(id);
+      return next;
+    });
+    void apiClient(`/api/gallery/${gallery.slug}/favorite`, {
+      method: wasFav ? 'DELETE' : 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ photoId: id }),
+    }).catch(() => {
+      // revert on failure
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (wasFav) next.add(id); else next.delete(id);
+        return next;
+      });
+    });
+  }, [favorites, gallery.slug]);
 
   // Fire-and-forget view tracking, once per mount.
   useEffect(() => {
@@ -108,18 +134,35 @@ export function ClientGallery({ gallery, photos: allPhotos, folders }: Props) {
       )}
 
       {/* Toolbar */}
-      {canDownload && photos.length > 0 && (
+      {(canDownload || canFavorite) && allPhotos.length > 0 && (
         <div className="px-4 sm:px-8 pt-6 flex items-center justify-between gap-3">
-          <p className="text-sm text-ink-muted">
-            {photos.length} photo{photos.length !== 1 ? 's' : ''}
-          </p>
-          <button
-            type="button"
-            onClick={allSelected ? clearSelection : selectAll}
-            className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
-          >
-            {allSelected ? 'Clear selection' : 'Select all'}
-          </button>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-ink-muted tabular-nums">
+              {photos.length} photo{photos.length !== 1 ? 's' : ''}
+            </p>
+            {canFavorite && (
+              <button
+                type="button"
+                onClick={() => setFavsOnly((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  favsOnly ? 'bg-accent border-accent text-accent-ink' : 'bg-surface border-border text-ink-muted hover:text-ink-strong hover:border-border-strong'
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
+                Favorites
+                <span className="tabular-nums opacity-70">{favorites.size}</span>
+              </button>
+            )}
+          </div>
+          {canDownload && (
+            <button
+              type="button"
+              onClick={allSelected ? clearSelection : selectAll}
+              className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+            >
+              {allSelected ? 'Clear selection' : 'Select all'}
+            </button>
+          )}
         </div>
       )}
 
@@ -157,6 +200,24 @@ export function ClientGallery({ gallery, photos: allPhotos, folders }: Props) {
                     >
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </button>
+                  )}
+
+                  {canFavorite && (
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(p.id)}
+                      aria-pressed={favorites.has(p.id)}
+                      aria-label={favorites.has(p.id) ? 'Remove favorite' : 'Add favorite'}
+                      className={`absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-full transition-all ${
+                        favorites.has(p.id)
+                          ? 'bg-white/90 text-accent-dark opacity-100'
+                          : 'bg-black/30 text-white opacity-0 group-hover:opacity-100 hover:bg-black/50'
+                      }`}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill={favorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" />
                       </svg>
                     </button>
                   )}
