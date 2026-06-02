@@ -47,6 +47,20 @@ export function ClientGallery({
   // List picker targets one or many files (bulk).
   const [pickerFiles, setPickerFiles] = useState<string[] | null>(null);
 
+  // Touch devices have no hover — show tile actions permanently there. Also
+  // gates the "Save to Photos" affordance to platforms whose share sheet can
+  // write images to the camera roll (iOS Safari).
+  const [coarse, setCoarse] = useState(false);
+  const [savingPhotos, setSavingPhotos] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: none)');
+    const update = () => setCoarse(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  const actionVis = coarse ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
+
   // The current view — a folder, favorites, or a list — selected from one row.
   // Mutually exclusive: picking any one clears the others.
   type View = { kind: 'folder'; id: string } | { kind: 'favorites' } | { kind: 'list'; id: string };
@@ -199,6 +213,43 @@ export function ClientGallery({
     else triggerDownload(`ids=${files.map((f) => f.id).join(',')}`);
   }, [view, files, triggerDownload]);
 
+  // Images among the current selection — drives the "Save to Photos" action.
+  const selectedImages = useMemo(
+    () => files.filter((f) => selected.has(f.id) && f.type === 'image'),
+    [files, selected],
+  );
+
+  // Save photos to the camera roll via the Web Share sheet (iOS: "Save N
+  // Images"). Fetches each image as a File, then shares. Falls back to the ZIP
+  // download when sharing files isn't supported or the fetch is blocked.
+  const sharePhotos = useCallback(async (imgs: ClientFile[]) => {
+    if (imgs.length === 0 || savingPhotos) return;
+    setSavingPhotos(true);
+    try {
+      const fileObjs = await Promise.all(imgs.map(async (f) => {
+        const res = await fetch(f.downloadUrl, { credentials: 'include' });
+        if (!res.ok) throw new Error('fetch_failed');
+        const blob = await res.blob();
+        return new File([blob], f.filename || `${f.id}.jpg`, { type: blob.type || 'image/jpeg' });
+      }));
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.canShare?.({ files: fileObjs }) && nav.share) {
+        await nav.share({ files: fileObjs });
+      } else {
+        triggerDownload(`ids=${imgs.map((f) => f.id).join(',')}`);
+      }
+    } catch (err) {
+      // AbortError = user dismissed the share sheet; ignore. Otherwise fall back.
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        triggerDownload(`ids=${imgs.map((f) => f.id).join(',')}`);
+      }
+    } finally {
+      setSavingPhotos(false);
+    }
+  }, [savingPhotos, triggerDownload]);
+
+  const saveToPhotos = useCallback(() => sharePhotos(selectedImages), [sharePhotos, selectedImages]);
+
   const close = useCallback(() => setOpenId(null), []);
   const step = useCallback((dir: number) => {
     setOpenId((cur) => {
@@ -252,9 +303,10 @@ export function ClientGallery({
         )}
       </header>
 
-      {/* Unified nav: folders, favorites, and lists in one mutually-exclusive row. */}
+      {/* Unified nav: folders, favorites, and lists in one mutually-exclusive row.
+          Horizontally scrollable on phones, wraps on wider screens. */}
       {allFiles.length > 0 && (
-        <nav className="px-4 sm:px-8 pt-6 flex flex-wrap items-center gap-2">
+        <nav className="px-4 sm:px-8 pt-6 flex flex-nowrap sm:flex-wrap items-center gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] scrollbar-none [&::-webkit-scrollbar]:hidden">
           {folders.map((f) => (
             <Chip
               key={f.id}
@@ -287,7 +339,7 @@ export function ClientGallery({
           <button
             type="button"
             onClick={() => requireEmail(async () => { const name = window.prompt('Name your list'); if (name?.trim()) await createList(name.trim()); })}
-            className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 py-1.5 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
+            className="shrink-0 inline-flex items-center gap-1 rounded-md border border-dashed border-border px-3 py-2 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
             List
@@ -363,11 +415,11 @@ export function ClientGallery({
                       onClick={(e) => toggleSelect(f.id, e.shiftKey)}
                       aria-pressed={isSelected}
                       aria-label={isSelected ? 'Deselect' : 'Select'}
-                      className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
-                        isSelected ? 'bg-accent border-accent text-accent-ink opacity-100' : 'bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100'
+                      className={`absolute top-2 left-2 h-9 w-9 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+                        isSelected ? 'bg-accent border-accent text-accent-ink opacity-100' : `bg-black/30 border-white/80 text-transparent ${actionVis}`
                       }`}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </button>
                   )}
                   <div className="absolute top-2 right-2 flex items-center gap-1.5">
@@ -376,9 +428,9 @@ export function ClientGallery({
                       type="button"
                       onClick={() => openPicker([f.id])}
                       aria-label="Add to list"
-                      className="h-7 w-7 inline-flex items-center justify-center rounded-full bg-black/30 text-white opacity-0 group-hover:opacity-100 hover:bg-black/50 transition-all"
+                      className={`h-9 w-9 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50 transition-all ${actionVis}`}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
                     </button>
                     {canFavorite && (
                       <button
@@ -386,11 +438,11 @@ export function ClientGallery({
                         onClick={() => requireEmail(() => toggleFavorite(f.id))}
                         aria-pressed={favorites.has(f.id)}
                         aria-label={favorites.has(f.id) ? 'Remove favorite' : 'Add favorite'}
-                        className={`h-7 w-7 inline-flex items-center justify-center rounded-full transition-all ${
-                          favorites.has(f.id) ? 'bg-white/90 text-accent-dark opacity-100' : 'bg-black/30 text-white opacity-0 group-hover:opacity-100 hover:bg-black/50'
+                        className={`h-9 w-9 sm:h-8 sm:w-8 inline-flex items-center justify-center rounded-full transition-all ${
+                          favorites.has(f.id) ? 'bg-white/90 text-accent-dark opacity-100' : `bg-black/30 text-white hover:bg-black/50 ${actionVis}`
                         }`}
                       >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill={favorites.has(f.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill={favorites.has(f.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
                       </button>
                     )}
                   </div>
@@ -404,32 +456,46 @@ export function ClientGallery({
 
       {gallery.allowComments && <CommentsSection slug={gallery.slug} initialComments={comments.filter((c) => !c.fileId)} />}
 
-      {/* Selection action bar */}
+      {/* Selection action bar — wraps + respects the iOS home-indicator inset */}
       {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
-          <span className="text-sm font-semibold text-ink-strong tabular-nums">{selected.size} selected</span>
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={clearSelection} className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">Clear</button>
-            <button
-              type="button"
-              onClick={() => openPicker([...selected])}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:border-border-strong transition-colors"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
-              Add to list
-            </button>
-            {canDownload && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-ink-strong tabular-nums">{selected.size} selected</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button type="button" onClick={clearSelection} className="px-2 py-2.5 text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">Clear</button>
               <button
                 type="button"
-                onClick={downloadSelected}
-                className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
+                onClick={() => openPicker([...selected])}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:border-border-strong transition-colors"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Download {selected.size}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
+                List
               </button>
-            )}
+              {/* Save photos straight to the camera roll on touch devices */}
+              {canDownload && coarse && selectedImages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={saveToPhotos}
+                  disabled={savingPhotos}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:border-border-strong transition-colors disabled:opacity-60"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+                  {savingPhotos ? 'Preparing…' : `Save ${selectedImages.length} to Photos`}
+                </button>
+              )}
+              {canDownload && (
+                <button
+                  type="button"
+                  onClick={downloadSelected}
+                  className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Download {selected.size}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -473,6 +539,17 @@ export function ClientGallery({
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></svg>
               </button>
+              {canDownload && coarse && open.type === 'image' && (
+                <button
+                  type="button"
+                  onClick={() => sharePhotos([open])}
+                  disabled={savingPhotos}
+                  aria-label="Save to Photos"
+                  className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-60"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></svg>
+                </button>
+              )}
               {canFavorite && (
                 <button
                   type="button"
