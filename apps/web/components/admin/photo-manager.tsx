@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient, apiClientMutation, ApiError } from '@/lib/api-client';
 import type { Photo } from '@/lib/api/photos';
@@ -218,6 +218,13 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
   // view with nothing selected and no uploads in flight.
   const canReorder = filter === 'all' && selected.size === 0 && tiles.length === 0;
 
+  const tileNodes = useRef(new Map<string, HTMLElement>());
+  const prevRects = useRef(new Map<string, DOMRect>());
+  const registerTile = useCallback((id: string, node: HTMLElement | null) => {
+    if (node) tileNodes.current.set(id, node);
+    else tileNodes.current.delete(id);
+  }, []);
+
   const reorder = useCallback(async (fromId: string, toId: string) => {
     if (fromId === toId) return;
     setPhotos((prev) => {
@@ -306,6 +313,30 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
   }, [photos, filter]);
 
   const unfiledCount = useMemo(() => photos.filter((p) => !p.folderId).length, [photos]);
+
+  // FLIP: animate tiles from their previous positions to their new ones when
+  // the order changes, instead of popping into place.
+  useLayoutEffect(() => {
+    const nodes = tileNodes.current;
+    const newRects = new Map<string, DOMRect>();
+    nodes.forEach((node, id) => newRects.set(id, node.getBoundingClientRect()));
+    nodes.forEach((node, id) => {
+      const prev = prevRects.current.get(id);
+      const next = newRects.get(id);
+      if (!prev || !next) return;
+      const dx = prev.left - next.left;
+      const dy = prev.top - next.top;
+      if (dx === 0 && dy === 0) return;
+      node.style.transition = 'none';
+      node.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        node.style.transition = 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)';
+        node.style.transform = '';
+      });
+    });
+    prevRects.current = newRects;
+  }, [visiblePhotos]);
+
   const isEmpty = photos.length === 0 && tiles.length === 0;
 
   return (
@@ -413,6 +444,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
               busy={busyId === photo.id}
               draggable={canReorder}
               dragging={dragId === photo.id}
+              onRef={(n) => registerTile(photo.id, n)}
               onDragStart={() => setDragId(photo.id)}
               onDragEnd={() => setDragId(null)}
               onDropOn={() => { if (dragId) void reorder(dragId, photo.id); setDragId(null); }}
@@ -508,7 +540,7 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 
 function PhotoTile({
   photo, galleryId, isCover, selected, busy, draggable, dragging,
-  onDragStart, onDragEnd, onDropOn, onToggleSelect, onDelete, onSetCover,
+  onRef, onDragStart, onDragEnd, onDropOn, onToggleSelect, onDelete, onSetCover,
 }: {
   photo: Photo;
   galleryId: string;
@@ -517,6 +549,7 @@ function PhotoTile({
   busy: boolean;
   draggable: boolean;
   dragging: boolean;
+  onRef: (node: HTMLElement | null) => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDropOn: () => void;
@@ -528,6 +561,7 @@ function PhotoTile({
   const errored = photo.uploadStatus === 'error';
   return (
     <div
+      ref={onRef}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
