@@ -354,6 +354,7 @@ export function PhotoManager({
   // Unified order of media keys ("p:<id>" photos, "a:<id>" attachments) for the
   // active folder. Mutated live during drag; rebuilt from positions otherwise.
   const [order, setOrder] = useState<string[]>([]);
+  const orderRef = useRef<string[]>([]); // mirrors `order` for stale-free reads on drop
   const dragIdRef = useRef<string | null>(null);
   const dragPayload = useRef<string[]>([]); // media keys being dragged (selection-aware)
   const dropFolderRef = useRef<string | null>(null);
@@ -461,6 +462,7 @@ export function PhotoManager({
         const copy = [...prev];
         const [moved] = copy.splice(from, 1);
         copy.splice(to, 0, moved!);
+        orderRef.current = copy;
         return copy;
       });
     },
@@ -491,17 +493,20 @@ export function PhotoManager({
       return;
     }
     // Otherwise persist the unified order across photos + files.
-    setOrder((prev) => {
-      const items = prev.map((k) => ({ kind: k.startsWith("p:") ? "photo" : "file", id: k.slice(2) }));
-      void apiClientMutation(`/api/galleries/${galleryId}/photos/order-media`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ items }),
-      }).catch((err) => {
-        setError(err instanceof ApiError ? `Reorder failed (${err.status})` : "Network error");
-        void refreshPhotos();
-      });
-      return prev;
+    const finalOrder = orderRef.current;
+    const items = finalOrder.map((k) => ({ kind: k.startsWith("p:") ? "photo" : "file", id: k.slice(2) }));
+    // Keep local positions in sync so switching folders (which rebuilds order
+    // from positions) reflects the new order without a refetch.
+    const posOf = new Map(finalOrder.map((k, i) => [k, i]));
+    setPhotos((ps) => ps.map((p) => (posOf.has(`p:${p.id}`) ? { ...p, position: posOf.get(`p:${p.id}`)! } : p)));
+    setAttachments((as) => as.map((a) => (posOf.has(`a:${a.id}`) ? { ...a, position: posOf.get(`a:${a.id}`)! } : a)));
+    void apiClientMutation(`/api/galleries/${galleryId}/photos/order-media`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ items }),
+    }).catch((err) => {
+      setError(err instanceof ApiError ? `Reorder failed (${err.status})` : "Network error");
+      void refreshPhotos();
     });
   }, [galleryId, refreshPhotos, onPointerMove, movePhotos, moveAttachments]);
 
@@ -515,12 +520,9 @@ export function PhotoManager({
         w: rect.width, h: rect.height, startX: e.clientX, startY: e.clientY,
       };
       dragIdRef.current = key;
-      // A selected photo drags the whole photo selection; anything else drags solo.
-      const id = key.slice(2);
+      // Dragging a selected item drags the whole selection; otherwise solo.
       dragPayload.current =
-        key.startsWith("p:") && selected.has(id) && selected.size > 0
-          ? [...selected].map((pid) => `p:${pid}`)
-          : [key];
+        selected.has(key) && selected.size > 0 ? [...selected] : [key];
       setDragId(key);
       setOverlayKey(key);
       document.body.style.userSelect = "none";
@@ -650,9 +652,12 @@ export function PhotoManager({
 
   async function moveSelected(folderId: string) {
     if (selected.size === 0) return;
-    const ids = [...selected];
+    const keys = [...selected];
     setSelected(new Set());
-    await movePhotos(ids, folderId);
+    const photoIds = keys.filter((k) => k.startsWith("p:")).map((k) => k.slice(2));
+    const attIds = keys.filter((k) => k.startsWith("a:")).map((k) => k.slice(2));
+    if (photoIds.length) await movePhotos(photoIds, folderId);
+    if (attIds.length) await moveAttachments(attIds, folderId);
   }
 
   const photoById = useMemo(() => new Map(photos.map((p) => [p.id, p])), [photos]);
@@ -664,7 +669,9 @@ export function PhotoManager({
     if (dragIdRef.current) return;
     const ph = photos.filter((p) => p.folderId === activeFolder).map((p) => ({ k: `p:${p.id}`, pos: p.position ?? 0 }));
     const at = attachments.filter((a) => a.folderId === activeFolder).map((a) => ({ k: `a:${a.id}`, pos: a.position ?? 0 }));
-    setOrder([...ph, ...at].sort((x, y) => x.pos - y.pos).map((i) => i.k));
+    const rebuilt = [...ph, ...at].sort((x, y) => x.pos - y.pos).map((i) => i.k);
+    orderRef.current = rebuilt;
+    setOrder(rebuilt);
   }, [photos, attachments, activeFolder]);
 
   const folderEmpty = order.length === 0 && tiles.length === 0;
@@ -853,13 +860,13 @@ export function PhotoManager({
                   photo={photo}
                   galleryId={galleryId}
                   isCover={cover === photo.id}
-                  selected={selected.has(photo.id)}
+                  selected={selected.has(key)}
                   busy={busyId === photo.id}
                   reorderable={canDrag}
                   dragging={dragId === key}
                   onRef={(n) => registerTile(key, n)}
                   onPointerDownReorder={(e) => beginDrag(key, e)}
-                  onToggleSelect={() => toggleSelect(photo.id)}
+                  onToggleSelect={() => toggleSelect(key)}
                   onDelete={() => onDelete(photo)}
                   onSetCover={() => onSetCover(photo)}
                 />
@@ -874,10 +881,12 @@ export function PhotoManager({
                 gallerySlug={gallerySlug}
                 att={att}
                 kind={attKind(att.mimeType)}
+                selected={selected.has(key)}
                 reorderable={canDrag}
                 dragging={dragId === key}
                 onRef={(n) => registerTile(key, n)}
                 onPointerDownReorder={(e) => beginDrag(key, e)}
+                onToggleSelect={() => toggleSelect(key)}
                 onDelete={() => deleteFile(att)}
               />
             );
@@ -1245,16 +1254,18 @@ function PhotoTile({
 }
 
 function MediaTile({
-  mid, gallerySlug, att, kind, reorderable, dragging, onRef, onPointerDownReorder, onDelete,
+  mid, gallerySlug, att, kind, selected, reorderable, dragging, onRef, onPointerDownReorder, onToggleSelect, onDelete,
 }: {
   mid: string;
   gallerySlug: string;
   att: Attachment;
   kind: MediaKind;
+  selected: boolean;
   reorderable: boolean;
   dragging: boolean;
   onRef: (node: HTMLElement | null) => void;
   onPointerDownReorder: (e: React.PointerEvent<HTMLElement>) => void;
+  onToggleSelect: () => void;
   onDelete: () => void;
 }) {
   const name = att.displayName ?? att.filenameOriginal;
@@ -1292,6 +1303,23 @@ function MediaTile({
           <Badge>File</Badge>
         </div>
       )}
+
+      {!dragging && (
+        <button
+          type="button"
+          onClick={onToggleSelect}
+          onPointerDown={(e) => e.stopPropagation()}
+          aria-pressed={selected}
+          aria-label={selected ? "Deselect" : "Select"}
+          className={`absolute top-2 right-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+            selected ? "bg-accent border-accent text-accent-ink opacity-100" : "bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        </button>
+      )}
+
+      {!dragging && selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent" />}
 
       {!dragging && (
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-t from-black/50 to-transparent">
