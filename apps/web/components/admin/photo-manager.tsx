@@ -226,16 +226,23 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     else tileNodes.current.delete(id);
   }, []);
 
+  const lastOverId = useRef<string | null>(null);
+
   const startDrag = useCallback((id: string) => {
     dragIdRef.current = id;
+    lastOverId.current = id;
     setDragId(id);
   }, []);
 
   // Live reorder as the dragged tile enters another — re-renders trigger the
-  // FLIP pass, so neighbours slide out of the way while dragging.
+  // FLIP pass, so neighbours slide out of the way while dragging. Dedupe by the
+  // last-entered id so bubbled child dragenter events and animation-induced
+  // re-entries don't thrash the order.
   const dragOver = useCallback((overId: string) => {
     const dragging = dragIdRef.current;
     if (!dragging || dragging === overId) return;
+    if (lastOverId.current === overId) return;
+    lastOverId.current = overId;
     setPhotos((prev) => {
       const from = prev.findIndex((p) => p.id === dragging);
       const to = prev.findIndex((p) => p.id === overId);
@@ -250,6 +257,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
   // Persist the final order once on drop/end.
   const endDrag = useCallback(() => {
     dragIdRef.current = null;
+    lastOverId.current = null;
     setDragId(null);
     setPhotos((prev) => {
       const orderedIds = prev.map((p) => p.id);
@@ -348,10 +356,14 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
       if (dx === 0 && dy === 0) return;
       node.style.transition = 'none';
       node.style.transform = `translate(${dx}px, ${dy}px)`;
+      // While a tile is sliding, don't let it capture dragenter — its transient
+      // geometry would otherwise trigger spurious reorders (jitter).
+      node.style.pointerEvents = 'none';
       requestAnimationFrame(() => {
-        node.style.transition = 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)';
+        node.style.transition = 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1)';
         node.style.transform = '';
       });
+      window.setTimeout(() => { node.style.pointerEvents = ''; }, 210);
     });
     prevRects.current = newRects;
   }, [visiblePhotos]);
