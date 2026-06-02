@@ -50,6 +50,7 @@ export const galleryFolders = sqliteTable('gallery_folders', {
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   position: integer('position').default(0),
+  hidden: integer('hidden').default(0),
   coverFileId: text('cover_file_id').references((): AnySQLiteColumn => files.id, { onDelete: 'set null' }),
 });
 
@@ -105,9 +106,32 @@ export const gallerySessions = sqliteTable('gallery_sessions', {
   token: text('token').primaryKey(),
   galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
   clientIp: text('client_ip'),
+  clientEmail: text('client_email'),
   createdAt: integer('created_at').notNull(),
   expiresAt: integer('expires_at').notNull(),
 });
+
+// Client-made lists (selects/collections), keyed to a session + their email.
+// Visible to the client (this session) and the creator.
+export const lists = sqliteTable('lists', {
+  id: text('id').primaryKey(),
+  galleryId: text('gallery_id').notNull().references(() => galleries.id, { onDelete: 'cascade' }),
+  sessionToken: text('session_token'),
+  clientEmail: text('client_email'),
+  name: text('name').notNull(),
+  createdAt: integer('created_at').notNull(),
+}, (t) => ({
+  byGallery: index('idx_lists_gallery').on(t.galleryId),
+}));
+
+export const listItems = sqliteTable('list_items', {
+  id: text('id').primaryKey(),
+  listId: text('list_id').notNull().references(() => lists.id, { onDelete: 'cascade' }),
+  fileId: text('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at').notNull(),
+}, (t) => ({
+  unq: uniqueIndex('uniq_list_item').on(t.listId, t.fileId),
+}));
 
 export const favorites = sqliteTable('favorites', {
   id: text('id').primaryKey(),
