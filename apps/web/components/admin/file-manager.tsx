@@ -11,6 +11,8 @@ import { uploadMultipart } from '@/lib/upload/multipart';
 // (bypassing the app + the dev rewrite proxy, which caps bodies at 10MB).
 // Kept under that cap so the single-request path never hits the proxy limit.
 const MULTIPART_THRESHOLD = 8 * 1024 * 1024;
+// How many files upload at once (each large file already parallelizes parts).
+const FILE_CONCURRENCY = 3;
 
 interface Props {
   galleryId: string;
@@ -124,7 +126,8 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     let token: string;
     try { token = await getCsrfToken(); }
     catch { setError('Could not start upload (auth).'); seeded.forEach((s) => { updateTile(s.key, { status: 'error', reason: 'auth' }); settle(s.key); }); return; }
-    for (const s of seeded) {
+
+    const one = async (s: { key: string; file: File }) => {
       if (s.file.size > MULTIPART_THRESHOLD) {
         try {
           await uploadMultipart({ galleryId, folderId, file: s.file, onProgress: (p) => updateTile(s.key, { status: 'uploading', progress: p }) });
@@ -138,7 +141,16 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
       } else {
         await uploadOne(s.file, s.key, token, folderId);
       }
-    }
+    };
+
+    // Upload several files at once (each large file already runs its parts
+    // concurrently, so cap files-in-flight to keep total connections sane).
+    let i = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(FILE_CONCURRENCY, seeded.length) }, async () => {
+        while (i < seeded.length) await one(seeded[i++]!);
+      }),
+    );
   }, [galleryId, uploadOne, updateTile, settle]);
 
   // ---- folders ---------------------------------------------------------
