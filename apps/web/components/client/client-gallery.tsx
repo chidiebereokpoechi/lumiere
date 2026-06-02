@@ -277,6 +277,23 @@ export function ClientGallery({
     return () => window.removeEventListener('keydown', onKey);
   }, [openId, close, step]);
 
+  // Swipe in the lightbox: left/right steps, a downward fling closes.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = t ? { x: t.clientX, y: t.clientY } : null;
+  }, []);
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    const s = touchStart.current;
+    touchStart.current = null;
+    const t = e.changedTouches[0];
+    if (!s || !t) return;
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+    else if (dy > 90 && dy > Math.abs(dx) * 1.5) close();
+  }, [step, close]);
+
   const eventLine = useMemo(() => [
     gallery.eventType,
     gallery.eventDate ? new Date(gallery.eventDate * 1000).toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' }) : null,
@@ -523,7 +540,7 @@ export function ClientGallery({
           </div>
 
           {/* Media */}
-          <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12" onClick={close}>
+          <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12 touch-pan-y" onClick={close} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <div className="max-h-full max-w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
               {open.type === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element
