@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient, apiClientMutation, ApiError } from "@/lib/api-client";
 import type { Photo } from "@/lib/api/photos";
@@ -9,19 +9,13 @@ import type { Attachment } from "@/lib/api/attachments";
 
 interface Props {
   galleryId: string;
+  gallerySlug: string;
   initialPhotos: Photo[];
   initialFolders: Folder[];
   initialAttachments: Attachment[];
   initialCoverPhotoId: string | null;
 }
 
-function formatBytes(n: number | null): string {
-  if (!n) return "";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
 
 type UploadState = "uploading" | "processing" | "ready" | "error";
 interface UploadTile {
@@ -44,6 +38,13 @@ const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 // an empty f.type (e.g. a .lnk), which would misroute non-images to photos.
 const isImage = (f: File) => IMAGE_TYPES.includes(f.type);
 
+type MediaKind = "video" | "audio" | "file";
+function attKind(mime: string | null): MediaKind {
+  if (mime?.startsWith("video/")) return "video";
+  if (mime?.startsWith("audio/")) return "audio";
+  return "file";
+}
+
 async function getCsrfToken(): Promise<string> {
   const m = document.cookie.match(/(?:^|; )lumiere_csrf=([^;]+)/);
   if (m) return decodeURIComponent(m[1]!);
@@ -53,6 +54,7 @@ async function getCsrfToken(): Promise<string> {
 
 export function PhotoManager({
   galleryId,
+  gallerySlug,
   initialPhotos,
   initialFolders,
   initialAttachments,
@@ -347,10 +349,13 @@ export function PhotoManager({
   // tile is under the cursor), so it works the same in folder views and lets
   // you freely move a photo back to where it started.
   const [dragId, setDragId] = useState<string | null>(null);
-  const [overlayPhoto, setOverlayPhoto] = useState<Photo | null>(null);
+  const [overlayKey, setOverlayKey] = useState<string | null>(null);
   const [dropFolderId, setDropFolderId] = useState<string | null>(null);
+  // Unified order of media keys ("p:<id>" photos, "a:<id>" attachments) for the
+  // active folder. Mutated live during drag; rebuilt from positions otherwise.
+  const [order, setOrder] = useState<string[]>([]);
   const dragIdRef = useRef<string | null>(null);
-  const dragPayload = useRef<string[]>([]); // photo ids being dragged (selection-aware)
+  const dragPayload = useRef<string[]>([]); // media keys being dragged (selection-aware)
   const dropFolderRef = useRef<string | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const dragInfo = useRef<{
@@ -407,38 +412,51 @@ export function PhotoManager({
     [galleryId, refreshFolders, refreshPhotos],
   );
 
+  // Move file attachments into a folder (PATCH each).
+  const moveAttachments = useCallback(
+    async (attIds: string[], folderId: string) => {
+      if (attIds.length === 0) return;
+      const idSet = new Set(attIds);
+      setAttachments((prev) => prev.map((a) => (idSet.has(a.id) ? { ...a, folderId } : a)));
+      try {
+        await Promise.all(attIds.map((id) =>
+          apiClientMutation(`/api/galleries/${galleryId}/attachments/${id}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ folderId }),
+          }),
+        ));
+        await refreshFolders();
+      } catch (err) {
+        setError(err instanceof ApiError ? `Could not move files (${err.status})` : "Network error");
+        void refreshAttachments();
+      }
+    },
+    [galleryId, refreshFolders, refreshAttachments],
+  );
+
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
-      if (!dragIdRef.current) return;
+      const dragging = dragIdRef.current;
+      if (!dragging) return;
       positionOverlay(e.clientX, e.clientY);
-      const el = document.elementFromPoint(
-        e.clientX,
-        e.clientY,
-      ) as HTMLElement | null;
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
 
       // Over a folder chip? Mark it as the drop target and don't reorder.
-      const folderEl = el?.closest<HTMLElement>("[data-folder]");
-      const overFolder = folderEl?.dataset.folder ?? null;
+      const overFolder = el?.closest<HTMLElement>("[data-folder]")?.dataset.folder ?? null;
       if (overFolder && overFolder !== activeFolder) {
-        if (dropFolderRef.current !== overFolder) {
-          dropFolderRef.current = overFolder;
-          setDropFolderId(overFolder);
-        }
+        if (dropFolderRef.current !== overFolder) { dropFolderRef.current = overFolder; setDropFolderId(overFolder); }
         return;
       }
-      if (dropFolderRef.current !== null) {
-        dropFolderRef.current = null;
-        setDropFolderId(null);
-      }
+      if (dropFolderRef.current !== null) { dropFolderRef.current = null; setDropFolderId(null); }
 
-      // Reorder only makes sense for a single dragged photo.
+      // Reorder only for a single dragged item.
       if (dragPayload.current.length > 1) return;
-      const overId = el?.closest<HTMLElement>("[data-pid]")?.dataset.pid;
-      const dragging = dragIdRef.current;
-      if (!overId || overId === dragging) return;
-      setPhotos((prev) => {
-        const from = prev.findIndex((p) => p.id === dragging);
-        const to = prev.findIndex((p) => p.id === overId);
+      const overMid = el?.closest<HTMLElement>("[data-mid]")?.dataset.mid;
+      if (!overMid || overMid === dragging) return;
+      setOrder((prev) => {
+        const from = prev.indexOf(dragging);
+        const to = prev.indexOf(overMid);
         if (from === -1 || to === -1 || from === to) return prev;
         const copy = [...prev];
         const [moved] = copy.splice(from, 1);
@@ -460,55 +478,51 @@ export function PhotoManager({
     dragPayload.current = [];
     dropFolderRef.current = null;
     setDragId(null);
-    setOverlayPhoto(null);
+    setOverlayKey(null);
     setDropFolderId(null);
 
     if (targetFolder) {
-      // Dropped on a folder chip → move the payload there (no reorder persist).
-      void movePhotos(payload, targetFolder);
+      // Dropped on a folder chip → move the payload (photos and/or files).
+      const photoIds = payload.filter((k) => k.startsWith("p:")).map((k) => k.slice(2));
+      const attIds = payload.filter((k) => k.startsWith("a:")).map((k) => k.slice(2));
+      if (photoIds.length) void movePhotos(photoIds, targetFolder);
+      if (attIds.length) void moveAttachments(attIds, targetFolder);
       setSelected(new Set());
       return;
     }
-    // Otherwise persist the (single-photo) reorder.
-    setPhotos((prev) => {
-      const orderedIds = prev.map((p) => p.id);
-      void apiClientMutation(`/api/galleries/${galleryId}/photos/reorder`, {
+    // Otherwise persist the unified order across photos + files.
+    setOrder((prev) => {
+      const items = prev.map((k) => ({ kind: k.startsWith("p:") ? "photo" : "file", id: k.slice(2) }));
+      void apiClientMutation(`/api/galleries/${galleryId}/photos/order-media`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ photoIds: orderedIds }),
+        body: JSON.stringify({ items }),
       }).catch((err) => {
-        setError(
-          err instanceof ApiError
-            ? `Reorder failed (${err.status})`
-            : "Network error",
-        );
+        setError(err instanceof ApiError ? `Reorder failed (${err.status})` : "Network error");
         void refreshPhotos();
       });
       return prev;
     });
-  }, [galleryId, refreshPhotos, onPointerMove, movePhotos]);
+  }, [galleryId, refreshPhotos, onPointerMove, movePhotos, moveAttachments]);
 
   const beginDrag = useCallback(
-    (photo: Photo, e: React.PointerEvent<HTMLElement>) => {
+    (key: string, e: React.PointerEvent<HTMLElement>) => {
       if (!canDrag || e.button !== 0) return;
       if ((e.target as HTMLElement).closest("button")) return; // let checkbox/actions work
       const rect = e.currentTarget.getBoundingClientRect();
       dragInfo.current = {
-        offsetX: e.clientX - rect.left,
-        offsetY: e.clientY - rect.top,
-        w: rect.width,
-        h: rect.height,
-        startX: e.clientX,
-        startY: e.clientY,
+        offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+        w: rect.width, h: rect.height, startX: e.clientX, startY: e.clientY,
       };
-      dragIdRef.current = photo.id;
-      // If the dragged photo is part of a multi-selection, drag the whole set.
+      dragIdRef.current = key;
+      // A selected photo drags the whole photo selection; anything else drags solo.
+      const id = key.slice(2);
       dragPayload.current =
-        selected.has(photo.id) && selected.size > 0
-          ? [...selected]
-          : [photo.id];
-      setDragId(photo.id);
-      setOverlayPhoto(photo);
+        key.startsWith("p:") && selected.has(id) && selected.size > 0
+          ? [...selected].map((pid) => `p:${pid}`)
+          : [key];
+      setDragId(key);
+      setOverlayKey(key);
       document.body.style.userSelect = "none";
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
@@ -539,7 +553,6 @@ export function PhotoManager({
     }
   }
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   async function uploadFiles(fileList: FileList | File[], folderId: string) {
     const files = Array.from(fileList);
     if (files.length === 0 || !folderId) return;
@@ -642,14 +655,19 @@ export function PhotoManager({
     await movePhotos(ids, folderId);
   }
 
-  const visiblePhotos = useMemo(
-    () => photos.filter((p) => p.folderId === activeFolder),
-    [photos, activeFolder],
-  );
-  const visibleFiles = useMemo(
-    () => attachments.filter((a) => a.folderId === activeFolder),
-    [attachments, activeFolder],
-  );
+  const photoById = useMemo(() => new Map(photos.map((p) => [p.id, p])), [photos]);
+  const attById = useMemo(() => new Map(attachments.map((a) => [a.id, a])), [attachments]);
+
+  // Rebuild the unified order from positions whenever folder membership changes
+  // (not during a drag, which mutates `order` directly).
+  useEffect(() => {
+    if (dragIdRef.current) return;
+    const ph = photos.filter((p) => p.folderId === activeFolder).map((p) => ({ k: `p:${p.id}`, pos: p.position ?? 0 }));
+    const at = attachments.filter((a) => a.folderId === activeFolder).map((a) => ({ k: `a:${a.id}`, pos: a.position ?? 0 }));
+    setOrder([...ph, ...at].sort((x, y) => x.pos - y.pos).map((i) => i.k));
+  }, [photos, attachments, activeFolder]);
+
+  const folderEmpty = order.length === 0 && tiles.length === 0;
 
   // FLIP: animate tiles from their previous positions to their new ones when
   // the order changes, instead of popping into place.
@@ -680,9 +698,7 @@ export function PhotoManager({
       }, 210);
     });
     prevRects.current = newRects;
-  }, [visiblePhotos]);
-
-  const folderEmpty = visiblePhotos.length === 0 && tiles.length === 0;
+  }, [order]);
 
   return (
     <div className="space-y-6">
@@ -760,6 +776,10 @@ export function PhotoManager({
         </p>
       )}
 
+      {canDrag && selected.size === 0 && order.length > 1 && (
+        <p className="text-xs text-ink-subtle">Drag to reorder — this is the order clients see. Drop onto a folder to move.</p>
+      )}
+
       {/* Folder content — the drop boundary for uploading into this folder */}
       <div
         className="relative space-y-6 min-h-64"
@@ -820,116 +840,50 @@ export function PhotoManager({
             </div>
           ))}
 
-          {/* Persisted photos (filtered by folder) */}
-          {visiblePhotos.map((photo) => (
-            <PhotoTile
-              key={photo.id}
-              photo={photo}
-              galleryId={galleryId}
-              isCover={cover === photo.id}
-              selected={selected.has(photo.id)}
-              busy={busyId === photo.id}
-              reorderable={canDrag}
-              dragging={dragId === photo.id}
-              onRef={(n) => registerTile(photo.id, n)}
-              onPointerDownReorder={(e) => beginDrag(photo, e)}
-              onToggleSelect={() => toggleSelect(photo.id)}
-              onDelete={() => onDelete(photo)}
-              onSetCover={() => onSetCover(photo)}
-            />
-          ))}
+          {/* Media — photos, video, audio, files inline & reorderable */}
+          {order.map((key) => {
+            const id = key.slice(2);
+            if (key.startsWith("p:")) {
+              const photo = photoById.get(id);
+              if (!photo) return null;
+              return (
+                <PhotoTile
+                  key={key}
+                  mid={key}
+                  photo={photo}
+                  galleryId={galleryId}
+                  isCover={cover === photo.id}
+                  selected={selected.has(photo.id)}
+                  busy={busyId === photo.id}
+                  reorderable={canDrag}
+                  dragging={dragId === key}
+                  onRef={(n) => registerTile(key, n)}
+                  onPointerDownReorder={(e) => beginDrag(key, e)}
+                  onToggleSelect={() => toggleSelect(photo.id)}
+                  onDelete={() => onDelete(photo)}
+                  onSetCover={() => onSetCover(photo)}
+                />
+              );
+            }
+            const att = attById.get(id);
+            if (!att) return null;
+            return (
+              <MediaTile
+                key={key}
+                mid={key}
+                gallerySlug={gallerySlug}
+                att={att}
+                kind={attKind(att.mimeType)}
+                reorderable={canDrag}
+                dragging={dragId === key}
+                onRef={(n) => registerTile(key, n)}
+                onPointerDownReorder={(e) => beginDrag(key, e)}
+                onDelete={() => deleteFile(att)}
+              />
+            );
+          })}
         </div>
       )}
-
-      {/* Files in this folder */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted">
-            Files in this folder
-          </h3>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-semibold text-ink-muted hover:text-ink-strong hover:border-border-strong transition-colors"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Add file
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            hidden
-            onChange={(e) => {
-              if (e.target.files) void uploadFiles(e.target.files, activeFolder);
-              e.target.value = "";
-            }}
-          />
-        </div>
-        {visibleFiles.length === 0 ? (
-          <p className="text-sm text-ink-muted">No files in this folder.</p>
-        ) : (
-          <ul className="space-y-2 max-w-2xl">
-            {visibleFiles.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-ink-subtle shrink-0"
-                >
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-                <span className="flex-1 min-w-0 text-sm font-semibold text-ink-strong truncate">
-                  {a.displayName ?? a.filenameOriginal}
-                </span>
-                <span className="text-xs tabular-nums text-ink-subtle shrink-0">
-                  {formatBytes(a.fileSize)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => deleteFile(a)}
-                  title="Delete"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-negative hover:bg-surface-2"
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
       </div>
 
       {/* Selection move bar */}
@@ -972,7 +926,7 @@ export function PhotoManager({
       )}
 
       {/* Drag overlay — outer follows the cursor; inner scales when over a folder */}
-      {overlayPhoto && dragInfo.current && (
+      {overlayKey && dragInfo.current && (
         <div
           ref={overlayRef}
           className="fixed top-0 left-0 z-50 pointer-events-none"
@@ -988,13 +942,14 @@ export function PhotoManager({
               dropFolderId ? "scale-[0.35]" : "scale-[1.04]"
             }`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`/img/${galleryId}/${overlayPhoto.id}/thumb`}
-              alt=""
-              draggable={false}
-              className="h-full w-full object-cover"
-            />
+            {overlayKey.startsWith("p:") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/img/${galleryId}/${overlayKey.slice(2)}/thumb`} alt="" draggable={false} className="h-full w-full object-contain bg-surface" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-surface-sunken text-ink-muted">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
+              </div>
+            )}
             {dragPayload.current.length > 1 && (
               <span className="absolute top-1 right-1 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums">
                 {dragPayload.current.length}
@@ -1135,6 +1090,7 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 }
 
 function PhotoTile({
+  mid,
   photo,
   galleryId,
   isCover,
@@ -1148,6 +1104,7 @@ function PhotoTile({
   onDelete,
   onSetCover,
 }: {
+  mid: string;
   photo: Photo;
   galleryId: string;
   isCover: boolean;
@@ -1166,7 +1123,7 @@ function PhotoTile({
   return (
     <div
       ref={onRef}
-      data-pid={photo.id}
+      data-mid={mid}
       onPointerDown={reorderable ? onPointerDownReorder : undefined}
       style={reorderable ? { touchAction: "none" } : undefined}
       className={`group relative aspect-square rounded-lg overflow-hidden border border-border ${dragging ? "border-dashed bg-surface-2" : "bg-surface"} ${reorderable && !dragging ? "cursor-grab" : ""}`}
@@ -1284,6 +1241,74 @@ function PhotoTile({
         </button>
       </div>
     </div>
+  );
+}
+
+function MediaTile({
+  mid, gallerySlug, att, kind, reorderable, dragging, onRef, onPointerDownReorder, onDelete,
+}: {
+  mid: string;
+  gallerySlug: string;
+  att: Attachment;
+  kind: MediaKind;
+  reorderable: boolean;
+  dragging: boolean;
+  onRef: (node: HTMLElement | null) => void;
+  onPointerDownReorder: (e: React.PointerEvent<HTMLElement>) => void;
+  onDelete: () => void;
+}) {
+  const name = att.displayName ?? att.filenameOriginal;
+  const streamUrl = `/api/gallery/${gallerySlug}/attachments/${att.id}/stream`;
+  return (
+    <div
+      ref={onRef}
+      data-mid={mid}
+      onPointerDown={reorderable ? onPointerDownReorder : undefined}
+      style={reorderable ? { touchAction: "none" } : undefined}
+      className={`group relative aspect-square overflow-hidden border border-border ${dragging ? "border-dashed bg-surface-2" : "bg-surface-sunken"} ${reorderable && !dragging ? "cursor-grab" : ""}`}
+    >
+      {dragging ? (
+        <div className="h-full w-full" />
+      ) : kind === "video" ? (
+        <>
+          <video src={`${streamUrl}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-contain bg-black" />
+          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-black/50 text-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+          </span>
+          <Badge>Video</Badge>
+        </>
+      ) : kind === "audio" ? (
+        <div className="h-full w-full flex flex-col items-center justify-center gap-2 p-3 text-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+          <span className="text-[11px] text-ink-subtle truncate max-w-full">{name}</span>
+          <Badge>Audio</Badge>
+        </div>
+      ) : (
+        <div className="h-full w-full flex flex-col items-center justify-center gap-2 p-3 text-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
+          <span className="text-[11px] text-ink-subtle truncate max-w-full">{name}</span>
+          <Badge>File</Badge>
+        </div>
+      )}
+
+      {!dragging && (
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-t from-black/50 to-transparent">
+          <button type="button" onClick={onDelete} onPointerDown={(e) => e.stopPropagation()} title="Delete" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-surface/90 text-negative hover:bg-surface">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="absolute top-2 left-2 rounded bg-surface-strong text-ink-inverse px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest">
+      {children}
+    </span>
   );
 }
 

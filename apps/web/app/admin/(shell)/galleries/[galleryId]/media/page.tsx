@@ -46,6 +46,7 @@ export default async function GalleryPhotosPage({ params }: Props) {
       <div className="px-8 py-6 pb-16">
         <PhotoManager
           galleryId={galleryId}
+          gallerySlug={gallery.slug}
           initialPhotos={photos}
           initialFolders={folders}
           initialAttachments={attachments}
