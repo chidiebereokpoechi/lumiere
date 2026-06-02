@@ -67,9 +67,18 @@ export function ClientGallery({
   }, []);
   const actionVis = coarse ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
-  // Cover acts as a full-screen intro; "View gallery" scrolls down to the grid.
+  // Cover acts as a full-screen intro; "View gallery" / switching folders scrolls
+  // to the grid's start. `gridRef` is the sticky chrome (so scrollIntoView no-ops
+  // once it's pinned); scroll the window to the section top minus the header.
   const gridRef = useRef<HTMLDivElement>(null);
-  const scrollToGrid = useCallback((smooth = true) => gridRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' }), []);
+  const sectionRef = useRef<HTMLElement>(null);
+  const scrollToGrid = useCallback((smooth = true) => {
+    const sec = sectionRef.current;
+    const headerH = gridRef.current?.offsetHeight ?? 0;
+    if (!sec) { gridRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' }); return; }
+    const top = Math.max(0, window.scrollY + sec.getBoundingClientRect().top - headerH);
+    window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
+  }, []);
   // Comments live behind a toggle in the lightbox to keep it uncluttered.
   const [showComments, setShowComments] = useState(false);
 
@@ -465,7 +474,7 @@ export function ClientGallery({
 
       {/* Edge-to-edge masonry — minimal chrome, photo-forward. min-height fills
           the viewport so short galleries still scroll the cover fully away. */}
-      <section className="px-1 sm:px-2 pt-1 min-h-svh">
+      <section ref={sectionRef} className="px-1 sm:px-2 pt-1 min-h-svh">
         {files.length === 0 ? (
           <p className="text-center text-sm text-ink-muted py-24">
             {view.kind === 'list' ? 'This list is empty.' : view.kind === 'favorites' ? 'No favorites yet.' : 'Nothing in this folder yet.'}
