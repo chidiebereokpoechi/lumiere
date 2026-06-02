@@ -182,18 +182,22 @@ export function ClientGallery({ gallery, photos: allPhotos, folders, initialFavo
         {photos.length === 0 ? (
           <p className="text-center text-sm text-ink-muted py-16">No photos in this gallery yet.</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="columns-2 sm:columns-3 lg:columns-4 gap-2">
             {photos.map((p, i) => {
               const isSelected = selected.has(p.id);
+              const ratio = p.width && p.height ? p.height / p.width : undefined;
               return (
-                <div key={p.id} className="group relative aspect-square overflow-hidden rounded-md bg-surface-sunken">
-                  <button type="button" onClick={() => setOpen(i)} className="block h-full w-full focus-visible:outline-none">
+                <div key={p.id} className="group relative mb-2 break-inside-avoid overflow-hidden rounded-md bg-surface-sunken">
+                  <button type="button" onClick={() => setOpen(i)} className="block w-full focus-visible:outline-none">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={p.thumbUrl}
                       alt=""
                       loading="lazy"
-                      className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] ${isSelected ? 'brightness-90' : ''}`}
+                      // Reserve space from known dimensions so the masonry doesn't
+                      // reflow as images load.
+                      style={ratio ? { aspectRatio: `${p.width} / ${p.height}` } : undefined}
+                      className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? 'brightness-90' : ''}`}
                     />
                   </button>
 

@@ -763,7 +763,7 @@ function PhotoTile({
       data-pid={photo.id}
       onPointerDown={reorderable ? onPointerDownReorder : undefined}
       style={reorderable ? { touchAction: 'none' } : undefined}
-      className={`group relative aspect-square rounded-lg overflow-hidden border border-border ${dragging ? 'border-dashed bg-surface-2' : 'bg-surface-sunken'} ${reorderable && !dragging ? 'cursor-grab' : ''}`}
+      className={`group relative aspect-square rounded-lg overflow-hidden border border-border ${dragging ? 'border-dashed bg-surface-2' : 'bg-surface'} ${reorderable && !dragging ? 'cursor-grab' : ''}`}
     >
       {dragging ? (
         // Placeholder slot while this photo is lifted into the overlay.
@@ -774,7 +774,7 @@ function PhotoTile({
           src={`/img/${galleryId}/${photo.id}/thumb`}
           alt={photo.filenameOriginal}
           draggable={false}
-          className={`h-full w-full object-cover ${selected ? 'brightness-90' : ''}`}
+          className={`h-full w-full object-contain ${selected ? 'brightness-90' : ''}`}
         />
       ) : (
         <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-center p-3">
