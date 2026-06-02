@@ -651,6 +651,7 @@ function FileTile({
   const ready = file.uploadStatus !== 'processing' && file.uploadStatus !== 'error';
   const streamUrl = `/api/gallery/${gallerySlug}/files/${file.id}/stream`;
   return (
+    <div className="flex flex-col gap-1.5">
     <div
       ref={onRef}
       data-mid={file.id}
@@ -678,7 +679,6 @@ function FileTile({
       ) : (
         <div className="h-full w-full flex flex-col items-center justify-center gap-2 p-3 text-center">
           <TypeIcon type={file.type} />
-          <span className="text-[11px] text-ink-subtle truncate max-w-full">{name}</span>
           <Badge>{file.type === 'audio' ? 'Audio' : 'File'}</Badge>
         </div>
       )}
@@ -706,6 +706,8 @@ function FileTile({
           </button>
         </div>
       )}
+    </div>
+    <span title={name} className="px-0.5 text-[11px] leading-tight text-ink-muted truncate">{name}</span>
     </div>
   );
 }
