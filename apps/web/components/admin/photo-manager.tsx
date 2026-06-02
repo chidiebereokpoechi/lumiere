@@ -214,6 +214,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
   }, []);
 
   const [dragId, setDragId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
   // Reordering writes global positions, so only allow it in the unfiltered
   // view with nothing selected and no uploads in flight.
   const canReorder = filter === 'all' && selected.size === 0 && tiles.length === 0;
@@ -225,16 +226,33 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     else tileNodes.current.delete(id);
   }, []);
 
-  const reorder = useCallback(async (fromId: string, toId: string) => {
-    if (fromId === toId) return;
+  const startDrag = useCallback((id: string) => {
+    dragIdRef.current = id;
+    setDragId(id);
+  }, []);
+
+  // Live reorder as the dragged tile enters another — re-renders trigger the
+  // FLIP pass, so neighbours slide out of the way while dragging.
+  const dragOver = useCallback((overId: string) => {
+    const dragging = dragIdRef.current;
+    if (!dragging || dragging === overId) return;
     setPhotos((prev) => {
-      const from = prev.findIndex((p) => p.id === fromId);
-      const to = prev.findIndex((p) => p.id === toId);
-      if (from === -1 || to === -1) return prev;
+      const from = prev.findIndex((p) => p.id === dragging);
+      const to = prev.findIndex((p) => p.id === overId);
+      if (from === -1 || to === -1 || from === to) return prev;
       const copy = [...prev];
       const [moved] = copy.splice(from, 1);
       copy.splice(to, 0, moved!);
-      const orderedIds = copy.map((p) => p.id);
+      return copy;
+    });
+  }, []);
+
+  // Persist the final order once on drop/end.
+  const endDrag = useCallback(() => {
+    dragIdRef.current = null;
+    setDragId(null);
+    setPhotos((prev) => {
+      const orderedIds = prev.map((p) => p.id);
       void apiClientMutation(`/api/galleries/${galleryId}/photos/reorder`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -243,7 +261,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
         setError(err instanceof ApiError ? `Reorder failed (${err.status})` : 'Network error');
         void refreshPhotos();
       });
-      return copy;
+      return prev;
     });
   }, [galleryId, refreshPhotos]);
 
@@ -321,6 +339,7 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     const newRects = new Map<string, DOMRect>();
     nodes.forEach((node, id) => newRects.set(id, node.getBoundingClientRect()));
     nodes.forEach((node, id) => {
+      if (id === dragIdRef.current) return; // don't fight the native drag ghost
       const prev = prevRects.current.get(id);
       const next = newRects.get(id);
       if (!prev || !next) return;
@@ -445,9 +464,9 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
               draggable={canReorder}
               dragging={dragId === photo.id}
               onRef={(n) => registerTile(photo.id, n)}
-              onDragStart={() => setDragId(photo.id)}
-              onDragEnd={() => setDragId(null)}
-              onDropOn={() => { if (dragId) void reorder(dragId, photo.id); setDragId(null); }}
+              onDragStart={() => startDrag(photo.id)}
+              onDragEnter={() => dragOver(photo.id)}
+              onDragEnd={endDrag}
               onToggleSelect={() => toggleSelect(photo.id)}
               onDelete={() => onDelete(photo)}
               onSetCover={() => onSetCover(photo)}
@@ -540,7 +559,7 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 
 function PhotoTile({
   photo, galleryId, isCover, selected, busy, draggable, dragging,
-  onRef, onDragStart, onDragEnd, onDropOn, onToggleSelect, onDelete, onSetCover,
+  onRef, onDragStart, onDragEnter, onDragEnd, onToggleSelect, onDelete, onSetCover,
 }: {
   photo: Photo;
   galleryId: string;
@@ -551,8 +570,8 @@ function PhotoTile({
   dragging: boolean;
   onRef: (node: HTMLElement | null) => void;
   onDragStart: () => void;
+  onDragEnter: () => void;
   onDragEnd: () => void;
-  onDropOn: () => void;
   onToggleSelect: () => void;
   onDelete: () => void;
   onSetCover: () => void;
@@ -564,9 +583,10 @@ function PhotoTile({
       ref={onRef}
       draggable={draggable}
       onDragStart={onDragStart}
+      onDragEnter={() => { if (draggable) onDragEnter(); }}
       onDragEnd={onDragEnd}
       onDragOver={(e) => { if (draggable) e.preventDefault(); }}
-      onDrop={(e) => { e.preventDefault(); onDropOn(); }}
+      onDrop={(e) => e.preventDefault()}
       className={`group relative aspect-square rounded-lg overflow-hidden border border-border bg-surface-sunken ${draggable ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging ? 'opacity-40' : ''}`}
     >
       {ready ? (
