@@ -259,7 +259,9 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
     const ov = overlayRef.current;
     const info = dragInfo.current;
     if (!ov || !info) return;
-    ov.style.transform = `translate(${clientX - info.offsetX}px, ${clientY - info.offsetY}px) scale(1.04)`;
+    // Outer layer tracks the cursor (no transition — must be instant). The
+    // inner layer handles the scale animation when over a folder.
+    ov.style.transform = `translate(${clientX - info.offsetX}px, ${clientY - info.offsetY}px)`;
   }, []);
 
   const movePhotos = useCallback(async (photoIds: string[], folderId: string) => {
@@ -651,25 +653,31 @@ export function PhotoManager({ galleryId, initialPhotos, initialFolders, initial
         </div>
       )}
 
-      {/* Drag overlay — the lifted, opaque copy that follows the cursor */}
+      {/* Drag overlay — outer follows the cursor; inner scales when over a folder */}
       {overlayPhoto && dragInfo.current && (
         <div
           ref={overlayRef}
-          className="fixed top-0 left-0 z-50 pointer-events-none overflow-hidden rounded-lg ring-2 ring-accent shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
+          className="fixed top-0 left-0 z-50 pointer-events-none"
           style={{
             width: dragInfo.current.w,
             height: dragInfo.current.h,
             willChange: 'transform',
-            transform: `translate(${dragInfo.current.startX - dragInfo.current.offsetX}px, ${dragInfo.current.startY - dragInfo.current.offsetY}px) scale(1.04)`,
+            transform: `translate(${dragInfo.current.startX - dragInfo.current.offsetX}px, ${dragInfo.current.startY - dragInfo.current.offsetY}px)`,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/img/${galleryId}/${overlayPhoto.id}/thumb`} alt="" draggable={false} className="h-full w-full object-cover" />
-          {dragPayload.current.length > 1 && (
-            <span className="absolute top-1 right-1 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums">
-              {dragPayload.current.length}
-            </span>
-          )}
+          <div
+            className={`relative h-full w-full origin-center overflow-hidden rounded-lg ring-2 ring-accent shadow-[0_12px_32px_rgba(0,0,0,0.35)] transition-transform duration-200 ease-out ${
+              dropFolderId ? 'scale-[0.35]' : 'scale-[1.04]'
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/img/${galleryId}/${overlayPhoto.id}/thumb`} alt="" draggable={false} className="h-full w-full object-cover" />
+            {dragPayload.current.length > 1 && (
+              <span className="absolute top-1 right-1 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums">
+                {dragPayload.current.length}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -691,9 +699,9 @@ function FolderChip({
   return (
     <span
       data-folder={id}
-      className={`group/chip inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
+      className={`group/chip inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold origin-center transition-all duration-200 ease-out ${
         isDropTarget
-          ? 'bg-accent-soft text-accent-ink border-accent ring-2 ring-accent'
+          ? 'scale-110 bg-accent text-accent-ink border-accent ring-4 ring-accent/40 shadow-[0_6px_20px_rgba(0,0,0,0.18)]'
           : active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
       }`}
     >
