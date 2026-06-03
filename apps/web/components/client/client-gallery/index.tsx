@@ -473,6 +473,14 @@ export function ClientGallery({
                 count={favorites.size}
               />
             )}
+          </nav>
+        )}
+        {/* Client-made lists get their own row, distinct from the sets above. */}
+        {lists.length > 0 && (
+          <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+            <span className="shrink-0 text-xs font-bold tracking-wider text-ink-subtle">
+              Lists
+            </span>
             {lists.map((l) => (
               <GalleryTab
                 key={l.id}
@@ -514,7 +522,7 @@ export function ClientGallery({
           suppressClickRef={suppressClickRef}
           onOpen={setOpenId}
           onToggleSelect={toggle}
-          onBeginDragSelect={beginDragSelect}
+          onBeginDragSelect={gridMode ? beginDragSelect : () => {}}
           onToggleFavorite={(id) => requireEmail(() => toggleFavorite(id))}
         />
       </section>
