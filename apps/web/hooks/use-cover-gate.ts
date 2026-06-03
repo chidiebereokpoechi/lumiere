@@ -91,14 +91,19 @@ export function useCoverGate(
         setDragging(true);
         setProg(clamp(1 + dy / vh()));
       } else {
+        // Reveal is threshold-only — no live preview, no tracking. The cover
+        // snaps in once the gesture has clearly committed past `revealFraction`.
         if (!atTop()) {
           startY.v = null;
           return;
         }
-        if (dy <= 0) return; // only a downward pull reveals the cover above
-        e.preventDefault();
-        setDragging(true);
-        setProg(clamp(dy / vh()));
+        if (dy <= 0) return;
+        if (dy / vh() >= revealFraction) {
+          e.preventDefault();
+          setShown(true);
+          setProg(1);
+          startY.v = null;
+        }
       }
     };
     const onTouchEnd = () => {
@@ -117,15 +122,23 @@ export function useCoverGate(
         setProg(clamp(1 - wheelAccum.v / vh()));
         scheduleSettle();
       } else {
+        // Reveal is threshold-only — accumulate but don't show progress until
+        // the user has clearly committed past `revealFraction` of the viewport.
         if (!atTop() || e.deltaY >= 0) {
           if (e.deltaY > 0) wheelAccum.v = 0;
           return;
         }
         e.preventDefault();
-        setDragging(true);
         wheelAccum.v += -e.deltaY;
-        setProg(clamp(wheelAccum.v / vh()));
-        scheduleSettle();
+        if (wheelAccum.v / vh() >= revealFraction) {
+          wheelAccum.v = 0;
+          setShown(true);
+          setProg(1);
+        } else {
+          // Decay so a slow trickle of upward scroll doesn't eventually trigger.
+          if (idle) window.clearTimeout(idle);
+          idle = window.setTimeout(() => { wheelAccum.v = 0; }, 140);
+        }
       }
     };
 
