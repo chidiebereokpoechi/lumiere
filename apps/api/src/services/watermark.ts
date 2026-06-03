@@ -8,9 +8,9 @@ import type { WatermarkConfig, TextWatermarkConfig } from '@lumiere/types';
 import { getObjectStream } from './storage';
 
 const SIZE_FACTOR: Record<TextWatermarkConfig['size'], number> = {
-  small: 0.025,
-  medium: 0.04,
-  large: 0.06,
+  small: 0.035,
+  medium: 0.055,
+  large: 0.085,
 };
 
 function escapeXml(s: string): string {
@@ -37,9 +37,11 @@ function buildTextSvg(width: number, height: number, cfg: TextWatermarkConfig): 
     case 'center':        x = width / 2;       y = height / 2 + fontSize / 3; anchor = 'middle'; break;
   }
 
+  // Use a font that's actually installed in the container (see Dockerfile).
+  // librsvg falls back to tofu boxes if the named family can't be resolved.
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
-    `<text x="${x}" y="${y}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" ` +
-    `font-size="${fontSize}" font-weight="600" fill="${cfg.color}" fill-opacity="${cfg.opacity}" ` +
+    `<text x="${x}" y="${y}" font-family="DejaVu Sans, sans-serif" ` +
+    `font-size="${fontSize}" font-weight="700" fill="${cfg.color}" fill-opacity="${cfg.opacity}" ` +
     `text-anchor="${anchor}" stroke="#000000" stroke-opacity="${cfg.opacity * 0.4}" stroke-width="${fontSize / 40}" paint-order="stroke">` +
     `${escapeXml(cfg.text)}</text></svg>`;
   return Buffer.from(svg);
