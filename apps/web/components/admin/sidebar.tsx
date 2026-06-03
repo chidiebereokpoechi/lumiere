@@ -14,7 +14,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: '/admin', label: 'Galleries', icon: <IconGrid /> },
   { href: '/admin/analytics', label: 'Analytics', icon: <IconChart />, disabled: true },
-  { href: '/admin/watermarks', label: 'Watermarks', icon: <IconStamp />, disabled: true },
+  { href: '/admin/watermarks', label: 'Watermarks', icon: <IconStamp /> },
   { href: '/admin/settings', label: 'Settings', icon: <IconGear />, disabled: true },
 ];
 
