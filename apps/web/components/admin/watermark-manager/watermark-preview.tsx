@@ -69,7 +69,7 @@ export function WatermarkPreview({
             style={{ opacity: draft.opacity }}
             className="inline-flex items-center gap-1.5 rounded bg-white/85 px-2 py-1 text-[11px] font-bold tracking-wider text-slate-800"
           >
-            <ImageIcon size={14} />
+            <ImageIcon size={16} />
             Logo
           </span>
         )}

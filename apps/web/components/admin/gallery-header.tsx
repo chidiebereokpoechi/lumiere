@@ -41,7 +41,7 @@ export function GalleryHeader({
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
             >
-              <External size={15} />
+              <External size={16} />
               Preview
             </Link>
           </>

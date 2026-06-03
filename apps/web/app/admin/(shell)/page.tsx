@@ -118,7 +118,7 @@ function Dot() {
 function PlaceholderCover() {
   return (
     <div className="h-full w-full bg-surface-sunken flex items-center justify-center">
-      <ImageIcon size={26} className="text-ink-subtle" />
+      <ImageIcon size={24} className="text-ink-subtle" />
     </div>
   );
 }
@@ -129,7 +129,7 @@ function NewGalleryButton() {
       href="/admin/galleries/new"
       className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
-      <Plus size={15} />
+      <Plus size={16} />
       New gallery
     </Link>
   );

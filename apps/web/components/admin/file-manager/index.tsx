@@ -443,7 +443,7 @@ export function FileManager({
               }}
               className={`inline-flex h-5 w-5 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? "bg-accent text-white border-accent ring-4 ring-accent/40" : "border-border text-ink-muted hover:text-ink-strong hover:border-border-strong"}`}
             >
-              <Plus size={15} />
+              <Plus size={16} />
             </button>
           </div>
           <div className="space-y-4">
@@ -507,7 +507,7 @@ export function FileManager({
               onClick={() => inputRef.current?.click()}
               className="px-3.5 tracking-wider"
             >
-              <Upload size={15} />
+              <Upload size={16} />
               Upload
             </Button>
             <input
@@ -658,7 +658,7 @@ export function FileManager({
               onClick={deleteSelected}
               className="inline-flex items-center gap-1.5 rounded-md border border-negative/40 px-3 py-2 text-sm font-semibold text-negative hover:bg-negative/10 transition-colors"
             >
-              <Trash size={15} />
+              <Trash size={16} />
               Delete
             </button>
             <button

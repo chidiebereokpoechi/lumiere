@@ -97,7 +97,7 @@ export default function NewGalleryPage() {
         </p>
       </header>
 
-      <div className="px-4 pb-16">
+      <div className="p-4 pb-16">
         <form onSubmit={onSubmit} className="max-w-2xl space-y-4">
           <section className="rounded-xl bg-surface border border-border p-4 space-y-4">
             <h2 className="text-xs font-extrabold tracking-wider text-ink-muted">
@@ -194,7 +194,7 @@ export default function NewGalleryPage() {
 
           <FormError message={error} />
 
-          <div className="flex items-center justify-end gap-4 pt-2">
+          <div className="flex items-center justify-end gap-4">
             <Link
               href="/admin"
               className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"

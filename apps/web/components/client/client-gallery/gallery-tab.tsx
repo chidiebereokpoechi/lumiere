@@ -53,7 +53,7 @@ export function GalleryTab({
           aria-label="Delete list"
           className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
         >
-          <Close size={14} />
+          <Close size={16} />
         </button>
       )}
     </span>

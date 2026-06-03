@@ -37,7 +37,7 @@ export function SaveStatus({ state }: { state: SaveState }) {
   if (state === "saved") {
     return (
       <span className={cn(base, "text-ink-muted")}>
-        <Check size={14} />
+        <Check size={16} />
         All changes saved
       </span>
     );

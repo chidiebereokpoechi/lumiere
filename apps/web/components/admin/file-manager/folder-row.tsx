@@ -104,11 +104,11 @@ export function FolderRow({
               : "text-ink-subtle hover:text-ink-strong",
           )}
         >
-          <Grip size={15} />
+          <Grip size={16} />
         </button>
       )}
       <span className="flex-1 min-w-0 inline-flex items-center gap-1.5 text-left text-sm font-semibold">
-        {hidden && <EyeOff size={14} className="shrink-0" />}
+        {hidden && <EyeOff size={16} className="shrink-0" />}
         <span className="truncate">{label}</span>
       </span>
       <span
@@ -130,7 +130,7 @@ export function FolderRow({
             title={hidden ? "Show to clients" : "Hide from clients"}
             className={iconTint}
           >
-            {hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+            {hidden ? <Eye size={16} /> : <EyeOff size={16} />}
           </button>
         )}
         {onRename && (
@@ -143,7 +143,7 @@ export function FolderRow({
             title="Rename"
             className={iconTint}
           >
-            <Pen size={14} />
+            <Pen size={16} />
           </button>
         )}
         {onDelete && (
@@ -160,7 +160,7 @@ export function FolderRow({
                 : "text-ink-subtle hover:text-negative"
             }
           >
-            <Close size={14} />
+            <Close size={16} />
           </button>
         )}
       </span>

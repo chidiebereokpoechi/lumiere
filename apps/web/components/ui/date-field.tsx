@@ -120,7 +120,7 @@ export function DateField({
               aria-label="Previous month"
               className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink-strong"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <span className="text-sm font-bold text-ink-strong">
               {MONTHS[view.m]} {view.y}
@@ -131,7 +131,7 @@ export function DateField({
               aria-label="Next month"
               className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink-strong"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </div>
           <div className="grid grid-cols-7 gap-1 mb-1">

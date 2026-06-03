@@ -50,7 +50,7 @@ export function AdminPreview({
           aria-label="Download"
           className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
         >
-          <Download size={20} />
+          <Download size={24} />
         </a>
       </div>
       <div
@@ -97,7 +97,7 @@ export function AdminPreview({
               aria-label="Previous"
               className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11"
             >
-              <ChevronLeft size={26} />
+              <ChevronLeft size={24} />
             </IconButton>
             <IconButton
               onClick={(e) => {
@@ -107,7 +107,7 @@ export function AdminPreview({
               aria-label="Next"
               className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11"
             >
-              <ChevronRight size={26} />
+              <ChevronRight size={24} />
             </IconButton>
           </>
         )}

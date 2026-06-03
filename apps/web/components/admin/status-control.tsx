@@ -92,7 +92,7 @@ export function StatusControl({
       >
         <span className={`h-2 w-2 rounded-full ${DOT[status]}`} />
         {LABELS[status]}
-        <ChevronDown size={14} />
+        <ChevronDown size={16} />
       </button>
       {open && (
         <div className="absolute right-0 z-30 mt-1.5 w-44 rounded-md border border-border bg-surface shadow-lg p-1.5">

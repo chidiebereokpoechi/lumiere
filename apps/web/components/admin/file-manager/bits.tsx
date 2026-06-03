@@ -18,5 +18,5 @@ export function Badge({ children }: { children: React.ReactNode }) {
 // Fallback glyph for non-visual file types (audio without cover art, documents).
 export function TypeIcon({ type }: { type: GalleryFile["type"] }) {
   const Icon = type === "audio" ? Music : FileDoc;
-  return <Icon size={28} className="text-ink-muted" />;
+  return <Icon size={24} className="text-ink-muted" />;
 }

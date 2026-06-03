@@ -104,7 +104,7 @@ export function FileTile({
             )}
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-black/50 text-white">
-                <Play size={18} />
+                <Play size={20} />
               </span>
             </span>
             <Badge>Video</Badge>
@@ -239,7 +239,7 @@ function TileMenu({
         aria-label="Actions"
         className={`h-8 w-8 inline-flex items-center justify-center rounded-md bg-surface text-ink-strong hover:bg-surface disabled:opacity-50 transition-opacity ${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       >
-        <More size={18} />
+        <More size={16} />
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-48 rounded-md border border-border bg-surface shadow-lg p-1.5 text-sm z-20">
