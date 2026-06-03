@@ -566,6 +566,9 @@ export function ClientGallery({
 
   const allSelected = selected.size > 0 && selected.size === files.length;
   const open = openIndex >= 0 ? files[openIndex] : null;
+  // On touch, once a selection exists, tapping a tile toggles it instead of
+  // opening the lightbox (and we hide the heart so the tile reads as selectable).
+  const selecting = coarse && selected.size > 0;
 
   return (
     <main className="min-h-dvh bg-bg pb-24">
@@ -617,15 +620,15 @@ export function ClientGallery({
       {/* Sticky chrome: a slim title bar with actions, then the tab row. */}
       <div
         ref={gridRef}
-        className="sticky top-0 z-30 bg-bg/95 backdrop-blur border-b border-border"
+        className="sticky top-0 z-30 bg-bg border-b border-border"
       >
-        <div className="px-4 sm:px-8 h-14 flex items-center justify-between gap-3">
+        <div className="px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold uppercase tracking-wider text-ink-strong">
+            <p className="truncate text-lg font-extrabold uppercase tracking-wider text-ink-strong">
               {gallery.title}
             </p>
             {gallery.subtitle && (
-              <p className="truncate text-xs text-ink-muted">
+              <p className="truncate text-sm text-ink-muted">
                 {gallery.subtitle}
               </p>
             )}
@@ -635,7 +638,7 @@ export function ClientGallery({
               <button
                 type="button"
                 onClick={allSelected ? clearSelection : selectAll}
-                className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+                className="text-sm font-bold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
               >
                 {allSelected ? "Clear" : "Select all"}
               </button>
@@ -644,11 +647,11 @@ export function ClientGallery({
                 onClick={downloadView}
                 aria-label="Download"
                 title="Download these"
-                className="inline-flex items-center gap-1.5 text-ink-muted hover:text-ink-strong"
+                className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
               >
                 <svg
-                  width="17"
-                  height="17"
+                  width="22"
+                  height="22"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -660,7 +663,7 @@ export function ClientGallery({
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider">
+                <span className="hidden sm:inline text-sm font-bold uppercase tracking-wider">
                   Download
                 </span>
               </button>
@@ -668,7 +671,7 @@ export function ClientGallery({
           )}
         </div>
         {allFiles.length > 0 && (
-          <nav className="px-4 sm:px-8 flex items-center gap-5 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+          <nav className="px-4 sm:px-8 pb-3 flex items-center gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
             {folders.map((f) => (
               <Tab
                 key={f.id}
@@ -728,7 +731,7 @@ export function ClientGallery({
                 >
                   <button
                     type="button"
-                    onClick={() => setOpenId(f.id)}
+                    onClick={() => { if (selecting) toggleSelect(f.id, false); else setOpenId(f.id); }}
                     className="block w-full text-left focus-visible:outline-none"
                   >
                     {f.type === "image" ? (
@@ -851,7 +854,7 @@ export function ClientGallery({
                       </svg>
                     </button>
                   )}
-                  {canFavorite && (
+                  {canFavorite && !selecting && (
                     <button
                       type="button"
                       onClick={() => requireEmail(() => toggleFavorite(f.id))}
@@ -866,8 +869,8 @@ export function ClientGallery({
                       }`}
                     >
                       <svg
-                        width="20"
-                        height="20"
+                        width="26"
+                        height="26"
                         viewBox="0 0 24 24"
                         fill={favorites.has(f.id) ? "currentColor" : "none"}
                         stroke="currentColor"
@@ -898,7 +901,7 @@ export function ClientGallery({
 
       {/* Selection action bar — wraps + respects the iOS home-indicator inset */}
       {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface px-4 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="text-sm font-semibold text-ink-strong tabular-nums">
               {selected.size} selected
@@ -1378,34 +1381,35 @@ function Tab({
   onDelete?: () => void;
 }) {
   return (
-    <span className="group/tab shrink-0 inline-flex items-center">
+    <span
+      className={`group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border pl-4 ${onDelete ? "pr-2" : "pr-4"} py-2.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+        active
+          ? "bg-surface-strong text-ink-inverse border-surface-strong"
+          : "bg-surface text-ink-muted border-border hover:bg-surface-2 hover:text-ink-strong hover:border-border-strong"
+      }`}
+    >
       <button
         type="button"
         onClick={onClick}
-        className={`relative inline-flex items-center gap-1.5 py-3.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
-          active ? "text-ink-strong" : "text-ink-muted hover:text-ink-strong"
-        }`}
+        className="inline-flex items-center gap-1.5 min-w-0 focus-visible:outline-none"
       >
         <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
         <span
-          className={`tabular-nums text-[11px] font-semibold ${active ? "text-ink-muted" : "text-ink-subtle"}`}
+          className={`tabular-nums text-xs ${active ? "text-ink-inverse/70" : "text-ink-subtle"}`}
         >
           {count}
         </span>
-        {active && (
-          <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />
-        )}
       </button>
-      {onDelete && active && (
+      {onDelete && (
         <button
           type="button"
           onClick={onDelete}
           aria-label="Delete list"
-          className="ml-1 text-ink-subtle hover:text-negative"
+          className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
         >
           <svg
-            width="13"
-            height="13"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
