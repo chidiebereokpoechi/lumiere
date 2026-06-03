@@ -17,12 +17,13 @@ export interface GalleryGridHandlers {
   canDownload: boolean;
   canFavorite: boolean;
   actionVis: string;
-  selecting: boolean;
+  selectionMode: boolean;
   suppressClickRef: React.MutableRefObject<boolean>;
   onOpen: (id: string) => void;
   onToggleSelect: (id: string, shift: boolean) => void;
   onBeginDragSelect: (id: string, e: React.PointerEvent) => void;
   onToggleFavorite: (id: string) => void;
+  onLongPress: (id: string) => void;
 }
 
 interface GridProps extends GalleryGridHandlers {
@@ -146,24 +147,59 @@ function GalleryTile({
   canDownload,
   canFavorite,
   actionVis,
-  selecting,
+  selectionMode,
   suppressClickRef,
   onOpen,
   onToggleSelect,
   onBeginDragSelect,
   onToggleFavorite,
+  onLongPress,
 }: GalleryGridHandlers & {
   f: ClientFile;
   isSelected: boolean;
   isFavorite: boolean;
   fill: boolean;
 }) {
+  // Long-press (touch or mouse hold) opens the quick-action menu. A press that
+  // fires the menu suppresses the subsequent click so it doesn't also open.
+  const lpTimer = useRef<number | null>(null);
+  const lpStart = useRef<{ x: number; y: number } | null>(null);
+  const lpFired = useRef(false);
+  const cancelLong = () => {
+    if (lpTimer.current) {
+      clearTimeout(lpTimer.current);
+      lpTimer.current = null;
+    }
+  };
+  const onPressStart = (e: React.PointerEvent) => {
+    lpFired.current = false;
+    lpStart.current = { x: e.clientX, y: e.clientY };
+    cancelLong();
+    lpTimer.current = window.setTimeout(() => {
+      lpFired.current = true;
+      onLongPress(f.id);
+    }, 450);
+  };
+  const onPressMove = (e: React.PointerEvent) => {
+    const s = lpStart.current;
+    if (s && Math.hypot(e.clientX - s.x, e.clientY - s.y) > 10) cancelLong();
+  };
+
   return (
     <>
       <button
         type="button"
+        onPointerDown={onPressStart}
+        onPointerMove={onPressMove}
+        onPointerUp={cancelLong}
+        onPointerCancel={cancelLong}
+        onContextMenu={(e) => e.preventDefault()}
         onClick={() => {
-          if (selecting) onToggleSelect(f.id, false);
+          if (lpFired.current) {
+            lpFired.current = false;
+            return;
+          }
+          if (selectionMode) onToggleSelect(f.id, false);
           else onOpen(f.id);
         }}
         className={`block w-full text-left focus-visible:outline-none ${fill ? "h-full" : ""}`}
@@ -240,13 +276,13 @@ function GalleryTile({
         )}
       </button>
 
-      {(canDownload || canFavorite) && (
+      {(selectionMode || canFavorite) && (
         <div
-          className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected ? "opacity-100" : actionVis}`}
+          className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected || selectionMode ? "opacity-100" : actionVis}`}
         />
       )}
 
-      {canDownload && (
+      {selectionMode && (
         <button
           type="button"
           onPointerDown={(e) => onBeginDragSelect(f.id, e)}
@@ -260,22 +296,22 @@ function GalleryTile({
           aria-pressed={isSelected}
           aria-label={isSelected ? "Deselect" : "Select"}
           style={{ touchAction: "none" }}
-          className={`absolute top-2.5 left-2.5 h-4 w-4 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+          className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
             isSelected
-              ? "bg-accent border-accent text-white opacity-100"
-              : `border-white text-transparent ${actionVis}`
+              ? "bg-accent border-accent text-white"
+              : "bg-black/30 border-white text-transparent"
           }`}
         >
-          <Check size={24} />
+          <Check size={20} />
         </button>
       )}
-      {canFavorite && !selecting && (
+      {canFavorite && !selectionMode && (
         <button
           type="button"
           onClick={() => onToggleFavorite(f.id)}
           aria-pressed={isFavorite}
           aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-          className={`absolute top-2.5 right-2.5 h-4 w-4 inline-flex items-center justify-center transition-all drop-shadow ${
+          className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all drop-shadow ${
             isFavorite ? "text-heart opacity-100" : `text-white ${actionVis}`
           }`}
         >
