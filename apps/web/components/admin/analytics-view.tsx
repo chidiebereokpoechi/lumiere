@@ -102,7 +102,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
             );
           })}
         </div>
-        <div className="mt-2 flex justify-between text-[11px] text-ink-subtle tabular-nums">
+        <div className="mt-2 flex justify-between text-[11px] text-ink-muted tabular-nums">
           <span>{days[0]}</span>
           <span>{days[days.length - 1]}</span>
         </div>
@@ -179,7 +179,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs font-extrabold tracking-wider text-ink-subtle border-b border-border">
+                <tr className="text-left text-xs font-extrabold tracking-wider text-ink-muted border-b border-border">
                   <th className="py-2 pr-4 font-extrabold">Client</th>
                   <th className="py-2 px-4 font-extrabold tabular-nums">
                     Favorites

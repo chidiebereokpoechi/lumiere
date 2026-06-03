@@ -23,20 +23,25 @@ export function DownloadModal({
   canFavorite: boolean;
   favoritesCount: number;
   onClose: () => void;
-  onDownload: (folderIds: string[], favorites: boolean, listFileIds: string[]) => void;
+  onDownload: (
+    folderIds: string[],
+    favorites: boolean,
+    listFileIds: string[],
+  ) => void;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectedLists, setSelectedLists] = useState<Set<string>>(new Set());
   const [favorites, setFavorites] = useState(false);
 
-  const nonEmptyFolders = folders.filter((f) => (folderCounts.get(f.id) ?? 0) > 0);
+  const nonEmptyFolders = folders.filter(
+    (f) => (folderCounts.get(f.id) ?? 0) > 0,
+  );
   const nonEmptyLists = lists.filter((l) => l.fileIds.length > 0);
   const allSelected =
     selected.size === nonEmptyFolders.length &&
     (!canFavorite || favorites) &&
     nonEmptyFolders.length > 0;
-  const nothing =
-    selected.size === 0 && selectedLists.size === 0 && !favorites;
+  const nothing = selected.size === 0 && selectedLists.size === 0 && !favorites;
 
   const toggleIn =
     (set: React.Dispatch<React.SetStateAction<Set<string>>>) => (id: string) =>
@@ -79,7 +84,12 @@ export function DownloadModal({
       </p>
 
       <ul className="mt-4 space-y-1 max-h-72 overflow-y-auto">
-        <Row checked={allSelected} onToggle={toggleAll} label="Everything" bold />
+        <Row
+          checked={allSelected}
+          onToggle={toggleAll}
+          label="Everything"
+          bold
+        />
         {nonEmptyFolders.map((f) => (
           <Row
             key={f.id}
@@ -99,7 +109,7 @@ export function DownloadModal({
         )}
         {nonEmptyLists.length > 0 && (
           <>
-            <li className="px-2.5 pt-3 pb-1 text-xs font-bold tracking-wider text-ink-subtle">
+            <li className="px-2.5 pt-3 pb-1 text-xs font-bold tracking-wider text-ink-muted">
               Lists
             </li>
             {nonEmptyLists.map((l) => (
@@ -168,7 +178,7 @@ function Row({
           {label}
         </span>
         {count !== undefined && (
-          <span className="text-xs text-ink-subtle tabular-nums">{count}</span>
+          <span className="text-xs text-ink-muted tabular-nums">{count}</span>
         )}
       </button>
     </li>

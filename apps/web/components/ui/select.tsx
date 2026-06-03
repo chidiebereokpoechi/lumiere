@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Check } from '@/components/ui/icons';
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Check } from "@/components/ui/icons";
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -14,7 +14,12 @@ export interface SelectOption<T extends string> {
 // Custom listbox dropdown (no native <select>). Matches the form input shell:
 // 1px border, peach focus ring, squared corners, chevron.
 export function Select<T extends string>({
-  id, value, onChange, options, placeholder, className,
+  id,
+  value,
+  onChange,
+  options,
+  placeholder,
+  className,
 }: {
   id?: string;
   value: T;
@@ -28,11 +33,19 @@ export function Select<T extends string>({
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const current = options.find((o) => o.value === value);
@@ -47,7 +60,7 @@ export function Select<T extends string>({
   }
 
   return (
-    <div ref={ref} className={`relative ${className ?? ''}`}>
+    <div ref={ref} className={`relative ${className ?? ""}`}>
       <button
         type="button"
         id={id}
@@ -56,8 +69,15 @@ export function Select<T extends string>({
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-left text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors"
       >
-        <span className={`min-w-0 flex-1 truncate ${current ? '' : 'text-ink-subtle'}`}>{current?.label ?? placeholder ?? 'Select…'}</span>
-        <ChevronDown className={`shrink-0 text-ink-subtle transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
+        <span
+          className={`min-w-0 flex-1 truncate ${current ? "" : "text-ink-muted"}`}
+        >
+          {current?.label ?? placeholder ?? "Select…"}
+        </span>
+        <ChevronDown
+          className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
+          size={16}
+        />
       </button>
       {open && (
         <div
@@ -67,7 +87,7 @@ export function Select<T extends string>({
           {groups.map((g, gi) => (
             <div key={g.group ?? gi} className="flex flex-col">
               {g.group && (
-                <p className="px-2.5 pb-1 text-xs font-bold tracking-wider text-ink-subtle">
+                <p className="px-2.5 pb-1 text-xs font-bold tracking-wider text-ink-muted">
                   {g.group}
                 </p>
               )}
@@ -85,12 +105,14 @@ export function Select<T extends string>({
                     }}
                     className={`flex w-full items-center justify-between gap-2 rounded px-2.5 py-1.5 text-left text-sm transition-colors ${
                       active
-                        ? 'bg-surface-2 text-ink-strong font-semibold'
-                        : 'text-ink-muted hover:bg-surface-2 hover:text-ink-strong'
+                        ? "bg-surface-2 text-ink-strong font-semibold"
+                        : "text-ink-muted hover:bg-surface-2 hover:text-ink-strong"
                     }`}
                   >
                     <span className="truncate">{o.label}</span>
-                    {active && <Check className="shrink-0 text-accent-dark" size={16} />}
+                    {active && (
+                      <Check className="shrink-0 text-accent-dark" size={16} />
+                    )}
                   </button>
                 );
               })}

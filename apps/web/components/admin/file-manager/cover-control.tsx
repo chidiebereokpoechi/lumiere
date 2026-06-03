@@ -73,7 +73,7 @@ export function CoverControl({
             style={{ objectPosition: objectPos(cover) }}
           />
         ) : (
-          <span className="h-full w-full flex flex-col items-center justify-center gap-1 text-ink-subtle">
+          <span className="h-full w-full flex flex-col items-center justify-center gap-1 text-ink-muted">
             <ImageIcon size={24} />
             <span className="text-xs font-semibold">No cover</span>
           </span>
@@ -195,7 +195,7 @@ function CoverModal({
       )}
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="text-xs font-bold tracking-wider text-ink-subtle">
+        <span className="text-xs font-bold tracking-wider text-ink-muted">
           From gallery
         </span>
         <input
@@ -220,7 +220,7 @@ function CoverModal({
       </div>
 
       {images.length === 0 ? (
-        <p className="mt-3 text-sm text-ink-subtle">
+        <p className="mt-3 text-sm text-ink-muted">
           No images in this gallery yet.
         </p>
       ) : (

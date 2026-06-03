@@ -42,7 +42,7 @@ export function GalleryTab({
       {icon && <span className="shrink-0 inline-flex">{icon}</span>}
       <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
       <span
-        className={`tabular-nums text-xs ${active ? "text-ink-inverse/70" : "text-ink-subtle"}`}
+        className={`tabular-nums text-xs ${active ? "text-ink-inverse/70" : "text-ink-muted"}`}
       >
         {count}
       </span>
@@ -54,7 +54,7 @@ export function GalleryTab({
             e.stopPropagation();
             onMenu();
           }}
-          className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-ink-strong"}`}
+          className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-muted hover:text-ink-strong"}`}
         >
           <More size={16} />
         </button>

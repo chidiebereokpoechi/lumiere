@@ -4,7 +4,7 @@ import { Music, FileDoc, SpinnerIcon } from "@/components/ui/icons";
 // Small shared visual atoms for the media manager (tiles, preview, placeholders).
 
 export function Spinner() {
-  return <SpinnerIcon size={20} className="animate-spin text-ink-subtle" />;
+  return <SpinnerIcon size={20} className="animate-spin text-ink-muted" />;
 }
 
 export function Badge({ children }: { children: React.ReactNode }) {

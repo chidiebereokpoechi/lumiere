@@ -36,7 +36,7 @@ export default async function HomePage() {
       </header>
 
       <section className="mt-16">
-        <h2 className="text-xs font-medium tracking-wider text-ink-subtle">
+        <h2 className="text-xs font-medium tracking-wider text-ink-muted">
           System status
         </h2>
         <div className="mt-4 rounded-md bg-surface p-4">
@@ -75,7 +75,7 @@ export default async function HomePage() {
       </section>
 
       <section className="mt-16 space-y-4">
-        <h2 className="text-xs font-medium tracking-wider text-ink-subtle">
+        <h2 className="text-xs font-medium tracking-wider text-ink-muted">
           Type ramp
         </h2>
         <div className="space-y-3">
@@ -87,7 +87,7 @@ export default async function HomePage() {
           <p className="text-sm text-ink-muted">
             Muted — supporting text and metadata.
           </p>
-          <p className="text-xs tracking-wider text-ink-subtle">
+          <p className="text-xs tracking-wider text-ink-muted">
             Eyebrow · all caps
           </p>
         </div>
@@ -124,7 +124,7 @@ function SwatchCard({ label, varName }: { label: string; varName: string }) {
       />
       <div className="mt-4 flex items-baseline justify-between">
         <span className="text-sm font-medium text-ink">{label}</span>
-        <span className="font-mono text-xs text-ink-subtle">{varName}</span>
+        <span className="font-mono text-xs text-ink-muted">{varName}</span>
       </div>
     </div>
   );

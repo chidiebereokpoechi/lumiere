@@ -4,7 +4,7 @@ import type React from "react";
 import { cn } from "@/lib/cn";
 
 const FIELD_BASE =
-  "w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors";
+  "w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-muted hover:border-border-strong focus:border-accent transition-colors";
 
 // Controlled text input. `onChange` yields the next string (not the event).
 // `className` merges last so callers can add margins/width tweaks.

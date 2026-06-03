@@ -208,7 +208,7 @@ export function Lightbox({
               <p className="mt-3 text-sm font-semibold text-ink-strong truncate">
                 {file.filename}
               </p>
-              <p className="text-xs text-ink-subtle">
+              <p className="text-xs text-ink-muted">
                 {formatBytes(file.fileSize)}
               </p>
             </div>

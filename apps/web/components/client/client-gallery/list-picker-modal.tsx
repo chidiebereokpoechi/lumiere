@@ -71,7 +71,7 @@ export function ListPickerModal({
           >
             Add to list
           </p>
-          <p className="text-xs text-ink-subtle">
+          <p className="text-xs text-ink-muted">
             {fileIds.length === 1 ? "1 item" : `${fileIds.length} items`}
           </p>
         </div>
@@ -131,7 +131,7 @@ export function ListPickerModal({
                   <span className="block text-sm font-semibold text-ink-strong truncate">
                     {l.name}
                   </span>
-                  <span className="block text-xs text-ink-subtle tabular-nums">
+                  <span className="block text-xs text-ink-muted tabular-nums">
                     {l.fileIds.length} item{l.fileIds.length === 1 ? "" : "s"}
                   </span>
                 </span>

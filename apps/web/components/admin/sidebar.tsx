@@ -54,7 +54,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden md:flex md:flex-col shrink-0 sticky top-0 h-dvh overflow-y-auto bg-bg border-r border-border py-4 transition-[width] duration-200 ease-out ${
+      className={`hidden md:flex md:flex-col shrink-0 sticky top-0 h-dvh overflow-y-auto bg-border border-r border-border py-4 transition-[width] duration-200 ease-out ${
         collapsed ? "md:w-18 px-4" : "md:w-57 px-4"
       }`}
     >
@@ -118,7 +118,7 @@ function NavLink({
       <span
         aria-disabled
         title={collapsed ? label : undefined}
-        className={`${base} bg-surface-2 text-ink-subtle border border-border cursor-not-allowed`}
+        className={`${base} bg-surface-2 text-ink-muted border border-border cursor-not-allowed`}
       >
         <span className="opacity-50">{item.icon}</span>
         {!collapsed && label}

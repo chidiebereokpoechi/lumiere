@@ -47,7 +47,7 @@ export function FolderRow({
   const onTint =
     active || isDropTarget
       ? "text-ink-inverse/70 hover:text-ink-inverse"
-      : "text-ink-subtle hover:text-ink-strong";
+      : "text-ink-muted hover:text-ink-strong";
   return (
     <div
       data-folder={id}
@@ -109,7 +109,7 @@ export function FolderRow({
       <span
         className={cn(
           "tabular-nums text-xs shrink-0",
-          active || isDropTarget ? "text-ink-inverse/70" : "text-ink-subtle",
+          active || isDropTarget ? "text-ink-inverse/70" : "text-ink-muted",
         )}
       >
         {count}
@@ -147,7 +147,8 @@ function FolderMenu({
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);

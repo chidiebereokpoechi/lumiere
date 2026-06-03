@@ -482,11 +482,11 @@ export function FileManager({
             <h2 className="text-xl font-extrabold tracking-wider text-ink-strong truncate">
               {folders.find((f) => f.id === activeFolder)?.name ?? "Media"}
             </h2>
-            <span className="text-sm text-ink-subtle tabular-nums">
+            <span className="text-sm text-ink-muted tabular-nums">
               {order.length}
             </span>
             <div className="ml-auto flex items-center gap-4">
-              <span className="hidden sm:inline text-xs font-bold tracking-wider text-ink-subtle">
+              <span className="hidden sm:inline text-xs font-bold tracking-wider text-ink-muted">
                 Sort
               </span>
               <Select
@@ -622,7 +622,7 @@ export function FileManager({
                         </span>
                       </>
                     )}
-                    <span className="text-[11px] text-ink-subtle truncate max-w-full">
+                    <span className="text-[11px] text-ink-muted truncate max-w-full">
                       {t.filename}
                     </span>
                   </div>

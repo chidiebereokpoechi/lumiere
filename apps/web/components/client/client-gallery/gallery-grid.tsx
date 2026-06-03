@@ -288,7 +288,7 @@ function GalleryTile({
             <span className="text-xs font-semibold text-ink-strong truncate max-w-full">
               {f.filename}
             </span>
-            <span className="text-[11px] text-ink-subtle">
+            <span className="text-[11px] text-ink-muted">
               {formatBytes(f.fileSize)}
             </span>
           </span>

@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Music, Play, Pause, SkipBack, SkipForward } from "@/components/ui/icons";
+import {
+  Music,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+} from "@/components/ui/icons";
 
 // Music-player-style audio surface: artwork, title, scrubber, transport.
 export function AudioPlayer({
@@ -62,7 +68,7 @@ export function AudioPlayer({
       <div className="mt-4 text-center">
         <p className="text-base font-bold text-ink-strong truncate">{title}</p>
         {subtitle && (
-          <p className="mt-0.5 text-xs text-ink-subtle tabular-nums">
+          <p className="mt-0.5 text-xs text-ink-muted tabular-nums">
             {subtitle}
           </p>
         )}
@@ -78,7 +84,7 @@ export function AudioPlayer({
         aria-label="Seek"
         className="mt-4 w-full accent-accent"
       />
-      <div className="flex justify-between text-[11px] text-ink-subtle tabular-nums">
+      <div className="flex justify-between text-[11px] text-ink-muted tabular-nums">
         <span>{fmt(cur)}</span>
         <span>-{fmt(Math.max(0, (dur || 0) - cur))}</span>
       </div>

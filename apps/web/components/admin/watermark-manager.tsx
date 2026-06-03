@@ -410,7 +410,7 @@ export function WatermarkManager({
                   <p className="text-sm font-bold text-ink-strong truncate">
                     {p.name}
                   </p>
-                  <p className="text-[11px] tracking-wider text-ink-subtle">
+                  <p className="text-[11px] tracking-wider text-ink-muted">
                     {p.type}
                   </p>
                 </div>
@@ -430,7 +430,7 @@ export function WatermarkManager({
                     type="button"
                     onClick={() => remove(p)}
                     title="Delete"
-                    className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-subtle hover:bg-surface-2 hover:text-negative"
+                    className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-negative"
                   >
                     <Trash size={16} />
                   </button>

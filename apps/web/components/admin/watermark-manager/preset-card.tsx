@@ -23,7 +23,7 @@ export function PresetCard({
           <p className="text-sm font-bold text-ink-strong truncate">
             {preset.name}
           </p>
-          <p className="text-[11px] tracking-wider text-ink-subtle">
+          <p className="text-[11px] tracking-wider text-ink-muted">
             {preset.type}
           </p>
         </div>
@@ -40,7 +40,7 @@ export function PresetCard({
             type="button"
             onClick={onDelete}
             title="Delete"
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-subtle hover:bg-surface-2 hover:text-negative"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-negative"
           >
             <Trash size={16} />
           </button>

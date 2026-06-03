@@ -292,7 +292,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
               })),
             ]}
           />
-          <p className="mt-1.5 text-xs text-ink-subtle">
+          <p className="mt-1.5 text-xs text-ink-muted">
             Changing this reprocesses existing photos; clearing it removes the
             watermarked copies.
           </p>

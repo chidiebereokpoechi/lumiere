@@ -67,7 +67,7 @@ export function CommentsSection({
                   <span className="text-sm font-semibold text-ink-strong">
                     {c.clientName || "Guest"}
                   </span>
-                  <span className="text-xs text-ink-subtle tabular-nums">
+                  <span className="text-xs text-ink-muted tabular-nums">
                     {when(c.createdAt)}
                   </span>
                 </div>

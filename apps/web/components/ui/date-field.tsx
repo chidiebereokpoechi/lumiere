@@ -105,10 +105,10 @@ export function DateField({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between gap-2 rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-left text-sm hover:border-border-strong focus:border-accent transition-colors"
       >
-        <span className={parsed ? "text-ink-strong" : "text-ink-subtle"}>
+        <span className={parsed ? "text-ink-strong" : "text-ink-muted"}>
           {label}
         </span>
-        <Calendar className="shrink-0 text-ink-subtle" size={16} />
+        <Calendar className="shrink-0 text-ink-muted" size={16} />
       </button>
 
       {open && (
@@ -138,7 +138,7 @@ export function DateField({
             {WEEK.map((w) => (
               <span
                 key={w}
-                className="text-center text-[10px] font-bold tracking-wider text-ink-subtle py-1"
+                className="text-center text-[10px] font-bold tracking-wider text-ink-muted py-1"
               >
                 {w}
               </span>

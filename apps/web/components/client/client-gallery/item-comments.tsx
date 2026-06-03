@@ -1,14 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiClient, apiErrorMessage, ApiError, postJson } from "@/lib/api-client";
+import {
+  apiClient,
+  apiErrorMessage,
+  ApiError,
+  postJson,
+} from "@/lib/api-client";
 import { formatDate } from "@/lib/format";
 import type { ClientComment } from "@/lib/api/comments";
 import { Button } from "@/components/ui/button";
 import { TextInput, Textarea } from "@/components/ui/text-input";
 
 // Approved comments for a single item + a submit form. Fetches lazily per file.
-export function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
+export function ItemComments({
+  slug,
+  fileId,
+}: {
+  slug: string;
+  fileId: string;
+}) {
   const [items, setItems] = useState<ClientComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -67,9 +78,9 @@ export function ItemComments({ slug, fileId }: { slug: string; fileId: string })
         Comments
       </h3>
       {loading ? (
-        <p className="text-sm text-ink-subtle">Loading…</p>
+        <p className="text-sm text-ink-muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-ink-subtle">No comments yet.</p>
+        <p className="text-sm text-ink-muted">No comments yet.</p>
       ) : (
         <ul className="space-y-3">
           {items.map((c) => (
@@ -81,7 +92,7 @@ export function ItemComments({ slug, fileId }: { slug: string; fileId: string })
                 <span className="text-sm font-semibold text-ink-strong">
                   {c.clientName || "Guest"}
                 </span>
-                <span className="text-[11px] text-ink-subtle tabular-nums">
+                <span className="text-[11px] text-ink-muted tabular-nums">
                   {formatDate(c.createdAt, { month: "short", day: "numeric" })}
                 </span>
               </div>

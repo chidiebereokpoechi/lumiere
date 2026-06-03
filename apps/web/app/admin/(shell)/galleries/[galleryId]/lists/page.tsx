@@ -107,7 +107,7 @@ export default async function GalleryListsPage({ params }: Props) {
                     {l.name}
                   </h2>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-ink-subtle tabular-nums">
+                    <span className="text-xs text-ink-muted tabular-nums">
                       {when(l.createdAt)}
                     </span>
                     <ExportFilenames
@@ -164,7 +164,7 @@ function Thumbs({
               />
             ) : (
               <span className="flex h-full w-full flex-col items-center justify-center gap-1 p-1 text-center">
-                <span className="text-[10px] font-semibold text-ink-subtle">
+                <span className="text-[10px] font-semibold text-ink-muted">
                   {f?.type ?? "—"}
                 </span>
               </span>

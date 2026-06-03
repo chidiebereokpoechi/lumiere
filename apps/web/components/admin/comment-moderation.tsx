@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { apiClientMutation, apiErrorMessage, mutateJson } from "@/lib/api-client";
+import {
+  apiClientMutation,
+  apiErrorMessage,
+  mutateJson,
+} from "@/lib/api-client";
 import type { AdminComment } from "@/lib/api/comments";
 import { confirmDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -129,12 +133,12 @@ export function CommentModeration({
                     {c.clientName || "Guest"}
                   </span>
                   {c.clientEmail && (
-                    <span className="ml-2 text-xs text-ink-subtle">
+                    <span className="ml-2 text-xs text-ink-muted">
                       {c.clientEmail}
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-ink-subtle tabular-nums shrink-0">
+                <span className="text-xs text-ink-muted tabular-nums shrink-0">
                   {when(c.createdAt)}
                 </span>
               </div>

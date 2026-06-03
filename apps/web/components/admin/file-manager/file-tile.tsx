@@ -240,7 +240,7 @@ function TileMenu({
           {otherFolders.length > 0 && (
             <>
               <div className="my-1 mx-1 h-px bg-border" />
-              <p className="px-2.5 pt-1 pb-0.5 text-[10px] font-bold tracking-wider text-ink-subtle">
+              <p className="px-2.5 pt-1 pb-0.5 text-[10px] font-bold tracking-wider text-ink-muted">
                 Move to
               </p>
               {otherFolders.map((f) => (

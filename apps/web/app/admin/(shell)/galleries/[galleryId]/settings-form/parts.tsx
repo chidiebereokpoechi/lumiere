@@ -22,7 +22,8 @@ export function Section({
 // Inline auto-save indicator — replaces a Save button. Changes persist
 // automatically as fields change.
 export function SaveStatus({ state }: { state: SaveState }) {
-  const base = "inline-flex items-center gap-2 text-xs font-semibold tracking-wider";
+  const base =
+    "inline-flex items-center gap-2 text-xs font-semibold tracking-wider";
   if (state === "saving") {
     return (
       <span className={cn(base, "text-ink-muted")}>
@@ -43,7 +44,7 @@ export function SaveStatus({ state }: { state: SaveState }) {
     );
   }
   return (
-    <span className={cn(base, "text-ink-subtle")}>
+    <span className={cn(base, "text-ink-muted")}>
       Changes save automatically
     </span>
   );

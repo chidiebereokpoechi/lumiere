@@ -110,7 +110,7 @@ function StatusPill({ status }: { status: "active" | "archived" | "draft" }) {
 
 function Dot() {
   return (
-    <span aria-hidden className="text-ink-subtle">
+    <span aria-hidden className="text-ink-muted">
       ·
     </span>
   );
@@ -119,7 +119,7 @@ function Dot() {
 function PlaceholderCover() {
   return (
     <div className="h-full w-full bg-surface-sunken flex items-center justify-center">
-      <ImageIcon size={24} className="text-ink-subtle" />
+      <ImageIcon size={24} className="text-ink-muted" />
     </div>
   );
 }
@@ -138,14 +138,14 @@ function NewGalleryButton() {
 
 function EmptyState() {
   return (
-    <div className="max-w-2xl rounded-xl bg-surface border border-border p-10">
+    <div className="max-w-2xl rounded-xl bg-surface border border-border p-4">
       <p className="text-xs font-bold tracking-wider text-ink-muted">
         Nothing here yet
       </p>
       <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-ink-strong">
         Create your first gallery
       </h2>
-      <p className="mt-3 text-sm text-ink-muted leading-relaxed">
+      <p className="mt-2 text-sm text-ink-muted leading-relaxed">
         Galleries hold photos, video, audio and files, delivered to your clients
         via a password-protected link.
       </p>

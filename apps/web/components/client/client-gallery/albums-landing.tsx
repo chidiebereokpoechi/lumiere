@@ -86,7 +86,7 @@ function AlbumCard({ item }: { item: AlbumItem }) {
             {label}
           </span>
           <span
-            className={`text-xs tabular-nums ${cover ? "text-white/80 drop-shadow" : "text-ink-subtle"}`}
+            className={`text-xs tabular-nums ${cover ? "text-white/80 drop-shadow" : "text-ink-muted"}`}
           >
             {count}
           </span>
