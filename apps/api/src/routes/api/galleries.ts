@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia';
+import { Elysia, t } from 'elysia';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { GalleryCreateInput, GalleryPatchInput } from '@lumiere/types';
 import { db } from '../../db';
@@ -8,10 +8,14 @@ import { checkCsrf } from '../../middleware/csrf';
 import { hashPassword } from '../../services/auth';
 import { uniqueGallerySlug } from '../../services/slug';
 import { ensureDefaultFolder } from '../../services/folders';
-import { deletePrefix } from '../../services/storage';
+import { deletePrefix, uploadObject, deleteObject } from '../../services/storage';
 import { enqueue } from '../../services/queue';
 import { parseBody } from '../../lib/validation';
+import { detectImageMime, extForMime } from '../../lib/mime';
 import { newId, now } from '../../lib/ids';
+
+// Standalone cover upload cap (covers are full-bleed hero images, not logos).
+const MAX_COVER_BYTES = 15 * 1024 * 1024;
 
 export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
   .use(authContext)
@@ -130,6 +134,42 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
     return db.query.galleries.findFirst({ where: eq(galleries.id, ctx.params.galleryId) });
   })
 
+  // POST /api/galleries/:galleryId/cover — upload a standalone cover image
+  // (not a gallery photo). Stored at covers/{gid}/{id}.{ext}; sets
+  // coverImageKey (precedence over coverFileId). Replaces any prior upload.
+  .post('/:galleryId/cover', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const existing = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!existing) { ctx.set.status = 404; return { error: 'not_found' }; }
+
+    const incoming = ctx.body.file;
+    const file = Array.isArray(incoming) ? incoming[0]! : incoming;
+    if (file.size > MAX_COVER_BYTES) {
+      ctx.set.status = 413;
+      return { error: 'too_large', maxBytes: MAX_COVER_BYTES };
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const mime = detectImageMime(bytes);
+    if (!mime) { ctx.set.status = 400; return { error: 'invalid_mime' }; }
+
+    if (existing.coverImageKey) await deleteObject(existing.coverImageKey).catch(() => {});
+    const key = `covers/${existing.id}/${newId()}.${extForMime(mime)}`;
+    await uploadObject(key, Buffer.from(bytes), mime);
+    await db.update(galleries)
+      .set({ coverImageKey: key, updatedAt: now() })
+      .where(eq(galleries.id, existing.id));
+    return db.query.galleries.findFirst({ where: eq(galleries.id, existing.id) });
+  }, {
+    body: t.Object({ file: t.File() }),
+  })
+
   // DELETE /api/galleries/:galleryId — drops DB row (cascades photos) and S3 prefixes
   .delete('/:galleryId', async (ctx) => {
     const csrfError = checkCsrf(ctx);
@@ -153,6 +193,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
       deletePrefix(`thumbnails/${ctx.params.galleryId}/`),
       deletePrefix(`watermarked/${ctx.params.galleryId}/`),
       deletePrefix(`files/${ctx.params.galleryId}/`),
+      deletePrefix(`covers/${ctx.params.galleryId}/`),
     ]);
     return { ok: true };
   });

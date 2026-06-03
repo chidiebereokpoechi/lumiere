@@ -39,6 +39,9 @@ interface MinimalGallery {
   title: string;
   subtitle: string | null;
   coverFileId: string | null;
+  coverUrl: string | null;
+  coverFocalX: number | null;
+  coverFocalY: number | null;
   layout: string;
   colorTheme: string;
   customCss: string | null;
@@ -60,6 +63,13 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
     title: g.title,
     subtitle: g.subtitle,
     coverFileId: g.coverFileId,
+    coverUrl: g.coverImageKey
+      ? `/img/${g.id}/cover`
+      : g.coverFileId
+        ? `/img/${g.id}/${g.coverFileId}/preview`
+        : null,
+    coverFocalX: g.coverFocalX,
+    coverFocalY: g.coverFocalY,
     layout: g.layout ?? 'grid',
     colorTheme: g.colorTheme ?? 'light',
     customCss: g.customCss,
