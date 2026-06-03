@@ -17,6 +17,7 @@ export interface GalleryFile {
   height: number | null;
   position: number | null;
   uploadStatus: 'processing' | 'ready' | 'error' | null;
+  s3KeyThumbnail: string | null;
   createdAt: number;
 }
 

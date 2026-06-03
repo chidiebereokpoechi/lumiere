@@ -13,7 +13,7 @@ WORKDIR /app
 # Fonts for SVG text watermarks — librsvg (via sharp) needs a system font, or
 # text renders as tofu boxes. DejaVu covers Latin + symbols; fontconfig resolves it.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core \
+  && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core ffmpeg \
   && fc-cache -f \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/node_modules ./node_modules

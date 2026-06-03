@@ -236,8 +236,9 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
         height: p.height,
         colorPalette: p.colorPalette ? JSON.parse(p.colorPalette) as string[] : null,
         position: p.position,
-        // Images use the /img derivative proxy; other media stream inline.
-        thumbUrl: p.type === 'image' ? `/img/${gallery.id}/${p.id}/thumb` : null,
+        // Images use the /img derivative proxy; video/audio expose a thumb too
+        // when one was extracted (cover art / frame). Non-images stream inline.
+        thumbUrl: p.type === 'image' || p.s3KeyThumbnail ? `/img/${gallery.id}/${p.id}/thumb` : null,
         previewUrl: p.type === 'image' ? `/img/${gallery.id}/${p.id}/preview` : null,
         streamUrl: p.type === 'image' ? null : `/api/gallery/${gallery.slug}/files/${p.id}/stream`,
         downloadUrl: `/api/gallery/${gallery.slug}/files/${p.id}/download`,

@@ -660,19 +660,42 @@ export function ClientGallery({
           <span
             className={`relative block w-full bg-black ${fill ? "h-full" : ""}`}
           >
-            <video
-              src={`${f.streamUrl ?? ""}#t=0.1`}
-              preload="metadata"
-              muted
-              playsInline
-              className={`block w-full ${fill ? "h-full object-cover" : "h-auto"}`}
-            />
+            {f.thumbUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={f.thumbUrl}
+                alt=""
+                loading="lazy"
+                style={
+                  !fill && f.width && f.height
+                    ? { aspectRatio: `${f.width} / ${f.height}` }
+                    : undefined
+                }
+                className={`block w-full object-cover ${fill ? "h-full" : "h-auto"} ${isSelected ? "brightness-90" : ""}`}
+              />
+            ) : (
+              <video
+                src={`${f.streamUrl ?? ""}#t=0.1`}
+                preload="metadata"
+                muted
+                playsInline
+                className={`block w-full ${fill ? "h-full object-cover" : "h-auto"}`}
+              />
+            )}
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white">
                 <Play size={24} />
               </span>
             </span>
           </span>
+        ) : f.type === "audio" && f.thumbUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={f.thumbUrl}
+            alt=""
+            loading="lazy"
+            className={`block w-full object-cover ${fill ? "h-full" : "aspect-square"} ${isSelected ? "brightness-90" : ""}`}
+          />
         ) : (
           <span
             className={`flex w-full flex-col items-center justify-center gap-2 p-3 text-center ${fill ? "h-full" : "aspect-square"}`}
@@ -1081,6 +1104,7 @@ export function ClientGallery({
                   src={open.streamUrl ?? ""}
                   title={open.filename}
                   subtitle={formatBytes(open.fileSize)}
+                  cover={open.thumbUrl}
                   onPlayingChange={setMediaPlaying}
                 />
               ) : (
@@ -1181,11 +1205,13 @@ function AudioPlayer({
   src,
   title,
   subtitle,
+  cover,
   onPlayingChange,
 }: {
   src: string;
   title: string;
   subtitle: string;
+  cover?: string | null;
   onPlayingChange?: (playing: boolean) => void;
 }) {
   const ref = useRef<HTMLAudioElement>(null);
@@ -1222,7 +1248,12 @@ function AudioPlayer({
   return (
     <div className="w-[min(92vw,24rem)] rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
       <div className="aspect-square w-full rounded-xl overflow-hidden bg-linear-to-br from-accent/40 via-surface-sunken to-surface-strong flex items-center justify-center">
-        <Music size={24} className="text-ink-inverse/80" />
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={cover} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <Music size={64} className="text-ink-inverse/80" />
+        )}
       </div>
 
       <div className="mt-4 text-center">

@@ -1495,19 +1495,30 @@ function FileTile({
           )
         ) : file.type === "video" ? (
           <>
-            <video
-              src={`${streamUrl}#t=0.1`}
-              preload="metadata"
-              muted
-              playsInline
-              className="h-full w-full object-contain bg-black"
-            />
+            {file.s3KeyThumbnail ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/img/${galleryId}/${file.id}/thumb`} alt={name} draggable={false} className="h-full w-full object-contain bg-black" />
+            ) : (
+              <video
+                src={`${streamUrl}#t=0.1`}
+                preload="metadata"
+                muted
+                playsInline
+                className="h-full w-full object-contain bg-black"
+              />
+            )}
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-black/50 text-white">
                 <Play size={18} />
               </span>
             </span>
             <Badge>Video</Badge>
+          </>
+        ) : file.s3KeyThumbnail ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/img/${galleryId}/${file.id}/thumb`} alt={name} draggable={false} className="h-full w-full object-cover" />
+            <Badge>{file.type === "audio" ? "Audio" : "File"}</Badge>
           </>
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center gap-2 p-3 text-center">

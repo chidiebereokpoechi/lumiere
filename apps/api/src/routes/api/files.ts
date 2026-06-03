@@ -168,15 +168,20 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
       const mime = o.file.type || 'application/octet-stream';
       const ext = extOf(o.filename);
       const key = `files/${gallery.id}/${o.fileId}${ext ? '.' + ext : ''}`;
+      const kind = kindForMime(mime);
       try {
         const nodeStream = Readable.fromWeb(o.file.stream() as Parameters<typeof Readable.fromWeb>[0]);
         const bytes = await uploadStream(key, nodeStream, mime);
         await db.insert(files).values({
-          id: o.fileId, galleryId: gallery.id, folderId, type: kindForMime(mime),
+          id: o.fileId, galleryId: gallery.id, folderId, type: kind,
           filenameOriginal: o.filename, mimeType: mime, fileSize: bytes || o.file.size,
           s3KeyOriginal: key, uploadStatus: 'ready', position: o.position, createdAt: now(),
         });
         emit(batchId, { type: 'ready', photoId: o.fileId, filename: o.filename });
+        // Best-effort thumbnail (cover art / video frame) — async, file is usable now.
+        if (kind === 'video' || kind === 'audio') {
+          await enqueue('process_media', { photoId: o.fileId, galleryId: gallery.id, kind }, gallery.id);
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         log.error('file.upload_failed', { fileId: o.fileId, msg });
@@ -296,6 +301,9 @@ export const fileRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/files'
       await db.update(files).set({ s3KeyThumbnail: file.s3KeyOriginal, s3KeyPreview: file.s3KeyOriginal, uploadStatus: 'ready', s3UploadId: null }).where(eq(files.id, file.id));
     } else {
       await db.update(files).set({ uploadStatus: 'ready', s3UploadId: null }).where(eq(files.id, file.id));
+      if (file.type === 'video' || file.type === 'audio') {
+        await enqueue('process_media', { photoId: file.id, galleryId: gallery.id, kind: file.type }, gallery.id);
+      }
     }
     return { ok: true, fileId: file.id, type: file.type };
   })

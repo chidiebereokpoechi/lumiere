@@ -21,6 +21,7 @@ import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
 import { startUploadReaper } from './services/upload-reaper';
 import { handleProcessPhoto } from './services/image-processor';
+import { handleProcessMedia } from './services/media-thumb';
 import { handleSendEmail } from './services/email-job';
 import { handleApplyWatermark } from './services/watermark-job';
 
@@ -29,6 +30,7 @@ migrate();
 // Worker setup — concurrency from env (v1.2 §9: bounded for memory safety).
 const concurrency = Number(process.env.IMAGE_CONCURRENCY ?? 3);
 registerHandler('process_photo', handleProcessPhoto);
+registerHandler('process_media', handleProcessMedia);
 registerHandler('send_email', handleSendEmail);
 registerHandler('apply_watermark', handleApplyWatermark);
 startWorker({ concurrency });
