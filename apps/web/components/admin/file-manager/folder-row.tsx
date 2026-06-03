@@ -1,11 +1,11 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { Eye, EyeOff, Pen, Close, Grip } from "@/components/ui/icons";
+import { EyeOff, Grip, More } from "@/components/ui/icons";
 
 // Vertical set/folder row for the sidebar: select, count, drop-target for file
-// drags, a drag handle to reorder sets, plus hover actions (hide / rename /
-// delete).
+// drags, a drag handle to reorder sets, plus a ⋯ menu (hide / rename / delete).
 export function FolderRow({
   id,
   active,
@@ -44,9 +44,9 @@ export function FolderRow({
   const hasFiles = (e: React.DragEvent) =>
     e.dataTransfer.types.includes("Files");
   const dim = hidden && !active && !isDropTarget;
-  const iconTint =
+  const onTint =
     active || isDropTarget
-      ? "text-ink-inverse/80 hover:text-ink-inverse"
+      ? "text-ink-inverse/70 hover:text-ink-inverse"
       : "text-ink-subtle hover:text-ink-strong";
   return (
     <div
@@ -97,12 +97,7 @@ export function FolderRow({
             onReorderStart?.(e);
           }}
           style={{ touchAction: "none" }}
-          className={cn(
-            "shrink-0 cursor-grab active:cursor-grabbing",
-            active || isDropTarget
-              ? "text-ink-inverse/60 hover:text-ink-inverse"
-              : "text-ink-subtle hover:text-ink-strong",
-          )}
+          className={cn("shrink-0 cursor-grab active:cursor-grabbing", onTint)}
         >
           <Grip size={16} />
         </button>
@@ -113,57 +108,107 @@ export function FolderRow({
       </span>
       <span
         className={cn(
-          "tabular-nums text-xs shrink-0 group-hover/row:hidden",
+          "tabular-nums text-xs shrink-0",
           active || isDropTarget ? "text-ink-inverse/70" : "text-ink-subtle",
         )}
       >
         {count}
       </span>
-      <span className="hidden group-hover/row:inline-flex items-center gap-1 shrink-0">
-        {onToggleHidden && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleHidden();
-            }}
-            title={hidden ? "Show to clients" : "Hide from clients"}
-            className={iconTint}
-          >
-            {hidden ? <Eye size={16} /> : <EyeOff size={16} />}
-          </button>
-        )}
-        {onRename && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRename();
-            }}
-            title="Rename"
-            className={iconTint}
-          >
-            <Pen size={16} />
-          </button>
-        )}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            title="Delete set"
-            className={
-              active
-                ? "text-ink-inverse/80 hover:text-ink-inverse"
-                : "text-ink-subtle hover:text-negative"
-            }
-          >
-            <Close size={16} />
-          </button>
-        )}
-      </span>
+      {(onToggleHidden || onRename || onDelete) && (
+        <FolderMenu
+          hidden={hidden}
+          tint={onTint}
+          onRename={onRename}
+          onDelete={onDelete}
+          onToggleHidden={onToggleHidden}
+        />
+      )}
+    </div>
+  );
+}
+
+// ⋯ actions menu for a set. Outside-click closes; each action stops propagation
+// so it doesn't also select the row.
+function FolderMenu({
+  hidden,
+  tint,
+  onRename,
+  onDelete,
+  onToggleHidden,
+}: {
+  hidden?: boolean;
+  tint: string;
+  onRename?: () => void;
+  onDelete?: () => void;
+  onToggleHidden?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const run = (fn?: () => void) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(false);
+    fn?.();
+  };
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        aria-label="Set actions"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className={cn("-mr-1 inline-flex items-center justify-center", tint)}
+      >
+        <More size={16} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 z-30 mt-1 w-44 rounded-md border border-border bg-surface shadow-lg p-1.5 text-sm text-ink-strong"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {onToggleHidden && (
+            <button
+              type="button"
+              onClick={run(onToggleHidden)}
+              className="w-full text-left rounded px-2.5 py-1.5 hover:bg-surface-2"
+            >
+              {hidden ? "Show to clients" : "Hide from clients"}
+            </button>
+          )}
+          {onRename && (
+            <button
+              type="button"
+              onClick={run(onRename)}
+              className="w-full text-left rounded px-2.5 py-1.5 hover:bg-surface-2"
+            >
+              Rename
+            </button>
+          )}
+          {onDelete && (
+            <>
+              <div className="my-1 mx-1 h-px bg-border" />
+              <button
+                type="button"
+                onClick={run(onDelete)}
+                className="w-full text-left rounded px-2.5 py-1.5 text-negative hover:bg-surface-2"
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
