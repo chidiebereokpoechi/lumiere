@@ -191,7 +191,7 @@ h4,
 h5,
 h6 {
   font-family: var(--font-sans);
-  font-weight: 700;
+  font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
