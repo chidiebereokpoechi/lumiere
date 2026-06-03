@@ -28,7 +28,7 @@ export default async function HomePage() {
           <h1 className="mt-3 text-5xl md:text-6xl font-semibold tracking-tight text-ink">
             Self-hosted gallery delivery.
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-muted">
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-muted">
             Frontend scaffold. Satoshi loaded, design tokens wired — built on
             top of a Bun + Elysia backend talking to RustFS over the LAN.
           </p>

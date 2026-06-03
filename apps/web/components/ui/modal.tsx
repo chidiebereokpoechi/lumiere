@@ -35,7 +35,7 @@ export function Modal({
         aria-labelledby={labelledBy}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "w-[min(92vw,26rem)] rounded-lg border border-border bg-surface p-6",
+          "w-[min(92vw,26rem)] rounded-lg border border-border bg-surface p-4",
           className,
         )}
       >

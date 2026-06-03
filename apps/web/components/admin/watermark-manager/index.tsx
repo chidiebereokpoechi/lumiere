@@ -51,7 +51,7 @@ export function WatermarkManager({
       )}
 
       {presets.length === 0 && !draft ? (
-        <div className="rounded-xl border border-border bg-surface px-6 py-12 text-center">
+        <div className="rounded-xl border border-border bg-surface px-4 py-12 text-center">
           <p className="text-sm text-ink-muted">
             No watermarks yet. Create one to protect preview-quality downloads.
           </p>

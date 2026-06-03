@@ -99,7 +99,7 @@ export function PresetEditor({
                       onClick={() => set("color", c)}
                       aria-label={c}
                       className={cn(
-                        "h-6 w-6 rounded-md border",
+                        "h-4 w-4 rounded-md border",
                         draft.color.toLowerCase() === c
                           ? "ring-2 ring-accent border-accent"
                           : "border-border",

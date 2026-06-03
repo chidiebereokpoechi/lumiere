@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { TextInput } from "@/components/ui/text-input";
 
 // Imperative, promise-based replacements for window.confirm / window.prompt /
 // window.alert, rendered through a single mounted <DialogHost/>. Call sites just
@@ -117,15 +119,15 @@ export function DialogHost() {
                 {req.label}
               </label>
             )}
-            <input
+            <TextInput
               autoFocus
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={setText}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && text.trim()) onConfirm();
               }}
               placeholder={req.placeholder}
-              className={`w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle focus:border-accent transition-colors ${req.label ? "" : "mt-4"}`}
+              className={req.label ? undefined : "mt-4"}
             />
           </>
         )}
@@ -142,22 +144,18 @@ export function DialogHost() {
                 : "Cancel"}
             </button>
           )}
-          <button
-            type="button"
+          <Button
+            variant={danger ? "danger" : "primary"}
             onClick={onConfirm}
             disabled={req.kind === "prompt" && !text.trim()}
-            className={`inline-flex items-center rounded-md border px-4 py-2.5 text-sm font-bold tracking-wider transition-colors disabled:opacity-50 ${
-              danger
-                ? "bg-negative border-negative text-white hover:opacity-90"
-                : "bg-accent border-accent text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white"
-            }`}
+            className="tracking-wider"
           >
             {req.kind === "confirm"
               ? (req.confirmLabel ?? "Confirm")
               : req.kind === "prompt"
                 ? (req.confirmLabel ?? "Save")
                 : "OK"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

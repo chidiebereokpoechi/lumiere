@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 // Downloads a newline-delimited .txt of original filenames — paste into a
 // Lightroom filename filter, or feed any other editing app's import list.
@@ -29,14 +30,14 @@ export function ExportFilenames({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="secondary"
       onClick={download}
       disabled={filenames.length === 0}
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-bold tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors disabled:opacity-40"
+      className="gap-1.5 px-3 py-1.5 text-xs tracking-wider"
     >
       <Download size={16} />
       {label}
-    </button>
+    </Button>
   );
 }

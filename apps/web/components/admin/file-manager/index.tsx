@@ -81,7 +81,11 @@ export function FileManager({
 
   // Uploads (progress tiles + SSE job watch). Drag-reorder is suspended while
   // any upload is in flight so placeholders don't fight the sortable.
-  const { tiles, upload } = useUploads({ galleryId, refreshFiles, onError: setError });
+  const { tiles, upload } = useUploads({
+    galleryId,
+    refreshFiles,
+    onError: setError,
+  });
   const canDrag = tiles.length === 0;
 
   // Display order of the active folder, drag-sort, and selection share `orderRef`.
@@ -164,9 +168,12 @@ export function FileManager({
     });
     if (!ok) return;
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, {
-        method: "DELETE",
-      });
+      await apiClientMutation(
+        `/api/galleries/${galleryId}/folders/${folder.id}`,
+        {
+          method: "DELETE",
+        },
+      );
       if (activeFolder === folder.id)
         setActiveFolder(folders.find((f) => f.id !== folder.id)?.id ?? "");
       await refreshFolders();
@@ -459,7 +466,9 @@ export function FileManager({
                 count={f.photoCount}
                 onRename={() => renameFolder(f)}
                 onToggleHidden={() => toggleFolderHidden(f)}
-                onDelete={folders.length > 1 ? () => deleteFolder(f) : undefined}
+                onDelete={
+                  folders.length > 1 ? () => deleteFolder(f) : undefined
+                }
                 onFileEnter={() => setFileOverFolder(f.id)}
                 onFileLeave={() =>
                   setFileOverFolder((c) => (c === f.id ? null : c))
@@ -543,7 +552,8 @@ export function FileManager({
               e.preventDefault();
               dragDepth.current = 0;
               setDragging(false);
-              if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
+              if (e.dataTransfer.files?.length)
+                handleFiles(e.dataTransfer.files);
             }}
           >
             {dragging && (
@@ -689,7 +699,7 @@ export function FileManager({
           >
             {draggingIds.size > 1 && (
               <>
-                <div className="absolute inset-0 rounded-lg bg-surface-sunken border border-border ring-2 ring-accent/50 rotate-6 translate-x-1.5 translate-y-1.5" />
+                <div className="absolute inset-0 rounded-lg bg-surface-sunken border border-border ring-2 ring-accent/50 rotate-4 translate-x-1.5 translate-y-1.5" />
                 <div className="absolute inset-0 rounded-lg bg-surface-sunken border border-border ring-2 ring-accent/60 -rotate-3 -translate-x-1 translate-y-0.5" />
               </>
             )}
@@ -709,7 +719,7 @@ export function FileManager({
               )}
             </div>
             {draggingIds.size > 1 && (
-              <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-white text-xs font-bold tabular-nums ring-2 ring-surface">
+              <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-white text-xs font-bold tabular-nums ring-2 ring-surface">
                 {draggingIds.size}
               </span>
             )}

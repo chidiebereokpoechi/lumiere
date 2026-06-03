@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { apiClientMutation, ApiError } from "@/lib/api-client";
+import { ApiError, mutateJson } from "@/lib/api-client";
 import { alertDialog } from "@/components/ui/dialog";
 import { ChevronDown } from "@/components/ui/icons";
+import { buttonClasses } from "@/components/ui/button-variants";
 import {
   broadcastGalleryStatus,
   onGalleryStatus,
@@ -64,11 +65,7 @@ export function StatusControl({
     setStatus(next);
     broadcastGalleryStatus(galleryId, next);
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status: next }),
-      });
+      await mutateJson(`/api/galleries/${galleryId}`, { status: next }, "PATCH");
       startTransition(() => router.refresh());
     } catch (err) {
       setStatus(prev);
@@ -88,7 +85,7 @@ export function StatusControl({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
+        className={buttonClasses("secondary", "px-3.5 tracking-wider")}
       >
         <span className={`h-2 w-2 rounded-full ${DOT[status]}`} />
         {LABELS[status]}

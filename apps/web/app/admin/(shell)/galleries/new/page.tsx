@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GalleryCreateInput } from "@lumiere/types";
-import { apiClientMutation, ApiError } from "@/lib/api-client";
+import { ApiError, mutateJson } from "@/lib/api-client";
 import {
   Field,
   TextInput,
@@ -55,13 +55,9 @@ export default function NewGalleryPage() {
 
     setPending(true);
     try {
-      const created = await apiClientMutation<CreatedGallery>(
+      const created = await mutateJson<CreatedGallery>(
         "/api/galleries",
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(parsed.data),
-        },
+        parsed.data,
       );
       router.push(`/admin/galleries/${created.id}`);
       router.refresh();

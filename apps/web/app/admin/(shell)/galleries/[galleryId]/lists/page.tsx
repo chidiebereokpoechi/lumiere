@@ -92,7 +92,7 @@ export default async function GalleryListsPage({ params }: Props) {
         </section>
 
         {lists.length === 0 ? (
-          <div className="rounded-lg border border-border bg-surface px-6 py-12 text-center">
+          <div className="rounded-lg border border-border bg-surface px-4 py-12 text-center">
             <p className="text-sm text-ink-muted">No client lists yet.</p>
           </div>
         ) : (

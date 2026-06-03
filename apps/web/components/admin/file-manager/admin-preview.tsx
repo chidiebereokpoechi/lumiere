@@ -42,7 +42,11 @@ export function AdminPreview({
         className="shrink-0 flex items-center justify-between px-4 h-14"
         onClick={(e) => e.stopPropagation()}
       >
-        <IconButton onClick={onClose} aria-label="Close" className="h-10 w-10 -ml-1">
+        <IconButton
+          onClick={onClose}
+          aria-label="Close"
+          className="h-10 w-10 -ml-1"
+        >
           <ChevronLeft size={24} />
         </IconButton>
         <a
@@ -116,7 +120,7 @@ export function AdminPreview({
         className="shrink-0 text-center pt-1 pb-3"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-sm text-ink-muted tabular-nums truncate px-6">
+        <p className="text-sm text-ink-muted tabular-nums truncate px-4">
           {name}
           {total > 1 ? `  ·  ${index + 1} / ${total}` : ""}
         </p>

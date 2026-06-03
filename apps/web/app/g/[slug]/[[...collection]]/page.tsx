@@ -61,7 +61,7 @@ export default async function ClientGalleryPage({ params }: Props) {
       },
     }[access.state];
     return (
-      <main className="min-h-dvh grid place-items-center bg-bg px-6 text-center">
+      <main className="min-h-dvh grid place-items-center bg-bg px-4 text-center">
         <div className="max-w-sm">
           <p className="text-xs font-bold tracking-wider text-ink-muted">
             {access.gallery.title}

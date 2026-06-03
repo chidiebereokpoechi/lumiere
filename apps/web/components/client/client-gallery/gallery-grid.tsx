@@ -260,7 +260,7 @@ function GalleryTile({
           aria-pressed={isSelected}
           aria-label={isSelected ? "Deselect" : "Select"}
           style={{ touchAction: "none" }}
-          className={`absolute top-2.5 left-2.5 h-6 w-6 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+          className={`absolute top-2.5 left-2.5 h-4 w-4 inline-flex items-center justify-center rounded-full border-2 transition-all ${
             isSelected
               ? "bg-accent border-accent text-white opacity-100"
               : `border-white text-transparent ${actionVis}`
@@ -275,7 +275,7 @@ function GalleryTile({
           onClick={() => onToggleFavorite(f.id)}
           aria-pressed={isFavorite}
           aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-          className={`absolute top-2.5 right-2.5 h-6 w-6 inline-flex items-center justify-center transition-all drop-shadow ${
+          className={`absolute top-2.5 right-2.5 h-4 w-4 inline-flex items-center justify-center transition-all drop-shadow ${
             isFavorite ? "text-heart opacity-100" : `text-white ${actionVis}`
           }`}
         >

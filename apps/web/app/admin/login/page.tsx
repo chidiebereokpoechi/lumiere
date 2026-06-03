@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LoginInput } from "@lumiere/types";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { ApiError, postJson } from "@/lib/api-client";
 import { Field, TextInput, Button, FormError } from "@/components/admin/form";
 
 export default function LoginPage() {
@@ -34,11 +34,7 @@ function LoginForm() {
     }
     setPending(true);
     try {
-      await apiClient("/api/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
+      await postJson("/api/auth/login", parsed.data);
       router.push(from);
       router.refresh();
     } catch (err) {
@@ -68,7 +64,7 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
+    <main className="min-h-dvh grid place-items-center bg-bg px-4 py-16">
       <div className="w-full max-w-md">
         <p className="text-center text-xs font-bold tracking-wider text-ink-muted">
           Lumière

@@ -6,6 +6,7 @@ import {
 } from "@/lib/api/galleries";
 import { Topnav } from "@/components/admin/topnav";
 import { ImageIcon, Plus } from "@/components/ui/icons";
+import { buttonClasses } from "@/components/ui/button-variants";
 import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -127,7 +128,7 @@ function NewGalleryButton() {
   return (
     <Link
       href="/admin/galleries/new"
-      className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
+      className={buttonClasses("primary", "tracking-wider")}
     >
       <Plus size={16} />
       New gallery
@@ -148,7 +149,7 @@ function EmptyState() {
         Galleries hold photos, video, audio and files, delivered to your clients
         via a password-protected link.
       </p>
-      <div className="mt-6 flex">
+      <div className="mt-4 flex">
         <NewGalleryButton />
       </div>
     </div>

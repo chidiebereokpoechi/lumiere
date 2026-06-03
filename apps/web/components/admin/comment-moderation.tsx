@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { apiClientMutation, ApiError } from "@/lib/api-client";
+import { apiClientMutation, apiErrorMessage, mutateJson } from "@/lib/api-client";
 import type { AdminComment } from "@/lib/api/comments";
 import { confirmDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,20 +42,16 @@ export function CommentModeration({
     setBusyId(c.id);
     setError(null);
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}/comments/${c.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ isApproved }),
-      });
+      await mutateJson(
+        `/api/galleries/${galleryId}/comments/${c.id}`,
+        { isApproved },
+        "PATCH",
+      );
       setComments((prev) =>
         prev.map((x) => (x.id === c.id ? { ...x, isApproved } : x)),
       );
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? `Update failed (${err.status})`
-          : "Network error",
-      );
+      setError(apiErrorMessage(err, "Update failed"));
     } finally {
       setBusyId(null);
     }
@@ -79,11 +75,7 @@ export function CommentModeration({
       });
       setComments((prev) => prev.filter((x) => x.id !== c.id));
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? `Delete failed (${err.status})`
-          : "Network error",
-      );
+      setError(apiErrorMessage(err, "Delete failed"));
     } finally {
       setBusyId(null);
     }

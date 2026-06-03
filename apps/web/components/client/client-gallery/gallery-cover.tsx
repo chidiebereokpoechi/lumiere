@@ -44,7 +44,7 @@ export function GalleryCover({
       )}
       {gallery.coverFileId && <div className="absolute inset-0 bg-black/35" />}
       <div
-        className={`relative h-full flex flex-col items-center justify-center text-center px-6 ${gallery.coverFileId ? "text-white" : "text-ink-strong"}`}
+        className={`relative h-full flex flex-col items-center justify-center text-center px-4 ${gallery.coverFileId ? "text-white" : "text-ink-strong"}`}
       >
         {eventLine && (
           <p className="text-xs font-bold tracking-wider opacity-90">

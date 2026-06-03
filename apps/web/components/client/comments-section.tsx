@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { ApiError, postJson } from "@/lib/api-client";
 import type { ClientComment } from "@/lib/api/comments";
 import { formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -30,13 +30,9 @@ export function CommentsSection({
     setError(null);
     setPending(true);
     try {
-      await apiClient(`/api/gallery/${slug}/comments`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          body: body.trim(),
-          ...(name.trim() ? { clientName: name.trim() } : {}),
-        }),
+      await postJson(`/api/gallery/${slug}/comments`, {
+        body: body.trim(),
+        ...(name.trim() ? { clientName: name.trim() } : {}),
       });
       setPosted(true);
       setBody("");

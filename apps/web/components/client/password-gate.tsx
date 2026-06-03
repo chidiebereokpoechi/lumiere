@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { ApiError, postJson } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/ui/text-input";
 
@@ -18,11 +18,7 @@ export function PasswordGate({ slug, title }: { slug: string; title: string }) {
     setError(null);
     setPending(true);
     try {
-      await apiClient(`/api/gallery/${slug}/unlock`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
+      await postJson(`/api/gallery/${slug}/unlock`, { password });
       router.refresh(); // session cookie now set; access re-renders as 'ok'
     } catch (err) {
       if (err instanceof ApiError) {
@@ -39,7 +35,7 @@ export function PasswordGate({ slug, title }: { slug: string; title: string }) {
   }
 
   return (
-    <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
+    <main className="min-h-dvh grid place-items-center bg-bg px-4 py-16">
       <div className="w-full max-w-sm">
         <p className="text-center text-xs font-bold tracking-wider text-ink-muted">
           {title}
