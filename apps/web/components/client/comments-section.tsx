@@ -110,7 +110,7 @@ export function CommentsSection({
             <button
               type="submit"
               disabled={pending || !body.trim()}
-              className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+              className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
             >
               {pending ? "Posting…" : "Post comment"}
             </button>

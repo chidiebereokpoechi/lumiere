@@ -124,7 +124,7 @@ export function Button({
 }: ButtonProps) {
   const cls = {
     primary:
-      "bg-accent text-accent-ink border-accent hover:bg-accent-dark hover:border-accent-dark hover:text-white",
+      "bg-accent text-white border-accent hover:bg-accent-dark hover:border-accent-dark hover:text-white",
     secondary:
       "bg-surface text-ink-strong border-border hover:bg-surface-2 hover:border-border-strong",
     ghost:

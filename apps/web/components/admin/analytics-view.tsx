@@ -231,7 +231,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl bg-surface border border-border p-5">
-      <p className="text-xs font-extrabold tracking-[0.22em] text-ink-muted">
+      <p className="text-xs font-extrabold tracking-wider text-ink-muted">
         {label}
       </p>
       <p className="mt-2 text-3xl font-bold tabular-nums text-ink-strong">

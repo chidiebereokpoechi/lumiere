@@ -705,7 +705,7 @@ export function ClientGallery({
           style={{ touchAction: "none" }}
           className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
             isSelected
-              ? "bg-accent border-accent text-accent-ink opacity-100"
+              ? "bg-accent border-accent text-white opacity-100"
               : `border-white text-transparent ${actionVis}`
           }`}
         >
@@ -721,7 +721,7 @@ export function ClientGallery({
           className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all drop-shadow ${
             favorites.has(f.id)
               ? "text-accent opacity-100"
-              : `text-white/90 ${actionVis}`
+              : `text-white ${actionVis}`
           }`}
         >
           <Heart size={24} />
@@ -1306,32 +1306,38 @@ function Tab({
 }) {
   return (
     <span
-      className={`group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border pl-4 ${onDelete ? "pr-2" : "pr-4"} py-2.5 text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border cursor-pointer pl-4 ${onDelete ? "pr-2" : "pr-4"} py-2.5 text-sm font-bold tracking-wider whitespace-nowrap transition-colors focus-visible:outline-none ${
         active
           ? "bg-surface-strong text-ink-inverse border-surface-strong"
           : "bg-surface text-ink-muted border-border hover:bg-surface-2 hover:text-ink-strong hover:border-border-strong"
       }`}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        className="inline-flex items-center gap-1.5 min-w-0 focus-visible:outline-none"
+      <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
+      <span
+        className={`tabular-nums text-xs ${active ? "text-ink-inverse/70" : "text-ink-subtle"}`}
       >
-        <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
-        <span
-          className={`tabular-nums text-xs ${active ? "text-ink-inverse/70" : "text-ink-subtle"}`}
-        >
-          {count}
-        </span>
-      </button>
+        {count}
+      </span>
       {onDelete && (
         <button
           type="button"
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
           aria-label="Delete list"
           className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
         >
-          <Close size={24} />
+          <Close size={14} />
         </button>
       )}
     </span>
@@ -1409,7 +1415,7 @@ function EmailModal({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
           >
             {pending ? "Saving…" : "Continue"}
           </button>
@@ -1469,7 +1475,7 @@ function ListPickerModal({
                   className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-surface-2"
                 >
                   <span
-                    className={`h-5 w-5 inline-flex items-center justify-center rounded border-2 ${member ? "bg-accent border-accent text-accent-ink" : "border-border"}`}
+                    className={`h-5 w-5 inline-flex items-center justify-center rounded border-2 ${member ? "bg-accent border-accent text-white" : "border-border"}`}
                   >
                     {member && <Check size={24} />}
                   </span>
@@ -1503,7 +1509,7 @@ function ListPickerModal({
           <button
             type="submit"
             disabled={!name.trim()}
-            className="rounded-md bg-accent border border-accent px-3 py-2 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="rounded-md bg-accent border border-accent px-3 py-2 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
           >
             Create
           </button>
@@ -1638,7 +1644,7 @@ function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
           <button
             type="submit"
             disabled={pending || !body.trim()}
-            className="inline-flex items-center rounded-md bg-accent border border-accent px-3.5 py-2 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="inline-flex items-center rounded-md bg-accent border border-accent px-3.5 py-2 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
           >
             {pending ? "Posting…" : "Post"}
           </button>

@@ -60,7 +60,7 @@ export default async function HomePage() {
             </div>
             <button
               type="button"
-              className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-ink hover:bg-accent-hover transition-colors duration-150 active:scale-95"
+              className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-hover transition-colors duration-150 active:scale-95"
             >
               Continue
             </button>

@@ -149,7 +149,7 @@ export function DialogHost() {
             className={`inline-flex items-center rounded-md border px-4 py-2.5 text-sm font-bold tracking-wider transition-colors disabled:opacity-50 ${
               danger
                 ? "bg-negative border-negative text-white hover:opacity-90"
-                : "bg-accent border-accent text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white"
+                : "bg-accent border-accent text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white"
             }`}
           >
             {req.kind === "confirm"

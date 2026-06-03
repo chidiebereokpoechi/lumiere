@@ -16,8 +16,22 @@ import { uploadMultipart } from "@/lib/upload/multipart";
 import { Select } from "@/components/ui/select";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import {
-  More, Check, Eye, EyeOff, Pen, Trash, Plus, Upload, Download, Play,
-  Music, FileDoc, Close, ChevronLeft, ChevronRight, SpinnerIcon,
+  More,
+  Check,
+  Eye,
+  EyeOff,
+  Pen,
+  Trash,
+  Plus,
+  Upload,
+  Download,
+  Play,
+  Music,
+  FileDoc,
+  Close,
+  ChevronLeft,
+  ChevronRight,
+  SpinnerIcon,
 } from "@/components/ui/icons";
 
 // Anything above this uploads directly to storage via presigned multipart
@@ -918,7 +932,7 @@ export function FileManager({
       {/* Two-column: sets sidebar + media grid */}
       <div className="flex gap-6 items-start">
         {/* Sets sidebar */}
-        <aside className="w-60 h-full shrink-0 border border-border p-4">
+        <aside className="w-80 h-full shrink-0 border border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold tracking-wider text-ink-subtle">
               Sets
@@ -972,7 +986,7 @@ export function FileManager({
                   }
                 })();
               }}
-              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? "bg-accent text-accent-ink border-accent ring-4 ring-accent/40" : "border-border text-ink-muted hover:text-ink-strong hover:border-border-strong"}`}
+              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? "bg-accent text-white border-accent ring-4 ring-accent/40" : "border-border text-ink-muted hover:text-ink-strong hover:border-border-strong"}`}
             >
               <Plus size={15} />
             </button>
@@ -1025,8 +1039,8 @@ export function FileManager({
                 className="w-40"
                 options={[
                   { value: "manual", label: "Manual" },
-                  { value: "name-asc", label: "Name A–Z" },
-                  { value: "name-desc", label: "Name Z–A" },
+                  { value: "name-asc", label: "Name A-Z" },
+                  { value: "name-desc", label: "Name Z-A" },
                   { value: "newest", label: "Newest" },
                   { value: "oldest", label: "Oldest" },
                   { value: "size-desc", label: "Largest" },
@@ -1036,7 +1050,7 @@ export function FileManager({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark transition-colors"
             >
               <Upload size={15} />
               Upload
@@ -1052,18 +1066,6 @@ export function FileManager({
               }}
             />
           </div>
-          {selected.size > 0 && (
-            <p className="text-xs text-ink-subtle">
-              Drag a selected item onto a set to move{" "}
-              {selected.size > 1 ? "them" : "it"}.
-            </p>
-          )}
-          {canDrag && selected.size === 0 && order.length > 1 && (
-            <p className="text-xs text-ink-subtle">
-              Drag to reorder — this is the order clients see. Drop onto a set
-              to move.
-            </p>
-          )}
 
           {/* Folder content — drop boundary */}
           <div
@@ -1091,7 +1093,7 @@ export function FileManager({
             }}
           >
             {dragging && (
-              <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center gap-2 bg-accent-soft/70 backdrop-blur-sm border-2 border-dashed border-accent text-accent-ink">
+              <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center gap-2 bg-accent-soft/70 border-2 border-dashed border-accent text-white">
                 <Upload size={36} />
                 <p className="text-base font-bold tracking-wider">
                   Drop into this folder
@@ -1179,7 +1181,7 @@ export function FileManager({
 
       {/* Selection move bar */}
       {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
           <span className="text-sm font-semibold text-ink-strong tabular-nums">
             {selected.size} selected
           </span>
@@ -1253,7 +1255,7 @@ export function FileManager({
               )}
             </div>
             {draggingIds.size > 1 && (
-              <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-accent-ink text-xs font-bold tabular-nums ring-2 ring-surface">
+              <span className="absolute -top-2 -right-2 min-w-6 h-6 px-1.5 inline-flex items-center justify-center rounded-full bg-accent text-white text-xs font-bold tabular-nums ring-2 ring-surface">
                 {draggingIds.size}
               </span>
             )}
@@ -1533,7 +1535,7 @@ function FileTile({
             onPointerDown={(e) => e.stopPropagation()}
             aria-pressed={selected}
             aria-label={selected ? "Deselect" : "Select"}
-            className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${selected ? "bg-accent border-accent text-accent-ink opacity-100" : "bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100"}`}
+            className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${selected ? "bg-accent border-accent text-white opacity-100" : "bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100"}`}
           >
             <Check size={16} />
           </button>
@@ -1630,7 +1632,7 @@ function TileMenu({
         onClick={() => setOpen((v) => !v)}
         disabled={busy}
         aria-label="Actions"
-        className={`h-8 w-8 inline-flex items-center justify-center rounded-md bg-surface/90 text-ink-strong hover:bg-surface disabled:opacity-50 transition-opacity ${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        className={`h-8 w-8 inline-flex items-center justify-center rounded-md bg-surface text-ink-strong hover:bg-surface disabled:opacity-50 transition-opacity ${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       >
         <More size={18} />
       </button>
@@ -1747,7 +1749,16 @@ function FolderRow({
         }
       }}
       title={hidden ? "Hidden from clients" : undefined}
-      className={`group/row flex items-center gap-1 rounded-md border px-4 py-4 transition-colors ${
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`group/row flex items-center gap-1 rounded-md border px-4 py-4 cursor-pointer transition-colors focus-visible:outline-none ${
         isDropTarget
           ? "bg-accent text-ink-inverse border-accent ring-2 ring-accent/40"
           : active
@@ -1755,14 +1766,10 @@ function FolderRow({
             : "bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong"
       } ${dim}`}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex-1 min-w-0 inline-flex items-center gap-1.5 text-left text-sm font-semibold focus-visible:outline-none"
-      >
+      <span className="flex-1 min-w-0 inline-flex items-center gap-1.5 text-left text-sm font-semibold">
         {hidden && <EyeOff size={14} className="shrink-0" />}
         <span className="truncate">{label}</span>
-      </button>
+      </span>
       <span
         className={`tabular-nums text-xs shrink-0 group-hover/row:hidden ${active || isDropTarget ? "text-ink-inverse/70" : "text-ink-subtle"}`}
       >
@@ -1772,7 +1779,10 @@ function FolderRow({
         {onToggleHidden && (
           <button
             type="button"
-            onClick={onToggleHidden}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleHidden();
+            }}
             title={hidden ? "Show to clients" : "Hide from clients"}
             className={iconTint}
           >
@@ -1782,7 +1792,10 @@ function FolderRow({
         {onRename && (
           <button
             type="button"
-            onClick={onRename}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRename();
+            }}
             title="Rename"
             className={iconTint}
           >
@@ -1792,7 +1805,10 @@ function FolderRow({
         {onDelete && (
           <button
             type="button"
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             title="Delete set"
             className={`${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
           >

@@ -153,7 +153,7 @@ export function CommentModeration({
                   className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold tracking-widest ${
                     c.isApproved
                       ? "bg-surface-sunken text-positive"
-                      : "bg-accent-soft text-accent-ink"
+                      : "bg-accent-soft text-white"
                   }`}
                 >
                   {c.isApproved ? "Approved" : "Pending"}
@@ -173,7 +173,7 @@ export function CommentModeration({
                       type="button"
                       disabled={busyId === c.id}
                       onClick={() => setApproved(c, true)}
-                      className="rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+                      className="rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
                     >
                       Approve
                     </button>

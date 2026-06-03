@@ -28,7 +28,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between p-4 bg-bg/90 backdrop-blur border-b border-border">
+    <header className="sticky top-0 z-30 flex items-center justify-between p-4 bg-bg border-b border-border">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">
           {title}
@@ -95,7 +95,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
 function Avatar({ name }: { name: string }) {
   const initial = name.charAt(0).toUpperCase();
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-accent text-accent-ink text-sm font-extrabold">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white text-sm font-extrabold">
       {initial}
     </span>
   );
