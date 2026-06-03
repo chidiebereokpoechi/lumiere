@@ -39,7 +39,7 @@ export default async function GalleryMediaPage({ params }: Props) {
         active="media"
       />
 
-      <div className="p-4 pb-16 bg-red-500 w-full">
+      <div className="p-4 pb-16 w-full">
         <FileManager
           galleryId={galleryId}
           gallerySlug={gallery.slug}

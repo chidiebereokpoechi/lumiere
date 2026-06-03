@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation';
-import { fetchGallery, fetchMe } from '@/lib/api/galleries';
-import { fetchGalleryAnalytics } from '@/lib/api/analytics';
-import { ApiError } from '@/lib/api-client';
-import { GalleryHeader } from '@/components/admin/gallery-header';
-import { AnalyticsView } from '@/components/admin/analytics-view';
+import { notFound } from "next/navigation";
+import { fetchGallery, fetchMe } from "@/lib/api/galleries";
+import { fetchGalleryAnalytics } from "@/lib/api/analytics";
+import { ApiError } from "@/lib/api-client";
+import { GalleryHeader } from "@/components/admin/gallery-header";
+import { AnalyticsView } from "@/components/admin/analytics-view";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ galleryId: string }>;
@@ -21,7 +21,10 @@ export default async function GalleryAnalyticsPage({ params }: Props) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  const [me, analytics] = await Promise.all([fetchMe(), fetchGalleryAnalytics(galleryId)]);
+  const [me, analytics] = await Promise.all([
+    fetchMe(),
+    fetchGalleryAnalytics(galleryId),
+  ]);
 
   return (
     <div>
@@ -35,7 +38,7 @@ export default async function GalleryAnalyticsPage({ params }: Props) {
         active="analytics"
       />
 
-      <div className="px-8 py-6 pb-16">
+      <div className="p-4 pb-16">
         <AnalyticsView galleryId={galleryId} analytics={analytics} />
       </div>
     </div>

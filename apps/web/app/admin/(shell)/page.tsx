@@ -5,6 +5,7 @@ import {
   type GallerySummary,
 } from "@/lib/api/galleries";
 import { Topnav } from "@/components/admin/topnav";
+import { ImageIcon, Plus } from "@/components/ui/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function AdminGalleriesPage() {
   const [me, galleries] = await Promise.all([fetchMe(), fetchGalleries()]);
 
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="">
       <Topnav
         title="Galleries"
         subtitle={
@@ -116,19 +117,7 @@ function Dot() {
 function PlaceholderCover() {
   return (
     <div className="h-full w-full bg-surface-sunken flex items-center justify-center">
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        className="text-ink-subtle"
-      >
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <circle cx="9" cy="11" r="1.5" />
-        <path d="m21 17-5-5L8 19" />
-      </svg>
+      <ImageIcon size={26} className="text-ink-subtle" />
     </div>
   );
 }
@@ -139,17 +128,7 @@ function NewGalleryButton() {
       href="/admin/galleries/new"
       className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <Plus size={15} />
       New gallery
     </Link>
   );

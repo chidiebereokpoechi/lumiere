@@ -25,7 +25,7 @@ export default async function AdminShellLayout({
   return (
     <div className="min-h-dvh flex bg-bg">
       <Sidebar />
-      <div className="flex-1 min-w-0 h-dvh">{children}</div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   );
 }

@@ -15,6 +15,10 @@ import type { Folder } from "@/lib/api/folders";
 import { uploadMultipart } from "@/lib/upload/multipart";
 import { Select } from "@/components/ui/select";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
+import {
+  More, Check, Eye, EyeOff, Pen, Trash, Plus, Upload, Download, Play,
+  Music, FileDoc, Close, ChevronLeft, ChevronRight, SpinnerIcon,
+} from "@/components/ui/icons";
 
 // Anything above this uploads directly to storage via presigned multipart
 // (bypassing the app + the dev rewrite proxy, which caps bodies at 10MB).
@@ -970,17 +974,7 @@ export function FileManager({
               }}
               className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? "bg-accent text-accent-ink border-accent ring-4 ring-accent/40" : "border-border text-ink-muted hover:text-ink-strong hover:border-border-strong"}`}
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
+              <Plus size={15} />
             </button>
           </div>
           <div className="space-y-3">
@@ -1044,20 +1038,7 @@ export function FileManager({
               onClick={() => inputRef.current?.click()}
               className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
+              <Upload size={15} />
               Upload
             </button>
             <input
@@ -1111,20 +1092,7 @@ export function FileManager({
           >
             {dragging && (
               <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center gap-2 bg-accent-soft/70 backdrop-blur-sm border-2 border-dashed border-accent text-accent-ink">
-                <svg
-                  width="36"
-                  height="36"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
+                <Upload size={36} />
                 <p className="text-base font-bold tracking-wider">
                   Drop into this folder
                 </p>
@@ -1234,19 +1202,7 @@ export function FileManager({
               onClick={deleteSelected}
               className="inline-flex items-center gap-1.5 rounded-md border border-negative/40 px-3 py-2 text-sm font-semibold text-negative hover:bg-negative/10 transition-colors"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
+              <Trash size={15} />
               Delete
             </button>
             <button
@@ -1374,39 +1330,14 @@ function AdminPreview({
           aria-label="Close"
           className="h-10 w-10 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
+          <ChevronLeft size={24} />
         </button>
         <a
           href={`/api/gallery/${gallerySlug}/files/${file.id}/download`}
           aria-label="Download"
           className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
+          <Download size={20} />
         </a>
       </div>
       <div
@@ -1460,18 +1391,7 @@ function AdminPreview({
               aria-label="Previous"
               className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
             >
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
+              <ChevronLeft size={26} />
             </button>
             <button
               type="button"
@@ -1482,18 +1402,7 @@ function AdminPreview({
               aria-label="Next"
               className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
             >
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <ChevronRight size={26} />
             </button>
           </>
         )}
@@ -1599,14 +1508,7 @@ function FileTile({
             />
             <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="h-10 w-10 inline-flex items-center justify-center rounded-full bg-black/50 text-white">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Play size={18} />
               </span>
             </span>
             <Badge>Video</Badge>
@@ -1633,18 +1535,7 @@ function FileTile({
             aria-label={selected ? "Deselect" : "Select"}
             className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${selected ? "bg-accent border-accent text-accent-ink opacity-100" : "bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100"}`}
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check size={16} />
           </button>
         )}
 
@@ -1741,11 +1632,7 @@ function TileMenu({
         aria-label="Actions"
         className={`h-8 w-8 inline-flex items-center justify-center rounded-md bg-surface/90 text-ink-strong hover:bg-surface disabled:opacity-50 transition-opacity ${open ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="5" r="1.6" />
-          <circle cx="12" cy="12" r="1.6" />
-          <circle cx="12" cy="19" r="1.6" />
-        </svg>
+        <More size={18} />
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-48 rounded-md border border-border bg-surface shadow-lg p-1.5 text-sm z-20">
@@ -1800,41 +1687,8 @@ function MenuItem({
 }
 
 function TypeIcon({ type }: { type: GalleryFile["type"] }) {
-  if (type === "audio") {
-    return (
-      <svg
-        width="28"
-        height="28"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-ink-muted"
-      >
-        <path d="M9 18V5l12-2v13" />
-        <circle cx="6" cy="18" r="3" />
-        <circle cx="18" cy="16" r="3" />
-      </svg>
-    );
-  }
-  return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="text-ink-muted"
-    >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  );
+  const Icon = type === "audio" ? Music : FileDoc;
+  return <Icon size={28} className="text-ink-muted" />;
 }
 
 // Vertical set/folder row for the sidebar: select, count, drop-target for file
@@ -1906,23 +1760,7 @@ function FolderRow({
         onClick={onClick}
         className="flex-1 min-w-0 inline-flex items-center gap-1.5 text-left text-sm font-semibold focus-visible:outline-none"
       >
-        {hidden && (
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="shrink-0"
-          >
-            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" />
-            <path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" />
-            <line x1="2" y1="2" x2="22" y2="22" />
-          </svg>
-        )}
+        {hidden && <EyeOff size={14} className="shrink-0" />}
         <span className="truncate">{label}</span>
       </button>
       <span
@@ -1938,36 +1776,7 @@ function FolderRow({
             title={hidden ? "Show to clients" : "Hide from clients"}
             className={iconTint}
           >
-            {hidden ? (
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            ) : (
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" />
-                <path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" />
-                <line x1="2" y1="2" x2="22" y2="22" />
-              </svg>
-            )}
+            {hidden ? <Eye size={14} /> : <EyeOff size={14} />}
           </button>
         )}
         {onRename && (
@@ -1977,19 +1786,7 @@ function FolderRow({
             title="Rename"
             className={iconTint}
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
+            <Pen size={14} />
           </button>
         )}
         {onDelete && (
@@ -1999,18 +1796,7 @@ function FolderRow({
             title="Delete set"
             className={`${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <Close size={14} />
           </button>
         )}
       </span>
@@ -2047,30 +1833,7 @@ function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
 }
 
 function Spinner() {
-  return (
-    <svg
-      className="animate-spin text-ink-subtle"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        stroke="currentColor"
-        strokeWidth="3"
-        className="opacity-20"
-      />
-      <path
-        d="M21 12a9 9 0 0 0-9-9"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <SpinnerIcon size={20} className="animate-spin text-ink-subtle" />;
 }
 
 function Badge({ children }: { children: React.ReactNode }) {

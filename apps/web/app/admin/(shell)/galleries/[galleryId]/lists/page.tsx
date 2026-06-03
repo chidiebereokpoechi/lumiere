@@ -56,17 +56,7 @@ export default async function GalleryListsPage({ params }: Props) {
         active="lists"
       />
 
-      <div className="pb-16">
-        <div className="mb-5">
-          <h1 className="text-xl font-extrabold tracking-tight text-ink-strong">
-            Client lists
-          </h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Selections clients have built. Each is tied to the email they
-            provided.
-          </p>
-        </div>
-
+      <div className="p-4 pb-16">
         {/* Favorites — exportable, optionally per client */}
         <section className="rounded-lg border border-border bg-surface p-5 mb-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">

@@ -38,7 +38,7 @@ export default async function GalleryEditorPage({ params }: Props) {
         active="settings"
       />
 
-      <div className="p-4 bg-emerald-500 pb-16">
+      <div className="p-4 pb-16">
         <div className="max-w-2xl">
           <SettingsForm gallery={gallery} watermarks={watermarks} />
         </div>

@@ -17,6 +17,7 @@ import {
   FormError,
 } from "@/components/admin/form";
 import { confirmDialog } from "@/components/ui/dialog";
+import { Pen, Trash, ImageIcon } from "@/components/ui/icons";
 
 const POSITIONS: { value: WatermarkPosition; label: string }[] = [
   { value: "top-left", label: "Top left" },
@@ -423,19 +424,7 @@ export function WatermarkManager({
                     title="Edit"
                     className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-muted hover:bg-surface-2 hover:text-ink-strong"
                   >
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                    </svg>
+                    <Pen size={16} />
                   </button>
                   <button
                     type="button"
@@ -443,19 +432,7 @@ export function WatermarkManager({
                     title="Delete"
                     className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-subtle hover:bg-surface-2 hover:text-negative"
                   >
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    <Trash size={16} />
                   </button>
                 </div>
               </div>
@@ -530,20 +507,7 @@ function WatermarkPreview({
             style={{ opacity: draft.opacity }}
             className="inline-flex items-center gap-1.5 rounded bg-white/85 px-2 py-1 text-[11px] font-bold tracking-wider text-slate-800"
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="m21 15-5-5L5 21" />
-            </svg>
+            <ImageIcon size={14} />
             Logo
           </span>
         )}
