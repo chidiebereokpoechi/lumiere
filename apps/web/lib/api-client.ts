@@ -85,6 +85,43 @@ export async function apiClientMutation<T = unknown>(
   });
 }
 
+/**
+ * Client-side JSON request with the body serialized and the content-type set.
+ * Thin sugar over `apiClient` for the common mutation shape.
+ */
+export function postJson<T = unknown>(
+  path: string,
+  body: unknown,
+  method = "POST",
+): Promise<T> {
+  return apiClient<T>(path, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * Resolve the CSRF token: read the `lumiere_csrf` cookie, falling back to a
+ * fresh `GET /api/auth/csrf`. Exported for callers that issue mutations outside
+ * `apiClientMutation` (e.g. the XHR upload path, which needs the raw header).
+ */
+export async function getCsrfToken(): Promise<string> {
+  const cached = readCookie("lumiere_csrf");
+  if (cached) return cached;
+  const { token } = await apiClient<{ token: string }>("/api/auth/csrf");
+  return token;
+}
+
+/**
+ * Uniform user-facing message for a failed request. `action` describes what was
+ * attempted, e.g. `apiErrorMessage(err, "Reorder failed")` →
+ * "Reorder failed (409)" for an ApiError, "Network error" otherwise.
+ */
+export function apiErrorMessage(err: unknown, action: string): string {
+  return err instanceof ApiError ? `${action} (${err.status})` : "Network error";
+}
+
 function readCookie(name: string): string | undefined {
   if (typeof document === 'undefined') return undefined;
   const target = `${name}=`;

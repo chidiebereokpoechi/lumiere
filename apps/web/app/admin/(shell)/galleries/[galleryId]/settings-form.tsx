@@ -517,7 +517,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
 // automatically as fields change.
 function SaveStatus({ state }: { state: SaveState }) {
   const base =
-    "inline-flex items-center gap-2 text-xs font-semibold tracking-widest";
+    "inline-flex items-center gap-2 text-xs font-semibold tracking-wider";
   if (state === "saving") {
     return (
       <span className={`${base} text-ink-muted`}>

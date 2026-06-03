@@ -150,7 +150,7 @@ export function CommentModeration({
               </p>
               <div className="mt-3 flex items-center gap-3">
                 <span
-                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold tracking-widest ${
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold tracking-wider ${
                     c.isApproved
                       ? "bg-surface-sunken text-positive"
                       : "bg-accent-soft text-white"

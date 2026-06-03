@@ -99,7 +99,7 @@ function StatusPill({ status }: { status: "active" | "archived" | "draft" }) {
         : "bg-surface-sunken text-ink-muted border-border";
   return (
     <span
-      className={`absolute top-2 left-2 rounded-md border px-2 py-1 text-xs font-extrabold tracking-widest ${cls}`}
+      className={`absolute top-2 left-2 rounded-md border px-2 py-1 text-xs font-extrabold tracking-wider ${cls}`}
     >
       {status}
     </span>

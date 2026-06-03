@@ -22,7 +22,7 @@ export default async function HomePage() {
     <main className="mx-auto max-w-3xl px-8 py-24 md:py-32">
       <header className="flex items-start justify-between gap-6">
         <div>
-          <p className="text-sm font-medium tracking-widest text-ink-muted">
+          <p className="text-sm font-medium tracking-wider text-ink-muted">
             Lumière
           </p>
           <h1 className="mt-3 text-5xl md:text-6xl font-semibold tracking-tight text-ink">
@@ -36,7 +36,7 @@ export default async function HomePage() {
       </header>
 
       <section className="mt-16">
-        <h2 className="text-xs font-medium tracking-widest text-ink-subtle">
+        <h2 className="text-xs font-medium tracking-wider text-ink-subtle">
           System status
         </h2>
         <div className="mt-4 rounded-md bg-surface p-8">
@@ -75,7 +75,7 @@ export default async function HomePage() {
       </section>
 
       <section className="mt-16 space-y-6">
-        <h2 className="text-xs font-medium tracking-widest text-ink-subtle">
+        <h2 className="text-xs font-medium tracking-wider text-ink-subtle">
           Type ramp
         </h2>
         <div className="space-y-3">
@@ -87,7 +87,7 @@ export default async function HomePage() {
           <p className="text-sm text-ink-muted">
             Muted — supporting text and metadata.
           </p>
-          <p className="text-xs tracking-widest text-ink-subtle">
+          <p className="text-xs tracking-wider text-ink-subtle">
             Eyebrow · all caps
           </p>
         </div>

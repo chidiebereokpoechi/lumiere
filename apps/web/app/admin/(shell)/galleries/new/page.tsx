@@ -84,7 +84,7 @@ export default function NewGalleryPage() {
       <header className="px-8 py-6 border-b border-border">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1 text-xs font-bold tracking-widest text-ink-muted hover:text-ink-strong"
+          className="inline-flex items-center gap-1 text-xs font-bold tracking-wider text-ink-muted hover:text-ink-strong"
         >
           ← Galleries
         </Link>
