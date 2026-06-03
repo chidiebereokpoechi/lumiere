@@ -194,7 +194,16 @@ export function ClientGallery({
       setAtLanding(false);
       setOpenId(null);
       clear();
-      window.history.pushState(null, "", `/g/${gallery.slug}/${viewSlug(v)}`);
+      // On the bare-slug domain (gallery.chidsism.com/:slug/...) we keep the
+      // URL bar /:slug/:view; on the canonical domain it stays /g/:slug/:view.
+      const cleanRoot =
+        window.location.pathname.split("/").filter(Boolean)[0] !== "g";
+      const prefix = cleanRoot ? "" : "/g";
+      window.history.pushState(
+        null,
+        "",
+        `${prefix}/${gallery.slug}/${viewSlug(v)}`,
+      );
       window.scrollTo({ top: 0 }); // each collection starts at the gallery top
     },
     [gallery.slug, viewSlug, clear],
@@ -277,8 +286,9 @@ export function ClientGallery({
   // Keep the view in sync with browser back/forward.
   useEffect(() => {
     const onPop = () => {
-      const seg =
-        window.location.pathname.split("/").filter(Boolean)[2] ?? null;
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      // /g/:slug/:view (canonical) vs /:slug/:view (gallery.chidsism.com).
+      const seg = (parts[0] === "g" ? parts[2] : parts[1]) ?? null;
       const resolved = resolveCollection(seg);
       // No segment in collections nav = back at the albums landing.
       if (collectionsMode) setAtLanding(!resolved);
