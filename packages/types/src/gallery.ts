@@ -39,6 +39,7 @@ export const GalleryPatchInput = z.object({
   eventDate: z.number().int().nullable(),
   eventType: z.string().nullable(),
   layout: z.enum(['grid', 'masonry', 'slideshow']),
+  navStyle: z.enum(['tabs', 'collections']),
   colorTheme: z.string(),
   customCss: z.string().nullable(),
   sortOrder: z.string(),

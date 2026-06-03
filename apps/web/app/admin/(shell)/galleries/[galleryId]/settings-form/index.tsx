@@ -86,6 +86,24 @@ export function SettingsForm({ gallery, watermarks }: Props) {
             />
           </Field>
         </div>
+        <Field
+          id="navStyle"
+          label="Navigation"
+          hint="how clients move between sets"
+        >
+          <Select
+            id="navStyle"
+            value={fields.navStyle}
+            onChange={immediate(setters.setNavStyle)}
+            options={[
+              { value: "tabs", label: "Tabs — one row of collection tabs" },
+              {
+                value: "collections",
+                label: "Collections — albums grid you drill into",
+              },
+            ]}
+          />
+        </Field>
       </Section>
 
       <Section title="Client">

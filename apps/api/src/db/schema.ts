@@ -40,6 +40,9 @@ export const galleries = sqliteTable('galleries', {
   eventDate: integer('event_date'),
   eventType: text('event_type'),
   layout: text('layout').default('grid'),
+  // Client landing: 'tabs' (one row of collection tabs) or 'collections' (an
+  // iOS-Photos-style albums grid you drill into).
+  navStyle: text('nav_style').default('tabs'),
   colorTheme: text('color_theme').default('light'),
   customCss: text('custom_css'),
   watermarkPresetId: text('watermark_preset_id'),

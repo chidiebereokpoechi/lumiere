@@ -6,6 +6,9 @@ import { ChevronDown, Check } from '@/components/ui/icons';
 export interface SelectOption<T extends string> {
   value: T;
   label: string;
+  // Optional group label — a heading is rendered before the first option of
+  // each group (options must be ordered by group). Omit for ungrouped lists.
+  group?: string;
 }
 
 // Custom listbox dropdown (no native <select>). Matches the form input shell:
@@ -34,6 +37,15 @@ export function Select<T extends string>({
 
   const current = options.find((o) => o.value === value);
 
+  // Bucket options into contiguous runs by `group` so each group renders as its
+  // own block (heading + items), with spacing between groups.
+  const groups: { group?: string; items: SelectOption<T>[] }[] = [];
+  for (const o of options) {
+    const last = groups[groups.length - 1];
+    if (last && last.group === o.group) last.items.push(o);
+    else groups.push({ group: o.group, items: [o] });
+  }
+
   return (
     <div ref={ref} className={`relative ${className ?? ''}`}>
       <button
@@ -48,30 +60,43 @@ export function Select<T extends string>({
         <ChevronDown className={`shrink-0 text-ink-subtle transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
       </button>
       {open && (
-        <ul
+        <div
           role="listbox"
-          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-surface shadow-lg p-1.5"
+          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-surface shadow-lg p-1.5 flex flex-col gap-4"
         >
-          {options.map((o) => {
-            const active = o.value === value;
-            return (
-              <li key={o.value}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => { onChange(o.value); setOpen(false); }}
-                  className={`flex w-full items-center justify-between gap-2 rounded px-2.5 py-1.5 text-left text-sm transition-colors ${
-                    active ? 'bg-surface-2 text-ink-strong font-semibold' : 'text-ink-muted hover:bg-surface-2 hover:text-ink-strong'
-                  }`}
-                >
-                  <span className="truncate">{o.label}</span>
-                  {active && <Check className="shrink-0 text-accent-dark" size={16} />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+          {groups.map((g, gi) => (
+            <div key={g.group ?? gi} className="flex flex-col">
+              {g.group && (
+                <p className="px-2.5 pb-1 text-xs font-bold tracking-wider text-ink-subtle">
+                  {g.group}
+                </p>
+              )}
+              {g.items.map((o) => {
+                const active = o.value === value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      onChange(o.value);
+                      setOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between gap-2 rounded px-2.5 py-1.5 text-left text-sm transition-colors ${
+                      active
+                        ? 'bg-surface-2 text-ink-strong font-semibold'
+                        : 'text-ink-muted hover:bg-surface-2 hover:text-ink-strong'
+                    }`}
+                  >
+                    <span className="truncate">{o.label}</span>
+                    {active && <Check className="shrink-0 text-accent-dark" size={16} />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

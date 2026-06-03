@@ -16,7 +16,9 @@ import { useDragSelect } from "@/hooks/use-drag-select";
 import { useCoverGate } from "@/hooks/use-cover-gate";
 import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
-import { Download, Heart, Zip } from "@/components/ui/icons";
+import { Select } from "@/components/ui/select";
+import { ChevronLeft, Download, Heart, Zip } from "@/components/ui/icons";
+import { AlbumsLanding, type AlbumItem } from "./albums-landing";
 import { GalleryCover } from "./gallery-cover";
 import { GalleryTab } from "./gallery-tab";
 import { GalleryGrid } from "./gallery-grid";
@@ -141,6 +143,13 @@ export function ClientGallery({
     () => resolveCollection(initialCollection) ?? defaultView,
   );
 
+  // 'collections' nav shows an albums landing you drill into; `atLanding` is the
+  // top-level grid-of-albums state (no specific collection open).
+  const collectionsMode = gallery.navStyle === "collections";
+  const [atLanding, setAtLanding] = useState(
+    collectionsMode && !initialCollection,
+  );
+
   const canDownload = gallery.allowDownload && gallery.downloadMode !== "none";
   const canFavorite = gallery.allowFavorites;
 
@@ -182,6 +191,7 @@ export function ClientGallery({
   const switchView = useCallback(
     (v: View) => {
       setView(v);
+      setAtLanding(false);
       setOpenId(null);
       clear();
       window.history.pushState(null, "", `/g/${gallery.slug}/${viewSlug(v)}`);
@@ -190,13 +200,90 @@ export function ClientGallery({
     [gallery.slug, viewSlug, clear],
   );
 
+  // Back to the albums landing (collections nav).
+  const goLanding = useCallback(() => {
+    setAtLanding(true);
+    setOpenId(null);
+    setSelectionMode(false);
+    clear();
+    window.history.pushState(null, "", `/g/${gallery.slug}`);
+    window.scrollTo({ top: 0 });
+  }, [gallery.slug, clear]);
+
+  // Album cards for the collections landing.
+  const collectionAlbums = useMemo<AlbumItem[]>(
+    () =>
+      folders.map((f) => {
+        const fs = allFiles.filter((x) => x.folderId === f.id);
+        return {
+          key: f.id,
+          label: f.name,
+          count: fs.length,
+          peek: fs.slice(0, 4),
+          onOpen: () => switchView({ kind: "folder", id: f.id }),
+        };
+      }),
+    [folders, allFiles, switchView],
+  );
+  const listAlbums = useMemo<AlbumItem[]>(() => {
+    const arr: AlbumItem[] = [];
+    if (canFavorite && favoriteCount > 0) {
+      const fs = allFiles.filter((f) => favorites.has(f.id));
+      arr.push({
+        key: "__fav__",
+        label: "Favorites",
+        favorite: true,
+        count: fs.length,
+        peek: fs.slice(0, 4),
+        onOpen: () => switchView({ kind: "favorites" }),
+      });
+    }
+    for (const l of lists) {
+      const ids = new Set(l.fileIds);
+      const fs = allFiles.filter((f) => ids.has(f.id));
+      arr.push({
+        key: l.id,
+        label: l.name,
+        count: l.fileIds.length,
+        peek: fs.slice(0, 4),
+        onOpen: () => switchView({ kind: "list", id: l.id }),
+      });
+    }
+    return arr;
+  }, [lists, allFiles, favorites, favoriteCount, canFavorite, switchView]);
+
+  // Options + value for the in-collection "switch collection" Select.
+  const viewKey = (v: View) =>
+    v.kind === "favorites" ? "fav" : `${v.kind === "list" ? "l" : "f"}:${v.id}`;
+  const collectionOptions = useMemo(() => {
+    const opts = folders.map((f) => ({
+      value: `f:${f.id}`,
+      label: f.name,
+      group: "Collections",
+    }));
+    if (canFavorite && favoriteCount > 0)
+      opts.push({ value: "fav", label: "Favorites", group: "Your lists" });
+    for (const l of lists)
+      opts.push({ value: `l:${l.id}`, label: l.name, group: "Your lists" });
+    return opts;
+  }, [folders, lists, canFavorite, favoriteCount]);
+  const selectCollection = (key: string) => {
+    if (key === "fav") switchView({ kind: "favorites" });
+    else if (key.startsWith("l:"))
+      switchView({ kind: "list", id: key.slice(2) });
+    else switchView({ kind: "folder", id: key.slice(2) });
+  };
+
   // Keep the view in sync with browser back/forward.
   useEffect(() => {
     const onPop = () => {
       const seg =
         window.location.pathname.split("/").filter(Boolean)[2] ?? null;
+      const resolved = resolveCollection(seg);
+      // No segment in collections nav = back at the albums landing.
+      if (collectionsMode) setAtLanding(!resolved);
       setView(
-        resolveCollection(seg) ??
+        resolved ??
           (folders[0]
             ? { kind: "folder", id: folders[0].id }
             : { kind: "favorites" }),
@@ -204,7 +291,7 @@ export function ClientGallery({
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [resolveCollection, folders]);
+  }, [resolveCollection, folders, collectionsMode]);
 
   useEffect(() => {
     void apiClient(`/api/gallery/${gallery.slug}/track-view`, {
@@ -300,9 +387,11 @@ export function ClientGallery({
   const renameList = useCallback(
     (id: string, name: string) => {
       setLists((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)));
-      void postJson(`/api/gallery/${gallery.slug}/lists/${id}`, { name }, "PATCH").catch(
-        () => {},
-      );
+      void postJson(
+        `/api/gallery/${gallery.slug}/lists/${id}`,
+        { name },
+        "PATCH",
+      ).catch(() => {});
     },
     [gallery.slug],
   );
@@ -515,36 +604,56 @@ export function ClientGallery({
 
       {/* Sticky chrome: a slim title bar with actions, then the tab row. */}
       <div className="sticky top-0 z-30 bg-bg">
-        <div className="px-2 sm:px-8 h-12 sm:h-16 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate font-[700] text-lg tracking-wider text-ink-strong">
-              {gallery.title}
-            </p>
-            {gallery.subtitle && (
-              <p className="truncate text-sm text-ink-muted">
-                {gallery.subtitle}
+        <div className="p-2 sm:p-8 flex items-center justify-between gap-3">
+          {collectionsMode && !atLanding ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                onClick={goLanding}
+                aria-label="Back to collections"
+                className="h-9 w-9 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <Select
+                value={viewKey(view)}
+                onChange={selectCollection}
+                options={collectionOptions}
+                className="w-44 sm:w-56"
+              />
+            </div>
+          ) : (
+            <div className="min-w-0">
+              <p className="truncate font-[700] text-lg tracking-wider text-ink-strong">
+                {gallery.title}
               </p>
-            )}
-          </div>
+              {gallery.subtitle && (
+                <p className="truncate text-sm text-ink-muted">
+                  {gallery.subtitle}
+                </p>
+              )}
+            </div>
+          )}
           {allFiles.length > 0 && (
             <div className="flex items-center gap-4 shrink-0">
-              {(canFavorite || canDownload) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!selectionMode) enterSelection();
-                    else if (allSelected) deselectAll();
-                    else selectAll();
-                  }}
-                  className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong whitespace-nowrap"
-                >
-                  {!selectionMode
-                    ? "Select"
-                    : allSelected
-                      ? "Deselect all"
-                      : "Select all"}
-                </button>
-              )}
+              {(canFavorite || canDownload) &&
+                !(collectionsMode && atLanding) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectionMode) enterSelection();
+                      else if (allSelected) deselectAll();
+                      else selectAll();
+                    }}
+                    className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong whitespace-nowrap"
+                  >
+                    {!selectionMode
+                      ? "Select"
+                      : allSelected
+                        ? "Deselect all"
+                        : "Select all"}
+                  </button>
+                )}
               {canDownload && (
                 <button
                   type="button"
@@ -559,31 +668,33 @@ export function ClientGallery({
             </div>
           )}
         </div>
-        {allFiles.length > 0 && !(coarse && selectionMode) && (
-          <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
-            {/* With favorites, surface them first + marked with a red heart. */}
-            {canFavorite && favoriteCount > 0 && (
-              <GalleryTab
-                active={view.kind === "favorites"}
-                onClick={() => switchView({ kind: "favorites" })}
-                label="Favorites"
-                count={favoriteCount}
-                icon={<Heart size={16} className="text-heart" />}
-              />
-            )}
-            {folders.map((f) => (
-              <GalleryTab
-                key={f.id}
-                active={view.kind === "folder" && view.id === f.id}
-                onClick={() => switchView({ kind: "folder", id: f.id })}
-                label={f.name}
-                count={folderCounts.get(f.id) ?? 0}
-              />
-            ))}
-          </nav>
-        )}
+        {!collectionsMode &&
+          allFiles.length > 0 &&
+          !(coarse && selectionMode) && (
+            <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+              {/* With favorites, surface them first + marked with a red heart. */}
+              {canFavorite && favoriteCount > 0 && (
+                <GalleryTab
+                  active={view.kind === "favorites"}
+                  onClick={() => switchView({ kind: "favorites" })}
+                  label="Favorites"
+                  count={favoriteCount}
+                  icon={<Heart size={16} className="text-heart" />}
+                />
+              )}
+              {folders.map((f) => (
+                <GalleryTab
+                  key={f.id}
+                  active={view.kind === "folder" && view.id === f.id}
+                  onClick={() => switchView({ kind: "folder", id: f.id })}
+                  label={f.name}
+                  count={folderCounts.get(f.id) ?? 0}
+                />
+              ))}
+            </nav>
+          )}
         {/* Client-made lists get their own row, distinct from the sets above. */}
-        {lists.length > 0 && !(coarse && selectionMode) && (
+        {!collectionsMode && lists.length > 0 && !(coarse && selectionMode) && (
           <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
             {lists.map((l) => (
               <GalleryTab
@@ -599,29 +710,39 @@ export function ClientGallery({
         )}
       </div>
 
-      {/* Edge-to-edge grid — minimal chrome, photo-forward. min-height fills the
-          viewport so short galleries still scroll the cover fully away. */}
-      <section className="px-2 sm:px-8 min-h-svh">
-        <GalleryGrid
-          files={files}
-          gridMode={gridMode}
-          selected={selected}
-          favorites={favorites}
-          dragSelecting={dragSelecting}
-          emptyText={emptyText}
-          canDownload={canDownload}
-          canFavorite={canFavorite}
-          actionVis={actionVis}
-          selectionMode={selectionMode}
-          desktop={!coarse}
-          suppressClickRef={suppressClickRef}
-          onOpen={setOpenId}
-          onToggleSelect={toggle}
-          onBeginDragSelect={gridMode ? beginDragSelect : () => {}}
-          onToggleFavorite={(id) => requireEmail(() => toggleFavorite(id))}
-          onBulkFavorite={bulkFavorite}
-          onLongPress={setSheetId}
-        />
+      {/* Collections landing (albums grid you drill into) or the per-collection
+          media grid. min-height fills the viewport so short content still
+          scrolls the cover fully away. */}
+      <section className="min-h-svh">
+        {collectionsMode && atLanding ? (
+          <AlbumsLanding
+            collections={collectionAlbums}
+            yourLists={listAlbums}
+          />
+        ) : (
+          <div className="px-2 sm:px-8">
+            <GalleryGrid
+              files={files}
+              gridMode={gridMode}
+              selected={selected}
+              favorites={favorites}
+              dragSelecting={dragSelecting}
+              emptyText={emptyText}
+              canDownload={canDownload}
+              canFavorite={canFavorite}
+              actionVis={actionVis}
+              selectionMode={selectionMode}
+              desktop={!coarse}
+              suppressClickRef={suppressClickRef}
+              onOpen={setOpenId}
+              onToggleSelect={toggle}
+              onBeginDragSelect={gridMode ? beginDragSelect : () => {}}
+              onToggleFavorite={(id) => requireEmail(() => toggleFavorite(id))}
+              onBulkFavorite={bulkFavorite}
+              onLongPress={setSheetId}
+            />
+          </div>
+        )}
       </section>
 
       {gallery.allowComments && (

@@ -43,6 +43,7 @@ export interface GalleryDetail {
   eventDate: number | null;
   eventType: string | null;
   layout: 'grid' | 'masonry' | 'slideshow' | null;
+  navStyle: 'tabs' | 'collections' | null;
   colorTheme: string | null;
   customCss: string | null;
   watermarkPresetId: string | null;

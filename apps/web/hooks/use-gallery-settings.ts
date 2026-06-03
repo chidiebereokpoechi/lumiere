@@ -41,6 +41,9 @@ export function useGallerySettings(gallery: GalleryDetail) {
   const [layout, setLayout] = useState<"grid" | "masonry" | "slideshow">(
     gallery.layout ?? "grid",
   );
+  const [navStyle, setNavStyle] = useState<"tabs" | "collections">(
+    gallery.navStyle ?? "tabs",
+  );
   const [clientName, setClientName] = useState(gallery.clientName ?? "");
   const [clientEmail, setClientEmail] = useState(gallery.clientEmail ?? "");
   const [eventDate, setEventDate] = useState(epochToDateInput(gallery.eventDate));
@@ -77,6 +80,7 @@ export function useGallerySettings(gallery: GalleryDetail) {
       status,
       downloadMode,
       layout,
+      navStyle,
       clientName: emptyToNull(clientName),
       clientEmail: emptyToNull(clientEmail),
       eventDate: dateInputToEpoch(eventDate),
@@ -112,6 +116,7 @@ export function useGallerySettings(gallery: GalleryDetail) {
     status,
     downloadMode,
     layout,
+    navStyle,
     clientName,
     clientEmail,
     eventDate,
@@ -225,6 +230,7 @@ export function useGallerySettings(gallery: GalleryDetail) {
       status,
       downloadMode,
       layout,
+      navStyle,
       clientName,
       clientEmail,
       eventDate,
@@ -244,6 +250,7 @@ export function useGallerySettings(gallery: GalleryDetail) {
       setStatus,
       setDownloadMode,
       setLayout,
+      setNavStyle,
       setClientName,
       setClientEmail,
       setEventDate,

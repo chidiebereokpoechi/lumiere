@@ -13,6 +13,7 @@ export interface MinimalGallery {
   coverFocalX: number | null;
   coverFocalY: number | null;
   layout: 'grid' | 'masonry' | 'slideshow';
+  navStyle: 'tabs' | 'collections';
   colorTheme: string;
   customCss: string | null;
   hasPassword: boolean;

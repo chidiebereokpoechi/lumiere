@@ -43,6 +43,7 @@ interface MinimalGallery {
   coverFocalX: number | null;
   coverFocalY: number | null;
   layout: string;
+  navStyle: string;
   colorTheme: string;
   customCss: string | null;
   hasPassword: boolean;
@@ -71,6 +72,7 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
     coverFocalX: g.coverFocalX,
     coverFocalY: g.coverFocalY,
     layout: g.layout ?? 'grid',
+    navStyle: g.navStyle ?? 'tabs',
     colorTheme: g.colorTheme ?? 'light',
     customCss: g.customCss,
     hasPassword: !!g.passwordHash,
