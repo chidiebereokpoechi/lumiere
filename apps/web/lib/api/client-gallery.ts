@@ -1,7 +1,7 @@
 import { apiServer } from '@/lib/api-client';
 import type { FileType } from '@/lib/api/files';
 
-export type AccessState = 'ok' | 'locked' | 'expired';
+export type AccessState = 'ok' | 'locked' | 'expired' | 'archived' | 'draft';
 
 export interface MinimalGallery {
   id: string;

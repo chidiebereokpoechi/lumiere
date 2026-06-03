@@ -25,13 +25,18 @@ export default async function ClientGalleryPage({ params }: Props) {
     throw err;
   }
 
-  if (access.state === 'expired') {
+  if (access.state === 'expired' || access.state === 'archived' || access.state === 'draft') {
+    const copy = {
+      expired: { heading: 'This gallery has expired', body: 'Reach out to the creator to restore access.' },
+      archived: { heading: 'This gallery is no longer available', body: 'Reach out to the creator if you need access.' },
+      draft: { heading: 'This gallery isn’t published yet', body: 'Check back soon, or reach out to the creator.' },
+    }[access.state];
     return (
       <main className="min-h-dvh grid place-items-center bg-bg px-6 text-center">
         <div className="max-w-sm">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-ink-muted">{access.gallery.title}</p>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-strong">This gallery has expired</h1>
-          <p className="mt-2 text-sm text-ink-muted">Reach out to the creator to restore access.</p>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-strong">{copy.heading}</h1>
+          <p className="mt-2 text-sm text-ink-muted">{copy.body}</p>
         </div>
       </main>
     );

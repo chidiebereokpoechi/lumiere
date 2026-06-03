@@ -3,6 +3,7 @@ import { eq, asc, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { galleries, files, galleryViews, galleryFolders } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
+import { authContext } from '../../middleware/auth';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
 import { verifyPassword, hashPassword } from '../../services/auth';
@@ -14,7 +15,17 @@ import { env } from '../../lib/config';
 import { newId, now } from '../../lib/ids';
 import { log } from '../../lib/logger';
 
-type AccessState = 'ok' | 'locked' | 'expired';
+type AccessState = 'ok' | 'locked' | 'expired' | 'archived' | 'draft';
+
+// Why a client can't view a gallery (status/expiry). The owner previewing their
+// own gallery (admin JWT) bypasses all of these. Returns null when viewable.
+function blockedState(g: typeof galleries.$inferSelect, isOwner: boolean): Exclude<AccessState, 'ok' | 'locked'> | null {
+  if (isOwner) return null;
+  if (isExpired(g)) return 'expired';
+  if (g.status === 'archived') return 'archived';
+  if (g.status === 'draft') return 'draft';
+  return null;
+}
 
 function isExpired(g: typeof galleries.$inferSelect): boolean {
   if (!g.expiresAt) return false;
@@ -66,21 +77,24 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
 
 export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
   .use(gallerySessionContext)
+  .use(authContext)
   .use(clientIp)
 
   // GET /api/gallery/:slug/access — RSC access decision (frontend plan §14)
-  .get('/:slug/access', async ({ params, gallerySession, set }) => {
+  .get('/:slug/access', async ({ params, gallerySession, currentPhotographer, set }) => {
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) {
       set.status = 404;
       return { error: 'not_found' };
     }
 
-    if (isExpired(gallery)) {
-      return { state: 'expired' as AccessState, gallery: toMinimal(gallery) };
+    const isOwner = !!currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    const blocked = blockedState(gallery, isOwner);
+    if (blocked) {
+      return { state: blocked as AccessState, gallery: toMinimal(gallery) };
     }
 
-    if (gallery.passwordHash) {
+    if (gallery.passwordHash && !isOwner) {
       const unlocked = gallerySession?.galleryId === gallery.id;
       return {
         state: (unlocked ? 'ok' : 'locked') as AccessState,
@@ -111,9 +125,10 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
       set.status = 400;
       return { error: 'no_password_set' };
     }
-    if (isExpired(gallery)) {
-      set.status = 410;
-      return { error: 'expired' };
+    const blocked = blockedState(gallery, false);
+    if (blocked) {
+      set.status = blocked === 'expired' ? 410 : 403;
+      return { error: blocked };
     }
 
     const ok = await verifyPassword(body.password, gallery.passwordHash);
@@ -142,14 +157,16 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
   // issue a gallery session if there isn't one, then stamp the email on it.
   // Required before favoriting or creating lists.
   .post('/:slug/identify', async (ctx) => {
-    const { params, cookie, set, gallerySession, clientIp } = ctx;
+    const { params, cookie, set, gallerySession, currentPhotographer, clientIp } = ctx;
     const parsed = parseBody(ctx, IdentifyInput);
     if (!parsed.ok) return parsed.error;
 
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) { set.status = 404; return { error: 'not_found' }; }
-    if (isExpired(gallery)) { set.status = 410; return { error: 'expired' }; }
-    if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+    const isOwner = !!currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    const blocked = blockedState(gallery, isOwner);
+    if (blocked) { set.status = blocked === 'expired' ? 410 : 403; return { error: blocked }; }
+    if (gallery.passwordHash && !isOwner && gallerySession?.galleryId !== gallery.id) {
       set.status = 401; return { error: 'locked' };
     }
 
@@ -173,17 +190,19 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
   // GET /api/gallery/:slug/files — public, unified media list. Every item is a
   // file with a `type`; images carry thumb/preview URLs, video/audio/file carry
   // a stream + download URL.
-  .get('/:slug/files', async ({ params, gallerySession, set }) => {
+  .get('/:slug/files', async ({ params, gallerySession, currentPhotographer, set }) => {
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) {
       set.status = 404;
       return { error: 'not_found' };
     }
-    if (isExpired(gallery)) {
-      set.status = 410;
-      return { error: 'expired' };
+    const isOwner = !!currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    const blocked = blockedState(gallery, isOwner);
+    if (blocked) {
+      set.status = blocked === 'expired' ? 410 : 403;
+      return { error: blocked };
     }
-    if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+    if (gallery.passwordHash && !isOwner && gallerySession?.galleryId !== gallery.id) {
       set.status = 401;
       return { error: 'locked' };
     }
@@ -228,16 +247,17 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
 
   // POST /api/gallery/:slug/track-view — fire-and-forget view event from the
   // client. Bumps gallery.view_count and inserts into gallery_views.
-  .post('/:slug/track-view', async ({ params, request, clientIp, set }) => {
+  .post('/:slug/track-view', async ({ params, request, clientIp, currentPhotographer, set }) => {
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) {
       set.status = 404;
       return { error: 'not_found' };
     }
-    if (isExpired(gallery)) {
-      set.status = 410;
-      return { error: 'expired' };
-    }
+    const isOwner = !!currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    // Don't count the owner's own previews, or views of non-live galleries.
+    if (isOwner) return { ok: true, skipped: 'owner' };
+    const blocked = blockedState(gallery, false);
+    if (blocked) { set.status = blocked === 'expired' ? 410 : 403; return { error: blocked }; }
 
     await db.insert(galleryViews).values({
       id: newId(),
