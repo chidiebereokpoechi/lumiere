@@ -135,7 +135,11 @@ export function FileManager({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ folderIds: ids }),
       }).catch((err) => {
-        setError(err instanceof ApiError ? `Reorder failed (${err.status})` : "Network error");
+        setError(
+          err instanceof ApiError
+            ? `Reorder failed (${err.status})`
+            : "Network error",
+        );
         void refreshFolders();
       });
     },
@@ -147,8 +151,12 @@ export function FileManager({
       setDraggingFolderId(id);
       document.body.style.userSelect = "none";
       const onMove = (ev: PointerEvent) => {
-        const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
-        const overId = el?.closest<HTMLElement>("[data-folder]")?.dataset.folder;
+        const el = document.elementFromPoint(
+          ev.clientX,
+          ev.clientY,
+        ) as HTMLElement | null;
+        const overId =
+          el?.closest<HTMLElement>("[data-folder]")?.dataset.folder;
         if (!overId || overId === id) return;
         setFolders((prev) => {
           const from = prev.findIndex((f) => f.id === id);
@@ -1604,7 +1612,7 @@ function FileTile({
             onPointerDown={(e) => e.stopPropagation()}
             aria-pressed={selected}
             aria-label={selected ? "Deselect" : "Select"}
-            className={`absolute top-2 left-2 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${selected ? "bg-accent border-accent text-white opacity-100" : "bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100"}`}
+            className={`absolute top-2 left-2 h-6 w-6 inline-flex items-center justify-center rounded-full border-2 transition-all ${selected ? "bg-accent border-accent text-white opacity-100" : "bg-black/30 border-white/80 text-transparent opacity-0 group-hover:opacity-100"}`}
           >
             <Check size={16} />
           </button>
@@ -1833,7 +1841,7 @@ function FolderRow({
           onClick();
         }
       }}
-      className={`group/row flex items-center gap-1 rounded-md border px-4 py-4 cursor-pointer transition-colors focus-visible:outline-none ${
+      className={`group/row flex items-center gap-4 rounded-md border px-4 py-4 cursor-pointer transition-colors focus-visible:outline-none ${
         isDropTarget
           ? "bg-accent text-ink-inverse border-accent ring-2 ring-accent/40"
           : active
@@ -1847,9 +1855,12 @@ function FolderRow({
           aria-label="Reorder set"
           title="Drag to reorder"
           onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => { e.stopPropagation(); onReorderStart?.(e); }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onReorderStart?.(e);
+          }}
           style={{ touchAction: "none" }}
-          className={`-ml-1 shrink-0 cursor-grab active:cursor-grabbing ${active || isDropTarget ? "text-ink-inverse/60 hover:text-ink-inverse" : "text-ink-subtle hover:text-ink-strong"}`}
+          className={`shrink-0 cursor-grab active:cursor-grabbing ${active || isDropTarget ? "text-ink-inverse/60 hover:text-ink-inverse" : "text-ink-subtle hover:text-ink-strong"}`}
         >
           <Grip size={15} />
         </button>

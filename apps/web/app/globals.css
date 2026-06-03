@@ -48,14 +48,16 @@
   --ink-subtle: #94a3b8; /* slate-400 */
   --ink-inverse: #ffffff; /* on dark surfaces */
 
-  --accent: #3f168a; /* peach */
-  --accent-hover: #5225a5;
-  --accent-dark: #310d74; /* deeper peach — analogous to primary-dark */
-  --accent-soft: #fde7dc;
+  --accent: #124ebe; /* peach */
+  --accent-hover: #3770d8;
+  --accent-dark: #0c3c97; /* deeper peach — analogous to primary-dark */
+  --accent-soft: #97b9f8;
   --accent-ink: #1f1411;
 
   --positive: #2f8055;
   --negative: #b34a36;
+
+  --heart: #ee1a37;
 
   --radius-sm: 0px;
   --radius-md: 0px;
@@ -107,6 +109,8 @@
   --color-accent-ink: var(--accent-ink);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
+
+  --color-heart: var(--heart);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);

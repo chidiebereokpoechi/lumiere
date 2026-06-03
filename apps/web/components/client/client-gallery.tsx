@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Comment,
+  HeartOpen,
 } from "@/components/ui/icons";
 
 interface Props {
@@ -494,7 +495,8 @@ export function ClientGallery({
             const res = await fetch(f.downloadUrl, { credentials: "include" });
             if (!res.ok) throw new Error("fetch_failed");
             const blob = await res.blob();
-            const fallbackType = f.type === "video" ? "video/mp4" : "image/jpeg";
+            const fallbackType =
+              f.type === "video" ? "video/mp4" : "image/jpeg";
             return new File([blob], f.filename || `${f.id}`, {
               type: blob.type || f.mimeType || fallbackType,
             });
@@ -735,7 +737,7 @@ export function ClientGallery({
           aria-pressed={isSelected}
           aria-label={isSelected ? "Deselect" : "Select"}
           style={{ touchAction: "none" }}
-          className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+          className={`absolute top-2.5 left-2.5 h-6 w-6 inline-flex items-center justify-center rounded-full border-2 transition-all ${
             isSelected
               ? "bg-accent border-accent text-white opacity-100"
               : `border-white text-transparent ${actionVis}`
@@ -750,13 +752,13 @@ export function ClientGallery({
           onClick={() => requireEmail(() => toggleFavorite(f.id))}
           aria-pressed={favorites.has(f.id)}
           aria-label={favorites.has(f.id) ? "Remove favorite" : "Add favorite"}
-          className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all drop-shadow ${
+          className={`absolute top-2.5 right-2.5 h-6 w-6 inline-flex items-center justify-center transition-all drop-shadow ${
             favorites.has(f.id)
-              ? "text-accent opacity-100"
+              ? "text-heart opacity-100"
               : `text-white ${actionVis}`
           }`}
         >
-          <Heart size={24} />
+          {favorites.has(f.id) ? <Heart size={24} /> : <HeartOpen size={24} />}
         </button>
       )}
       {isSelected && (
@@ -813,10 +815,7 @@ export function ClientGallery({
       </header>
 
       {/* Sticky chrome: a slim title bar with actions, then the tab row. */}
-      <div
-        ref={gridRef}
-        className="sticky top-0 z-30 bg-bg border-b border-border"
-      >
+      <div ref={gridRef} className="sticky top-0 z-30 bg-bg">
         <div className="px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-lg font-extrabold tracking-wider text-ink-strong">
@@ -843,7 +842,7 @@ export function ClientGallery({
           )}
         </div>
         {allFiles.length > 0 && (
-          <nav className="px-4 sm:px-8 pb-3 flex items-center gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+          <nav className="px-4 sm:px-8 pb-4 flex items-center gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
             {folders.map((f) => (
               <Tab
                 key={f.id}
@@ -887,7 +886,7 @@ export function ClientGallery({
 
       {/* Edge-to-edge masonry — minimal chrome, photo-forward. min-height fills
           the viewport so short galleries still scroll the cover fully away. */}
-      <section ref={sectionRef} className="px-4 sm:px-8 pt-4 min-h-svh">
+      <section ref={sectionRef} className="px-4 sm:px-8 min-h-svh">
         <div ref={measureRef} className="w-full">
           {files.length === 0 ? (
             <p className="text-center text-sm text-ink-muted py-24">
@@ -1022,9 +1021,13 @@ export function ClientGallery({
                   aria-label={
                     favorites.has(open.id) ? "Remove favorite" : "Add favorite"
                   }
-                  className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${favorites.has(open.id) ? "text-accent-dark" : "text-ink-muted"}`}
+                  className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${favorites.has(open.id) ? "text-heart" : "text-ink-muted"}`}
                 >
-                  <Heart size={24} />
+                  {favorites.has(open.id) ? (
+                    <Heart size={24} />
+                  ) : (
+                    <HeartOpen size={24} />
+                  )}
                 </button>
               )}
               <button
@@ -1045,17 +1048,19 @@ export function ClientGallery({
                   <Comment size={24} />
                 </button>
               )}
-              {canDownload && coarse && (open.type === "image" || open.type === "video") && (
-                <button
-                  type="button"
-                  onClick={() => sharePhotos([open])}
-                  disabled={savingPhotos}
-                  aria-label="Save to Photos"
-                  className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong disabled:opacity-60"
-                >
-                  <ImageIcon size={24} />
-                </button>
-              )}
+              {canDownload &&
+                coarse &&
+                (open.type === "image" || open.type === "video") && (
+                  <button
+                    type="button"
+                    onClick={() => sharePhotos([open])}
+                    disabled={savingPhotos}
+                    aria-label="Save to Photos"
+                    className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong disabled:opacity-60"
+                  >
+                    <ImageIcon size={24} />
+                  </button>
+                )}
               {canDownload && (
                 <a
                   href={open.downloadUrl}

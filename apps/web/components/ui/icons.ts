@@ -20,7 +20,6 @@ export {
   CgPlayButtonO as Play,
   CgMoreVerticalAlt as More,
   CgBookmark as Bookmark,
-  CgHeart as Heart,
   CgFolder as Folder,
   CgCalendar as Calendar,
   CgExternal as External,
@@ -28,7 +27,6 @@ export {
   CgFileDocument as FileDoc,
   CgArrowLeft as ArrowLeft,
   CgArrowRight as ArrowRight,
-  CgMenu as Grip,
   CgPlayPauseO as Pause,
   CgPlayTrackPrev as SkipBack,
   CgPlayTrackNext as SkipForward,
@@ -40,4 +38,10 @@ export {
   CgOptions as Gear,
   CgList as ListIcon,
   CgSpinner as SpinnerIcon,
-} from 'react-icons/cg';
+} from "react-icons/cg";
+
+export {
+  IoReorderTwoOutline as Grip,
+  IoHeartOutline as HeartOpen,
+  IoHeart as Heart,
+} from "react-icons/io5";
