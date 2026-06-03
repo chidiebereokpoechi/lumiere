@@ -5,5 +5,7 @@ dbs:
         endpoint: ${LITESTREAM_S3_ENDPOINT}
         bucket: ${LITESTREAM_S3_BUCKET}
         path: db
+        region: ${LITESTREAM_S3_REGION}
+        force-path-style: true
         access-key-id: ${LITESTREAM_S3_ACCESS_KEY}
         secret-access-key: ${LITESTREAM_S3_SECRET_KEY}

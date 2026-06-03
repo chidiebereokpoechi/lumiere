@@ -13,6 +13,7 @@ import { enqueue } from '../../services/queue';
 import { parseBody } from '../../lib/validation';
 import { detectImageMime, extForMime } from '../../lib/mime';
 import { newId, now } from '../../lib/ids';
+import { log } from '../../lib/logger';
 
 // Standalone cover upload cap (covers are full-bleed hero images, not logos).
 const MAX_COVER_BYTES = 15 * 1024 * 1024;
@@ -187,13 +188,22 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
     }
 
     await db.delete(galleries).where(eq(galleries.id, ctx.params.galleryId));
-    await Promise.allSettled([
-      deletePrefix(`originals/${ctx.params.galleryId}/`),
-      deletePrefix(`previews/${ctx.params.galleryId}/`),
-      deletePrefix(`thumbnails/${ctx.params.galleryId}/`),
-      deletePrefix(`watermarked/${ctx.params.galleryId}/`),
-      deletePrefix(`files/${ctx.params.galleryId}/`),
-      deletePrefix(`covers/${ctx.params.galleryId}/`),
-    ]);
+    const gid = ctx.params.galleryId;
+    // `attachments/` is a legacy prefix from before the photos+attachments
+    // unification — kept here to clean up galleries that still have data there.
+    const prefixes = [
+      `originals/${gid}/`, `previews/${gid}/`, `thumbnails/${gid}/`,
+      `watermarked/${gid}/`, `files/${gid}/`, `covers/${gid}/`,
+      `attachments/${gid}/`,
+    ];
+    const results = await Promise.allSettled(prefixes.map((p) => deletePrefix(p)));
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        log.error('gallery_delete.prefix_failed', {
+          gid, prefix: prefixes[i],
+          error: r.reason instanceof Error ? r.reason.message : String(r.reason),
+        });
+      }
+    });
     return { ok: true };
   });
