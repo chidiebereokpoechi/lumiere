@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { fetchAccess, fetchClientFiles, fetchFavorites } from '@/lib/api/client-gallery';
 import { fetchClientComments } from '@/lib/api/comments';
@@ -11,6 +12,17 @@ export const dynamic = 'force-dynamic';
 interface Props {
   // Optional catch-all: `/g/:slug` and `/g/:slug/:collection` both land here.
   params: Promise<{ slug: string; collection?: string[] }>;
+}
+
+// Browser tab shows the gallery name (falls back gracefully on errors).
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const { gallery } = await fetchAccess(slug);
+    return { title: gallery.title };
+  } catch {
+    return { title: 'Gallery' };
+  }
 }
 
 export default async function ClientGalleryPage({ params }: Props) {
