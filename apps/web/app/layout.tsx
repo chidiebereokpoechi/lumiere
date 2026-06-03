@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { DialogHost } from '@/components/ui/dialog';
 
 export const metadata: Metadata = {
   title: 'Lumière',
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-dvh bg-bg text-ink antialiased">{children}</body>
+      <body className="min-h-dvh bg-bg text-ink antialiased">
+        {children}
+        <DialogHost />
+      </body>
     </html>
   );
 }

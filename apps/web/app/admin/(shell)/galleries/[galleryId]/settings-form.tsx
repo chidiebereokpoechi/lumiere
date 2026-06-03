@@ -7,6 +7,8 @@ import { apiClientMutation, ApiError } from '@/lib/api-client';
 import type { GalleryDetail } from '@/lib/api/galleries';
 import type { WatermarkPreset } from '@/lib/api/watermarks';
 import { Field, TextInput, Textarea, Select, Toggle, Button, FormError } from '@/components/admin/form';
+import { DateField } from '@/components/ui/date-field';
+import { confirmDialog } from '@/components/ui/dialog';
 
 interface Props {
   gallery: GalleryDetail;
@@ -121,9 +123,13 @@ export function SettingsForm({ gallery, watermarks }: Props) {
   }
 
   async function onDelete() {
-    if (!confirm(`Delete "${gallery.title}"? This removes all photos and attachments. Cannot be undone.`)) {
-      return;
-    }
+    const ok = await confirmDialog({
+      title: 'Delete gallery',
+      message: `Delete "${gallery.title}"? This removes all photos and attachments. Cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await apiClientMutation(`/api/galleries/${gallery.id}`, { method: 'DELETE' });
       router.push('/admin');
@@ -171,7 +177,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
         </div>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="eventDate" label="Event date">
-            <TextInput id="eventDate" type="date" value={eventDate} onChange={setEventDate} />
+            <DateField id="eventDate" value={eventDate} onChange={setEventDate} placeholder="No date" />
           </Field>
           <Field id="eventType" label="Event type">
             <TextInput id="eventType" value={eventType} onChange={setEventType} placeholder="Wedding" />
@@ -199,7 +205,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
         </Field>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="expiresAt" label="Expires on" hint="optional">
-            <TextInput id="expiresAt" type="date" value={expiresAt} onChange={setExpiresAt} />
+            <DateField id="expiresAt" value={expiresAt} onChange={setExpiresAt} placeholder="Never" />
           </Field>
           <Field id="gracePeriodDays" label="Grace period (days)" hint="after expiry">
             <TextInput id="gracePeriodDays" value={gracePeriodDays} onChange={setGracePeriodDays} placeholder="0" />

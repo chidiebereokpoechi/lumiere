@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClientMutation, ApiError } from '@/lib/api-client';
+import { alertDialog } from '@/components/ui/dialog';
 
 type Status = 'active' | 'draft' | 'archived';
 
@@ -36,7 +37,7 @@ export function StatusControl({ galleryId, status: initial }: { galleryId: strin
       startTransition(() => router.refresh());
     } catch (err) {
       setStatus(prev);
-      alert(err instanceof ApiError ? `Could not update status (${err.status})` : 'Network error');
+      void alertDialog({ title: 'Could not update status', message: err instanceof ApiError ? `Server returned ${err.status}.` : 'Network error.' });
     }
   }
 

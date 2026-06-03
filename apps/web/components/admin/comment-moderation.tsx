@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { apiClientMutation, ApiError } from '@/lib/api-client';
 import type { AdminComment } from '@/lib/api/comments';
+import { confirmDialog } from '@/components/ui/dialog';
 
 function when(epoch: number): string {
   return new Date(epoch * 1000).toLocaleString('en', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -39,7 +40,7 @@ export function CommentModeration({ galleryId, initialComments }: { galleryId: s
   }
 
   async function remove(c: AdminComment) {
-    if (!confirm('Delete this comment? Cannot be undone.')) return;
+    if (!(await confirmDialog({ title: 'Delete comment', message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true }))) return;
     setBusyId(c.id);
     setError(null);
     try {

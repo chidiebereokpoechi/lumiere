@@ -6,6 +6,8 @@ import { apiClient, apiClientMutation, ApiError } from '@/lib/api-client';
 import type { GalleryFile } from '@/lib/api/files';
 import type { Folder } from '@/lib/api/folders';
 import { uploadMultipart } from '@/lib/upload/multipart';
+import { Select } from '@/components/ui/select';
+import { confirmDialog, promptDialog } from '@/components/ui/dialog';
 
 // Anything above this uploads directly to storage via presigned multipart
 // (bypassing the app + the dev rewrite proxy, which caps bodies at 10MB).
@@ -161,7 +163,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
 
   // ---- folders ---------------------------------------------------------
   async function createFolder() {
-    const name = window.prompt('Folder name')?.trim();
+    const name = (await promptDialog({ title: 'New set', label: 'Set name', placeholder: 'e.g. Highlights', confirmLabel: 'Create' }))?.trim();
     if (!name) return;
     try {
       const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, {
@@ -172,7 +174,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     } catch (err) { setError(err instanceof ApiError ? `Could not create folder (${err.status})` : 'Network error'); }
   }
   async function renameFolder(folder: Folder) {
-    const name = window.prompt('Rename folder', folder.name)?.trim();
+    const name = (await promptDialog({ title: 'Rename set', label: 'Set name', defaultValue: folder.name, confirmLabel: 'Rename' }))?.trim();
     if (!name || name === folder.name) return;
     try {
       await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, {
@@ -190,8 +192,9 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     } catch (err) { setError(err instanceof ApiError ? `Could not update folder (${err.status})` : 'Network error'); }
   }
   async function deleteFolder(folder: Folder) {
-    if (folders.length <= 1) { setError('A gallery must have at least one folder.'); return; }
-    if (!confirm(`Delete folder "${folder.name}"? Its contents move into another folder (nothing is deleted).`)) return;
+    if (folders.length <= 1) { setError('A gallery must have at least one set.'); return; }
+    const ok = await confirmDialog({ title: 'Delete set', message: `Delete "${folder.name}"? Its contents move into another set (nothing is deleted).`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     try {
       await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, { method: 'DELETE' });
       if (activeFolder === folder.id) setActiveFolder(folders.find((f) => f.id !== folder.id)?.id ?? '');
@@ -217,7 +220,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
   // action and by dropping a drag onto the New-folder target).
   const createFolderAndMove = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
-    const name = window.prompt('New folder name')?.trim();
+    const name = (await promptDialog({ title: 'New set', label: 'Set name', placeholder: 'Set name', confirmLabel: 'Create' }))?.trim();
     if (!name) return;
     try {
       const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, {
@@ -238,7 +241,9 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
 
   async function deleteSelected() {
     if (selected.size === 0) return;
-    if (!confirm(`Delete ${selected.size} item${selected.size > 1 ? 's' : ''}? Cannot be undone.`)) return;
+    const n = selected.size;
+    const ok = await confirmDialog({ title: `Delete ${n} item${n > 1 ? 's' : ''}`, message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     const ids = [...selected];
     setSelected(new Set());
     setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
@@ -250,7 +255,8 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
   }
 
   async function onDelete(file: GalleryFile) {
-    if (!confirm(`Delete "${file.displayName ?? file.filenameOriginal}"? Cannot be undone.`)) return;
+    const ok = await confirmDialog({ title: 'Delete file', message: `Delete "${file.displayName ?? file.filenameOriginal}"? Cannot be undone.`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     setBusyId(file.id);
     try {
       await apiClientMutation(`/api/galleries/${galleryId}/files/${file.id}`, { method: 'DELETE' });
@@ -273,9 +279,9 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
   }
 
   async function renameFile(file: GalleryFile) {
-    const next = window.prompt('Rename file', file.displayName ?? file.filenameOriginal)?.trim();
-    if (next === undefined) return;
-    const displayName = next === '' ? null : next;
+    const next = await promptDialog({ title: 'Rename file', label: 'Display name', defaultValue: file.displayName ?? file.filenameOriginal, confirmLabel: 'Rename' });
+    if (next === null) return;
+    const displayName = next.trim() === '' ? null : next.trim();
     setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, displayName } : f)));
     try {
       await apiClientMutation(`/api/galleries/${galleryId}/files/${file.id}`, {
@@ -549,15 +555,16 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
               onDrop={(e) => {
                 if (!e.dataTransfer.types.includes('Files')) return;
                 e.preventDefault(); e.stopPropagation(); setDropNew(false);
-                const fl = e.dataTransfer.files;
-                const name = window.prompt('New set name')?.trim();
-                if (!name || !fl.length) return;
+                const files = Array.from(e.dataTransfer.files);
+                if (!files.length) return;
                 void (async () => {
+                  const name = (await promptDialog({ title: 'New set', label: 'Set name', confirmLabel: 'Create' }))?.trim();
+                  if (!name) return;
                   try {
                     const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }) });
                     await refreshFolders();
                     setActiveFolder(created.id);
-                    handleFiles(fl, created.id);
+                    handleFiles(files, created.id);
                   } catch (err) { setError(err instanceof ApiError ? `Could not create set (${err.status})` : 'Network error'); }
                 })();
               }}
@@ -593,17 +600,22 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
           <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-lg font-extrabold uppercase tracking-wider text-ink-strong truncate">{folders.find((f) => f.id === activeFolder)?.name ?? 'Media'}</h2>
             <span className="text-sm text-ink-subtle tabular-nums">{order.length}</span>
-            <label className="ml-auto inline-flex items-center gap-1.5 text-sm text-ink-muted">
+            <div className="ml-auto flex items-center gap-1.5">
               <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider text-ink-subtle">Sort</span>
-              <select value={sortMode} onChange={(e) => applySort(e.target.value as SortMode)} className="rounded-md bg-surface-2 border border-border px-2.5 py-1.5 text-sm text-ink-strong focus:border-accent transition-colors">
-                <option value="manual">Manual</option>
-                <option value="name-asc">Name A–Z</option>
-                <option value="name-desc">Name Z–A</option>
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="size-desc">Largest</option>
-              </select>
-            </label>
+              <Select
+                value={sortMode}
+                onChange={(v) => applySort(v)}
+                className="w-40"
+                options={[
+                  { value: 'manual', label: 'Manual' },
+                  { value: 'name-asc', label: 'Name A–Z' },
+                  { value: 'name-desc', label: 'Name Z–A' },
+                  { value: 'newest', label: 'Newest' },
+                  { value: 'oldest', label: 'Oldest' },
+                  { value: 'size-desc', label: 'Largest' },
+                ]}
+              />
+            </div>
             <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
               Upload
@@ -692,21 +704,16 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
           <span className="text-sm font-semibold text-ink-strong tabular-nums">{selected.size} selected</span>
           <div className="flex items-center gap-3">
-            <label className="text-sm text-ink-muted">Move to</label>
-            <select
-              defaultValue=""
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === '__new__') void createFolderAndMove([...selected]);
-                else if (v) void moveSelected(v);
-                e.target.value = '';
-              }}
-              className="rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong focus:border-accent transition-colors"
-            >
-              <option value="" disabled>Choose folder…</option>
-              {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              <option value="__new__">+ New folder…</option>
-            </select>
+            <Select
+              value=""
+              placeholder="Move to…"
+              className="w-44"
+              onChange={(v) => { if (v === '__new__') void createFolderAndMove([...selected]); else if (v) void moveSelected(v); }}
+              options={[
+                ...folders.map((f) => ({ value: f.id, label: f.name })),
+                { value: '__new__', label: '+ New set…' },
+              ]}
+            />
             <button type="button" onClick={deleteSelected} className="inline-flex items-center gap-1.5 rounded-md border border-negative/40 px-3 py-2 text-sm font-semibold text-negative hover:bg-negative/10 transition-colors">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
               Delete

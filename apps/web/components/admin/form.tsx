@@ -121,34 +121,8 @@ export function Button({
   );
 }
 
-interface SelectProps<T extends string> {
-  id: string;
-  value: T;
-  onChange: (next: T) => void;
-  options: Array<{ value: T; label: string }>;
-}
-export function Select<T extends string>({ id, value, onChange, options }: SelectProps<T>) {
-  return (
-    <select
-      id={id}
-      value={value}
-      onChange={(e) => onChange(e.target.value as T)}
-      className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors appearance-none cursor-pointer"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 12px center',
-        paddingRight: '36px',
-      }}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  );
-}
+// Re-export the custom listbox (no native <select>) under the form API.
+export { Select } from '@/components/ui/select';
 
 interface ToggleProps {
   id: string;

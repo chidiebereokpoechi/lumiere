@@ -6,6 +6,7 @@ import type {
   WatermarkPreset, WatermarkPosition, WatermarkSize, WatermarkConfig, LogoUploadResult,
 } from '@/lib/api/watermarks';
 import { Field, TextInput, Select, Button, FormError } from '@/components/admin/form';
+import { confirmDialog } from '@/components/ui/dialog';
 
 const POSITIONS: { value: WatermarkPosition; label: string }[] = [
   { value: 'top-left', label: 'Top left' },
@@ -103,7 +104,8 @@ export function WatermarkManager({ initialPresets }: { initialPresets: Watermark
   }
 
   async function remove(p: WatermarkPreset) {
-    if (!confirm(`Delete watermark "${p.name}"? Galleries using it keep their existing derivatives until reprocessed.`)) return;
+    const ok = await confirmDialog({ title: 'Delete watermark', message: `Delete "${p.name}"? Galleries using it keep their existing derivatives until reprocessed.`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     setPresets((prev) => prev.filter((x) => x.id !== p.id));
     try { await apiClientMutation(`/api/watermark-presets/${p.id}`, { method: 'DELETE' }); }
     catch { void apiClient<WatermarkPreset[]>('/api/watermark-presets').then(setPresets).catch(() => {}); }
@@ -151,8 +153,20 @@ export function WatermarkManager({ initialPresets }: { initialPresets: Watermark
                   </Field>
                   <Field id="wm-color" label="Color">
                     <div className="flex items-center gap-3">
-                      <input type="color" value={draft.color} onChange={(e) => set('color', e.target.value)} className="h-9 w-12 rounded-md border border-border bg-surface-2 cursor-pointer" />
-                      <span className="text-sm text-ink-muted tabular-nums">{draft.color}</span>
+                      <span className="h-9 w-9 shrink-0 rounded-md border border-border" style={{ background: draft.color }} />
+                      <TextInput id="wm-color" value={draft.color} onChange={(v) => set('color', v.startsWith('#') ? v : `#${v}`)} placeholder="#ffffff" />
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {['#ffffff', '#000000', '#ff5c33', '#a95ee7', '#2f8055', '#1f2937'].map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => set('color', c)}
+                          aria-label={c}
+                          className={`h-6 w-6 rounded-md border ${draft.color.toLowerCase() === c ? 'ring-2 ring-accent border-accent' : 'border-border'}`}
+                          style={{ background: c }}
+                        />
+                      ))}
                     </div>
                   </Field>
                 </>

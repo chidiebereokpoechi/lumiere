@@ -11,6 +11,7 @@ import type {
 import type { ClientComment } from "@/lib/api/comments";
 import type { ClientList } from "@/lib/api/lists";
 import { CommentsSection } from "@/components/client/comments-section";
+import { confirmDialog } from "@/components/ui/dialog";
 
 interface Props {
   gallery: MinimalGallery;
@@ -809,8 +810,8 @@ export function ClientGallery({
                 onClick={() => switchView({ kind: "list", id: l.id })}
                 label={l.name}
                 count={l.fileIds.length}
-                onDelete={() => {
-                  if (window.confirm(`Delete list "${l.name}"?`))
+                onDelete={async () => {
+                  if (await confirmDialog({ title: 'Delete list', message: `Delete "${l.name}"?`, confirmLabel: 'Delete', danger: true }))
                     deleteList(l.id);
                 }}
               />

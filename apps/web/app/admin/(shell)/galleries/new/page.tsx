@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { GalleryCreateInput } from '@lumiere/types';
 import { apiClientMutation, ApiError } from '@/lib/api-client';
 import { Field, TextInput, Textarea, Button, FormError } from '@/components/admin/form';
+import { DateField } from '@/components/ui/date-field';
 
 interface CreatedGallery {
   id: string;
@@ -102,7 +103,7 @@ export default function NewGalleryPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="eventDate" label="Event date" hint="optional">
-                <TextInput id="eventDate" type="date" value={eventDate} onChange={setEventDate} />
+                <DateField id="eventDate" value={eventDate} onChange={setEventDate} placeholder="No date" />
               </Field>
               <Field id="eventType" label="Event type" hint="optional">
                 <TextInput id="eventType" value={eventType} onChange={setEventType} placeholder="Wedding" />
