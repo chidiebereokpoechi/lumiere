@@ -60,7 +60,7 @@ export function GalleryHeader({
         }
       />
 
-      <nav className="flex items-center gap-2 px-8 pt-6">
+      <nav className="flex items-center gap-4 px-4 pt-4">
         <Tab
           href={`/admin/galleries/${galleryId}`}
           active={active === "settings"}

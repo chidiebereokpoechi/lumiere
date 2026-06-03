@@ -914,7 +914,7 @@ export function FileManager({
       {/* Two-column: sets sidebar + media grid */}
       <div className="flex gap-6 items-start">
         {/* Sets sidebar */}
-        <aside className="w-52 shrink-0">
+        <aside className="w-60 shrink-0 bg-red-500 p-3">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-ink-subtle">
               Sets

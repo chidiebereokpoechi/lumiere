@@ -9,6 +9,7 @@ import type { WatermarkPreset } from '@/lib/api/watermarks';
 import { Field, TextInput, Textarea, Select, Toggle, Button, FormError } from '@/components/admin/form';
 import { DateField } from '@/components/ui/date-field';
 import { confirmDialog } from '@/components/ui/dialog';
+import { broadcastGalleryStatus, onGalleryStatus } from '@/lib/gallery-status';
 
 interface Props {
   gallery: GalleryDetail;
@@ -111,6 +112,9 @@ export function SettingsForm({ gallery, watermarks }: Props) {
     if (timer.current) clearTimeout(timer.current);
     if (title.trim().length > 0) void save();
   }, [save, title]);
+
+  // Keep status in sync with the header status control.
+  useEffect(() => onGalleryStatus((gid, s) => { if (gid === gallery.id) setStatus(s); }), [gallery.id]);
   // Mark the next auto-save as immediate (selects/toggles/dates change → save now).
   const immediate = <T,>(fn: (v: T) => void) => (v: T) => { flushNext.current = true; fn(v); };
 
@@ -163,7 +167,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
         </Field>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="status" label="Status">
-            <Select id="status" value={status} onChange={immediate(setStatus)} options={[
+            <Select id="status" value={status} onChange={immediate((v) => { setStatus(v); broadcastGalleryStatus(gallery.id, v); })} options={[
               { value: 'active', label: 'Active' },
               { value: 'draft', label: 'Draft' },
               { value: 'archived', label: 'Archived' },

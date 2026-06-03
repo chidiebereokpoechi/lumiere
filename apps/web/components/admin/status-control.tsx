@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClientMutation, ApiError } from '@/lib/api-client';
 import { alertDialog } from '@/components/ui/dialog';
+import { broadcastGalleryStatus, onGalleryStatus, type GalleryStatus } from '@/lib/gallery-status';
 
-type Status = 'active' | 'draft' | 'archived';
+type Status = GalleryStatus;
 
 const LABELS: Record<Status, string> = { active: 'Published', draft: 'Draft', archived: 'Archived' };
 const DOT: Record<Status, string> = { active: 'bg-positive', draft: 'bg-ink-subtle', archived: 'bg-negative' };
@@ -25,11 +26,15 @@ export function StatusControl({ galleryId, status: initial }: { galleryId: strin
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
+  // Sync if the settings-form (or another instance) changes status.
+  useEffect(() => onGalleryStatus((gid, s) => { if (gid === galleryId) setStatus(s); }), [galleryId]);
+
   async function choose(next: Status) {
     setOpen(false);
     if (next === status) return;
     const prev = status;
     setStatus(next);
+    broadcastGalleryStatus(galleryId, next);
     try {
       await apiClientMutation(`/api/galleries/${galleryId}`, {
         method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: next }),
@@ -37,6 +42,7 @@ export function StatusControl({ galleryId, status: initial }: { galleryId: strin
       startTransition(() => router.refresh());
     } catch (err) {
       setStatus(prev);
+      broadcastGalleryStatus(galleryId, prev);
       void alertDialog({ title: 'Could not update status', message: err instanceof ApiError ? `Server returned ${err.status}.` : 'Network error.' });
     }
   }

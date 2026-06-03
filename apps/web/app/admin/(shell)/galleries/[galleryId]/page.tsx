@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation';
-import { fetchGallery, fetchMe } from '@/lib/api/galleries';
-import { fetchWatermarkPresets } from '@/lib/api/watermarks';
-import { ApiError } from '@/lib/api-client';
-import { GalleryHeader } from '@/components/admin/gallery-header';
-import { SettingsForm } from './settings-form';
+import { notFound } from "next/navigation";
+import { fetchGallery, fetchMe } from "@/lib/api/galleries";
+import { fetchWatermarkPresets } from "@/lib/api/watermarks";
+import { ApiError } from "@/lib/api-client";
+import { GalleryHeader } from "@/components/admin/gallery-header";
+import { SettingsForm } from "./settings-form";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ galleryId: string }>;
@@ -21,7 +21,10 @@ export default async function GalleryEditorPage({ params }: Props) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  const [me, watermarks] = await Promise.all([fetchMe(), fetchWatermarkPresets().catch(() => [])]);
+  const [me, watermarks] = await Promise.all([
+    fetchMe(),
+    fetchWatermarkPresets().catch(() => []),
+  ]);
 
   return (
     <div>
@@ -35,7 +38,7 @@ export default async function GalleryEditorPage({ params }: Props) {
         active="settings"
       />
 
-      <div className="px-8 py-6 pb-16">
+      <div className="px-4 py-4 pb-16">
         <div className="max-w-2xl">
           <SettingsForm gallery={gallery} watermarks={watermarks} />
         </div>
