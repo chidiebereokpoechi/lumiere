@@ -91,15 +91,28 @@ export function SettingsForm({ gallery, watermarks }: Props) {
       eventDate, eventType, expiresAt, gracePeriodDays, allowFavorites, allowComments,
       allowDownload, notifyOnView, watermarkPresetId, customCss]);
 
-  // Debounced auto-save: persist ~600ms after the last change. Skip the initial
-  // mount so loading the form doesn't fire a save.
+  // Auto-save: non-text fields (selects, toggles, dates) flush immediately;
+  // text fields debounce ~700ms and also flush on blur. Skip the initial mount.
   const firstRun = useRef(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushNext = useRef(false);
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
     if (title.trim().length === 0) { setError('Title is required'); setSaveState('error'); return; }
-    const t = setTimeout(() => { void save(); }, 600);
-    return () => clearTimeout(t);
+    if (timer.current) clearTimeout(timer.current);
+    const delay = flushNext.current ? 0 : 700;
+    flushNext.current = false;
+    timer.current = setTimeout(() => { void save(); }, delay);
+    return () => { if (timer.current) clearTimeout(timer.current); };
   }, [save, title]);
+
+  // Flush a pending text-field edit immediately (used on blur).
+  const flushNow = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    if (title.trim().length > 0) void save();
+  }, [save, title]);
+  // Mark the next auto-save as immediate (selects/toggles/dates change → save now).
+  const immediate = <T,>(fn: (v: T) => void) => (v: T) => { flushNext.current = true; fn(v); };
 
   // Password is applied on demand, then we refresh to update the "currently set" hint.
   async function applyPassword() {
@@ -143,21 +156,21 @@ export function SettingsForm({ gallery, watermarks }: Props) {
     <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
       <Section title="Basics">
         <Field id="title" label="Title" required>
-          <TextInput id="title" required value={title} onChange={setTitle} />
+          <TextInput id="title" required value={title} onChange={setTitle} onBlur={flushNow} />
         </Field>
         <Field id="subtitle" label="Subtitle" hint="optional">
-          <Textarea id="subtitle" rows={2} value={subtitle} onChange={setSubtitle} />
+          <Textarea id="subtitle" rows={2} value={subtitle} onChange={setSubtitle} onBlur={flushNow} />
         </Field>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="status" label="Status">
-            <Select id="status" value={status} onChange={setStatus} options={[
+            <Select id="status" value={status} onChange={immediate(setStatus)} options={[
               { value: 'active', label: 'Active' },
               { value: 'draft', label: 'Draft' },
               { value: 'archived', label: 'Archived' },
             ]} />
           </Field>
           <Field id="layout" label="Layout">
-            <Select id="layout" value={layout} onChange={setLayout} options={[
+            <Select id="layout" value={layout} onChange={immediate(setLayout)} options={[
               { value: 'grid', label: 'Grid' },
               { value: 'masonry', label: 'Masonry' },
               { value: 'slideshow', label: 'Slideshow' },
@@ -169,18 +182,18 @@ export function SettingsForm({ gallery, watermarks }: Props) {
       <Section title="Client">
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="clientName" label="Client name">
-            <TextInput id="clientName" value={clientName} onChange={setClientName} />
+            <TextInput id="clientName" value={clientName} onChange={setClientName} onBlur={flushNow} />
           </Field>
           <Field id="clientEmail" label="Client email">
-            <TextInput id="clientEmail" type="email" value={clientEmail} onChange={setClientEmail} />
+            <TextInput id="clientEmail" type="email" value={clientEmail} onChange={setClientEmail} onBlur={flushNow} />
           </Field>
         </div>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="eventDate" label="Event date">
-            <DateField id="eventDate" value={eventDate} onChange={setEventDate} placeholder="No date" />
+            <DateField id="eventDate" value={eventDate} onChange={immediate(setEventDate)} placeholder="No date" />
           </Field>
           <Field id="eventType" label="Event type">
-            <TextInput id="eventType" value={eventType} onChange={setEventType} placeholder="Wedding" />
+            <TextInput id="eventType" value={eventType} onChange={setEventType} onBlur={flushNow} placeholder="Wedding" />
           </Field>
         </div>
       </Section>
@@ -205,24 +218,24 @@ export function SettingsForm({ gallery, watermarks }: Props) {
         </Field>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field id="expiresAt" label="Expires on" hint="optional">
-            <DateField id="expiresAt" value={expiresAt} onChange={setExpiresAt} placeholder="Never" />
+            <DateField id="expiresAt" value={expiresAt} onChange={immediate(setExpiresAt)} placeholder="Never" />
           </Field>
           <Field id="gracePeriodDays" label="Grace period (days)" hint="after expiry">
-            <TextInput id="gracePeriodDays" value={gracePeriodDays} onChange={setGracePeriodDays} placeholder="0" />
+            <TextInput id="gracePeriodDays" value={gracePeriodDays} onChange={setGracePeriodDays} onBlur={flushNow} placeholder="0" />
           </Field>
         </div>
       </Section>
 
       <Section title="Permissions">
-        <Toggle id="allowFavorites" checked={allowFavorites} onChange={setAllowFavorites} label="Favorites" description="Clients can mark photos as favorites." />
-        <Toggle id="allowComments" checked={allowComments} onChange={setAllowComments} label="Comments" description="Clients can leave comments (with moderation)." />
-        <Toggle id="allowDownload" checked={allowDownload} onChange={setAllowDownload} label="Downloads" description="Clients can download photos and gallery ZIPs." />
-        <Toggle id="notifyOnView" checked={notifyOnView} onChange={setNotifyOnView} label="Notify on view" description="Email you the first time the gallery is opened (rate-limited to once every 4h)." />
+        <Toggle id="allowFavorites" checked={allowFavorites} onChange={immediate(setAllowFavorites)} label="Favorites" description="Clients can mark photos as favorites." />
+        <Toggle id="allowComments" checked={allowComments} onChange={immediate(setAllowComments)} label="Comments" description="Clients can leave comments (with moderation)." />
+        <Toggle id="allowDownload" checked={allowDownload} onChange={immediate(setAllowDownload)} label="Downloads" description="Clients can download photos and gallery ZIPs." />
+        <Toggle id="notifyOnView" checked={notifyOnView} onChange={immediate(setNotifyOnView)} label="Notify on view" description="Email you the first time the gallery is opened (rate-limited to once every 4h)." />
       </Section>
 
       <Section title="Delivery">
         <Field id="downloadMode" label="Download mode">
-          <Select id="downloadMode" value={downloadMode} onChange={setDownloadMode} options={[
+          <Select id="downloadMode" value={downloadMode} onChange={immediate(setDownloadMode)} options={[
             { value: 'watermarked', label: 'Watermarked (preview-quality with logo)' },
             { value: 'full', label: 'Full resolution' },
             { value: 'selected', label: 'Selected favorites get full, rest watermarked' },
@@ -237,7 +250,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
           <Select
             id="watermarkPresetId"
             value={watermarkPresetId}
-            onChange={setWatermarkPresetId}
+            onChange={immediate(setWatermarkPresetId)}
             options={[
               { value: '', label: watermarks.length === 0 ? 'No watermarks — create one first' : 'None' },
               ...watermarks.map((w) => ({ value: w.id, label: `${w.name} (${w.type})` })),
@@ -251,7 +264,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
 
       <Section title="Advanced">
         <Field id="customCss" label="Custom CSS" hint="scoped to the gallery container; sanitised">
-          <Textarea id="customCss" rows={4} value={customCss} onChange={setCustomCss} placeholder=".gallery-hero { letter-spacing: 0.5em; }" />
+          <Textarea id="customCss" rows={4} value={customCss} onChange={setCustomCss} onBlur={flushNow} placeholder=".gallery-hero { letter-spacing: 0.5em; }" />
         </Field>
       </Section>
 

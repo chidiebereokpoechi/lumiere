@@ -45,9 +45,10 @@ interface TextInputProps {
   value: string;
   onChange: (next: string) => void;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  onBlur?: () => void;
 }
 export function TextInput({
-  id, name, type = 'text', required, placeholder, autoComplete, value, onChange, onKeyDown,
+  id, name, type = 'text', required, placeholder, autoComplete, value, onChange, onKeyDown, onBlur,
 }: TextInputProps) {
   return (
     <input
@@ -60,6 +61,7 @@ export function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={onKeyDown}
+      onBlur={onBlur}
       className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
     />
   );
@@ -72,9 +74,10 @@ interface TextareaProps {
   placeholder?: string;
   value: string;
   onChange: (next: string) => void;
+  onBlur?: () => void;
 }
 export function Textarea({
-  id, name, rows = 3, placeholder, value, onChange,
+  id, name, rows = 3, placeholder, value, onChange, onBlur,
 }: TextareaProps) {
   return (
     <textarea
@@ -84,6 +87,7 @@ export function Textarea({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors resize-y"
     />
   );
