@@ -100,7 +100,7 @@ export function DialogHost() {
       onClick={onCancel}
     >
       <div
-        className="w-[min(92vw,26rem)] rounded-lg border border-border bg-surface p-6 shadow-xl"
+        className="w-[min(92vw,26rem)] rounded-lg border border-border bg-surface p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-extrabold tracking-tight text-ink-strong">

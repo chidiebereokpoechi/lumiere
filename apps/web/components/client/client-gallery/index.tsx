@@ -441,7 +441,7 @@ export function ClientGallery({
             )}
           </div>
           {canDownload && files.length > 0 && (
-            <div className="flex items-center gap-5 shrink-0">
+            <div className="flex items-center gap-4 shrink-0">
               <button
                 type="button"
                 onClick={downloadView}

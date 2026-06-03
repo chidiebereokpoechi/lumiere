@@ -66,7 +66,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
   const maxFav = Math.max(1, ...topFavorites.map((f) => f.count));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Totals */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Stat label="Views" value={totals.views} />
@@ -108,7 +108,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Device split */}
         <Card title="Devices">
           {deviceTotal === 0 ? (
@@ -246,7 +246,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl bg-surface border border-border p-6">
+    <section className="rounded-xl bg-surface border border-border p-4">
       <h2 className="text-xs font-extrabold tracking-wider text-ink-muted mb-4">
         {title}
       </h2>

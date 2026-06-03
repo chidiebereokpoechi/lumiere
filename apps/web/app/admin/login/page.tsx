@@ -82,7 +82,7 @@ function LoginForm() {
             Access your creator dashboard.
           </p>
 
-          <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
+          <form className="mt-4 space-y-4" onSubmit={onSubmit} noValidate>
             <Field id="email" label="Email">
               <TextInput
                 id="email"

@@ -37,7 +37,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
     password;
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
       <Section title="Basics">
         <Field id="title" label="Title" required>
           <TextInput
@@ -57,7 +57,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
             onBlur={flushNow}
           />
         </Field>
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field id="status" label="Status">
             <Select
               id="status"
@@ -89,7 +89,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
       </Section>
 
       <Section title="Client">
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field id="clientName" label="Client name">
             <TextInput
               id="clientName"
@@ -108,7 +108,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
             />
           </Field>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field id="eventDate" label="Event date">
             <DateField
               id="eventDate"
@@ -171,7 +171,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
             </Button>
           )}
         </Field>
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field id="expiresAt" label="Expires on" hint="optional">
             <DateField
               id="expiresAt"

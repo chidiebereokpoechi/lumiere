@@ -34,9 +34,9 @@ export function PresetEditor({
   onUploadLogo: (file: File) => void;
 }) {
   return (
-    <section className="rounded-xl bg-surface border border-border p-6 space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-5">
+    <section className="rounded-xl bg-surface border border-border p-4 space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
           <Field id="wm-name" label="Name" required>
             <TextInput
               id="wm-name"

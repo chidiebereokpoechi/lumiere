@@ -81,7 +81,7 @@ export default function NewGalleryPage() {
 
   return (
     <div>
-      <header className="px-8 py-6 border-b border-border">
+      <header className="p-4 border-b border-border">
         <Link
           href="/admin"
           className="inline-flex items-center gap-1 text-xs font-bold tracking-wider text-ink-muted hover:text-ink-strong"
@@ -97,9 +97,9 @@ export default function NewGalleryPage() {
         </p>
       </header>
 
-      <div className="pb-16">
-        <form onSubmit={onSubmit} className="max-w-2xl space-y-6">
-          <section className="rounded-xl bg-surface border border-border p-7 space-y-6">
+      <div className="px-4 pb-16">
+        <form onSubmit={onSubmit} className="max-w-2xl space-y-4">
+          <section className="rounded-xl bg-surface border border-border p-4 space-y-4">
             <h2 className="text-xs font-extrabold tracking-wider text-ink-muted">
               Details
             </h2>

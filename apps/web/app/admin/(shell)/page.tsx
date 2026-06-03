@@ -26,7 +26,7 @@ export default async function AdminGalleriesPage() {
         action={<NewGalleryButton />}
       />
 
-      <div className="px-8 py-6">
+      <div className="px-4 py-4">
         {galleries.length === 0 ? (
           <EmptyState />
         ) : (

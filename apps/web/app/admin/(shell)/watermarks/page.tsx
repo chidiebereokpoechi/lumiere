@@ -18,7 +18,7 @@ export default async function WatermarksPage() {
         subtitle="Reusable text or logo overlays for preview-quality downloads."
         user={{ name: me.name, email: me.email }}
       />
-      <div className="px-8 py-6 pb-16">
+      <div className="px-4 py-4 pb-16">
         <WatermarkManager initialPresets={presets} />
       </div>
     </div>

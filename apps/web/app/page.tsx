@@ -20,7 +20,7 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto max-w-3xl px-8 py-24 md:py-32">
-      <header className="flex items-start justify-between gap-6">
+      <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium tracking-wider text-ink-muted">
             Lumière
@@ -39,8 +39,8 @@ export default async function HomePage() {
         <h2 className="text-xs font-medium tracking-wider text-ink-subtle">
           System status
         </h2>
-        <div className="mt-4 rounded-md bg-surface p-8">
-          <div className="flex items-center justify-between gap-6">
+        <div className="mt-4 rounded-md bg-surface p-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <StatusDot kind={isOk ? "ok" : isDegraded ? "warn" : "error"} />
               <div>
@@ -74,7 +74,7 @@ export default async function HomePage() {
         <SwatchCard label="accent" varName="--accent" />
       </section>
 
-      <section className="mt-16 space-y-6">
+      <section className="mt-16 space-y-4">
         <h2 className="text-xs font-medium tracking-wider text-ink-subtle">
           Type ramp
         </h2>

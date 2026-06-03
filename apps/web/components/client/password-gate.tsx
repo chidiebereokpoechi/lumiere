@@ -46,7 +46,7 @@ export function PasswordGate({ slug, title }: { slug: string; title: string }) {
         </p>
         <form
           onSubmit={onSubmit}
-          className="mt-8 rounded-xl bg-surface border border-border p-8 space-y-5"
+          className="mt-4 rounded-xl bg-surface border border-border p-4 space-y-4"
         >
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-ink-strong">

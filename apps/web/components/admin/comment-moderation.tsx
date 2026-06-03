@@ -90,7 +90,7 @@ export function CommentModeration({
   }
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl space-y-4">
       {error && (
         <div
           role="alert"

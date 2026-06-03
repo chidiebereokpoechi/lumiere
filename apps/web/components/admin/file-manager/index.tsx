@@ -380,7 +380,7 @@ export function FileManager({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {error && (
         <div
           role="alert"
@@ -524,7 +524,7 @@ export function FileManager({
 
           {/* Folder content — drop boundary */}
           <div
-            className="relative space-y-6 min-h-64"
+            className="relative space-y-4 min-h-64"
             onDragEnter={(e) => {
               if (e.dataTransfer.types.includes("Files")) {
                 dragDepth.current += 1;

@@ -59,7 +59,7 @@ export function CommentsSection({
       <h2 className="text-xs font-extrabold tracking-wider text-ink-muted mb-4">
         Comments
       </h2>
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-2xl space-y-4">
         {initialComments.length > 0 && (
           <ul className="space-y-4">
             {initialComments.map((c) => (

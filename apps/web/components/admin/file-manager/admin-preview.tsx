@@ -79,7 +79,7 @@ export function AdminPreview({
             // eslint-disable-next-line jsx-a11y/media-has-caption
             <audio src={streamUrl} controls className="w-[min(90vw,32rem)]" />
           ) : (
-            <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
+            <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-4 text-center">
               <TypeIcon type={file.type} />
               <p className="mt-3 text-sm font-semibold text-ink-strong truncate">
                 {name}
