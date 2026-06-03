@@ -171,8 +171,19 @@ export function DateField({
               );
             })}
           </div>
-          {parsed && (
-            <div className="mt-2 pt-2 border-t border-border flex justify-end">
+          <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => {
+                const t = new Date();
+                onChange(iso(t.getFullYear(), t.getMonth(), t.getDate()));
+                setOpen(false);
+              }}
+              className="text-xs font-bold tracking-wider text-ink-muted hover:text-ink-strong"
+            >
+              Today
+            </button>
+            {parsed && (
               <button
                 type="button"
                 onClick={() => {
@@ -183,8 +194,8 @@ export function DateField({
               >
                 Clear
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
