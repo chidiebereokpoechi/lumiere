@@ -43,6 +43,9 @@ export const GalleryPatchInput = z.object({
   customCss: z.string().nullable(),
   sortOrder: z.string(),
   coverFileId: z.string().nullable(),
+  coverImageKey: z.string().nullable(),
+  coverFocalX: z.number().int().min(0).max(100).nullable(),
+  coverFocalY: z.number().int().min(0).max(100).nullable(),
   watermarkPresetId: z.string().nullable(),
   password: z.string().nullable(),
 }).partial().strict();

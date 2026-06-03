@@ -22,6 +22,11 @@ export const galleries = sqliteTable('galleries', {
   title: text('title').notNull(),
   subtitle: text('subtitle'),
   coverFileId: text('cover_file_id').references((): AnySQLiteColumn => files.id, { onDelete: 'set null' }),
+  // Standalone cover (uploaded, not a gallery photo). Takes precedence over
+  // coverFileId when set. Focal point (0-100%) drives object-position cropping.
+  coverImageKey: text('cover_image_key'),
+  coverFocalX: integer('cover_focal_x'),
+  coverFocalY: integer('cover_focal_y'),
   passwordHash: text('password_hash'),
   status: text('status').default('active'),
   downloadMode: text('download_mode').default('watermarked'),

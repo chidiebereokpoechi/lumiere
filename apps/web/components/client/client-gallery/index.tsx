@@ -23,6 +23,8 @@ import { Lightbox } from "./lightbox";
 import { SelectionBar } from "./selection-bar";
 import { EmailModal } from "./email-modal";
 import { ListPickerModal } from "./list-picker-modal";
+import { DownloadModal } from "./download-modal";
+import { ItemActionSheet } from "./item-action-sheet";
 
 interface Props {
   gallery: MinimalGallery;
@@ -336,14 +338,19 @@ export function ClientGallery({
     triggerDownload(`ids=${[...selected].join(",")}`);
   }, [selected, triggerDownload]);
 
-  // Download the whole current view (folder / favorites / list) without first
-  // selecting every file in it.
-  const downloadView = useCallback(() => {
-    if (files.length === 0) return;
-    if (view.kind === "folder") triggerDownload(`folderId=${view.id}`);
-    else if (view.kind === "favorites") triggerDownload("scope=favorites");
-    else triggerDownload(`ids=${files.map((f) => f.id).join(",")}`);
-  }, [view, files, triggerDownload]);
+  // Download picker (multi-set + favorites → one ZIP).
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadPicked = useCallback(
+    (folderIds: string[], favs: boolean) => {
+      const parts: string[] = [];
+      if (folderIds.length) parts.push(`folderIds=${folderIds.join(",")}`);
+      if (favs) parts.push("favorites=1");
+      if (parts.length === 0) return;
+      triggerDownload(parts.join("&"));
+      setDownloadOpen(false);
+    },
+    [triggerDownload],
+  );
 
   // Photos + videos among the current selection — drives "Save to Photos"
   // (the iOS share sheet writes both to the camera roll).
@@ -412,9 +419,31 @@ export function ClientGallery({
     [files],
   );
 
-  // On touch, once a selection exists, tapping a tile toggles it instead of
-  // opening the lightbox (and we hide the heart so the tile reads as selectable).
-  const selecting = coarse && selected.size > 0;
+  // Explicit selection mode (Apple-Photos-style): checkboxes appear, tapping a
+  // tile toggles it. Entered via the Select button or long-press; Done exits.
+  const [selectionMode, setSelectionMode] = useState(false);
+  const enterSelection = useCallback(
+    (id?: string) => {
+      setSelectionMode(true);
+      if (id) toggle(id, false);
+    },
+    [toggle],
+  );
+  const exitSelection = useCallback(() => {
+    setSelectionMode(false);
+    clear();
+  }, [clear]);
+  const bulkFavorite = useCallback(() => {
+    if (selected.size === 0) return;
+    requireEmail(() => {
+      for (const id of selected) if (!favorites.has(id)) toggleFavorite(id);
+    });
+  }, [selected, favorites, requireEmail, toggleFavorite]);
+
+  // Long-press quick-action menu target.
+  const [sheetId, setSheetId] = useState<string | null>(null);
+  const sheetFile = sheetId ? allFiles.find((f) => f.id === sheetId) : null;
+
   const gridMode = gallery.layout === "grid";
   const emptyText =
     view.kind === "list"
@@ -440,17 +469,28 @@ export function ClientGallery({
               </p>
             )}
           </div>
-          {canDownload && files.length > 0 && (
+          {allFiles.length > 0 && (
             <div className="flex items-center gap-4 shrink-0">
-              <button
-                type="button"
-                onClick={downloadView}
-                aria-label="Download"
-                title="Download these"
-                className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
-              >
-                <Download size={24} />
-              </button>
+              {(canFavorite || canDownload) && !selectionMode && (
+                <button
+                  type="button"
+                  onClick={() => enterSelection()}
+                  className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong"
+                >
+                  Select
+                </button>
+              )}
+              {canDownload && (
+                <button
+                  type="button"
+                  onClick={() => setDownloadOpen(true)}
+                  aria-label="Download"
+                  title="Download"
+                  className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
+                >
+                  <Download size={24} />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -473,6 +513,14 @@ export function ClientGallery({
                 count={favorites.size}
               />
             )}
+          </nav>
+        )}
+        {/* Client-made lists get their own row, distinct from the sets above. */}
+        {lists.length > 0 && (
+          <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+            <span className="shrink-0 text-xs font-bold tracking-wider text-ink-subtle">
+              Lists
+            </span>
             {lists.map((l) => (
               <GalleryTab
                 key={l.id}
@@ -510,12 +558,13 @@ export function ClientGallery({
           canDownload={canDownload}
           canFavorite={canFavorite}
           actionVis={actionVis}
-          selecting={selecting}
+          selectionMode={selectionMode}
           suppressClickRef={suppressClickRef}
           onOpen={setOpenId}
           onToggleSelect={toggle}
-          onBeginDragSelect={beginDragSelect}
+          onBeginDragSelect={gridMode ? beginDragSelect : () => {}}
           onToggleFavorite={(id) => requireEmail(() => toggleFavorite(id))}
+          onLongPress={setSheetId}
         />
       </section>
 
@@ -526,13 +575,15 @@ export function ClientGallery({
         />
       )}
 
-      {selected.size > 0 && (
+      {selectionMode && (
         <SelectionBar
           count={selected.size}
           canDownload={canDownload}
+          canFavorite={canFavorite}
           showSavePhotos={coarse && selectedImages.length > 0}
           savingPhotos={savingPhotos}
-          onClear={clear}
+          onDone={exitSelection}
+          onFavorite={bulkFavorite}
           onAddToList={() => openPicker([...selected])}
           onSavePhotos={() => sharePhotos(selectedImages)}
           onDownload={downloadSelected}
@@ -581,6 +632,33 @@ export function ClientGallery({
             const l = await createList(name);
             if (l) setMembership(l.id, pickerFiles, true);
           }}
+        />
+      )}
+
+      {downloadOpen && (
+        <DownloadModal
+          folders={folders}
+          folderCounts={folderCounts}
+          canFavorite={canFavorite}
+          favoritesCount={favorites.size}
+          onClose={() => setDownloadOpen(false)}
+          onDownload={downloadPicked}
+        />
+      )}
+
+      {sheetFile && (
+        <ItemActionSheet
+          file={sheetFile}
+          canDownload={canDownload}
+          canFavorite={canFavorite}
+          coarse={coarse}
+          isFavorite={favorites.has(sheetFile.id)}
+          onSelect={() => enterSelection(sheetFile.id)}
+          onFavorite={() => requireEmail(() => toggleFavorite(sheetFile.id))}
+          onAddToList={() => openPicker([sheetFile.id])}
+          onDownload={() => triggerDownload(`ids=${sheetFile.id}`)}
+          onShare={() => sharePhotos([sheetFile])}
+          onClose={() => setSheetId(null)}
         />
       )}
     </main>

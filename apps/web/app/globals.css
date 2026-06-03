@@ -189,3 +189,13 @@ html:not(.theme-no-transition) * {
 *::after {
   border-radius: 0 !important;
 }
+
+/* Touch devices: inputs render at >=16px so iOS Safari doesn't auto-zoom the
+ * viewport on focus. Desktop keeps the smaller text-sm sizing. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

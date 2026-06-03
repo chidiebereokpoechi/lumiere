@@ -24,13 +24,14 @@ import { FolderRow } from "./folder-row";
 import { AdminPreview } from "./admin-preview";
 import { UploadSummary } from "./upload-summary";
 import { Spinner, TypeIcon } from "./bits";
+import { CoverControl, type CoverState } from "./cover-control";
 
 interface Props {
   galleryId: string;
   gallerySlug: string;
   initialFiles: GalleryFile[];
   initialFolders: Folder[];
-  initialCoverFileId: string | null;
+  initialCover: CoverState;
 }
 
 export function FileManager({
@@ -38,7 +39,7 @@ export function FileManager({
   gallerySlug,
   initialFiles,
   initialFolders,
-  initialCoverFileId,
+  initialCover,
 }: Props) {
   const router = useRouter();
   const [files, setFiles] = useState<GalleryFile[]>(initialFiles);
@@ -47,7 +48,7 @@ export function FileManager({
     initialFolders[0]?.id ?? "",
   );
   const [fileOverFolder, setFileOverFolder] = useState<string | null>(null);
-  const [cover, setCover] = useState<string | null>(initialCoverFileId);
+  const [cover, setCover] = useState<CoverState>(initialCover);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -287,7 +288,7 @@ export function FileManager({
     const ids = [...selected];
     setSelected(new Set());
     setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
-    setCover((c) => (c && ids.includes(c) ? null : c));
+    setCover((c) => (c.fileId && ids.includes(c.fileId) ? { ...c, fileId: null } : c));
     await Promise.all(
       ids.map((id) =>
         apiClientMutation(`/api/galleries/${galleryId}/files/${id}`, {
@@ -314,27 +315,9 @@ export function FileManager({
         method: "DELETE",
       });
       setFiles((prev) => prev.filter((f) => f.id !== file.id));
-      if (cover === file.id) setCover(null);
+      setCover((c) => (c.fileId === file.id ? { ...c, fileId: null } : c));
     } catch (err) {
       setError(apiErrorMessage(err, "Delete failed"));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function onSetCover(file: GalleryFile) {
-    setBusyId(file.id);
-    const prev = cover;
-    setCover(file.id);
-    try {
-      await mutateJson(
-        `/api/galleries/${galleryId}`,
-        { coverFileId: file.id },
-        "PATCH",
-      );
-    } catch (err) {
-      setCover(prev);
-      setError(apiErrorMessage(err, "Could not set cover"));
     } finally {
       setBusyId(null);
     }
@@ -403,6 +386,12 @@ export function FileManager({
       <div className="flex gap-4 items-start">
         {/* Sets sidebar */}
         <aside className="w-80 h-full shrink-0 border border-border p-4">
+          <CoverControl
+            galleryId={galleryId}
+            images={files.filter((f) => f.type === "image")}
+            cover={cover}
+            onChange={setCover}
+          />
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-bold tracking-wider text-ink-subtle">
               Sets
@@ -580,7 +569,7 @@ export function FileManager({
                       file={file}
                       galleryId={galleryId}
                       gallerySlug={gallerySlug}
-                      isCover={cover === file.id}
+                      isCover={!cover.imageKey && cover.fileId === file.id}
                       selected={selected.has(file.id)}
                       busy={busyId === file.id}
                       reorderable={canDrag}
@@ -592,7 +581,6 @@ export function FileManager({
                       onToggleSelect={(shift) => toggle(file.id, shift)}
                       onOpen={() => setPreviewId(file.id)}
                       onDelete={() => onDelete(file)}
-                      onSetCover={() => onSetCover(file)}
                       onRename={() => renameFile(file)}
                       onCopyName={() => copyFilename(file)}
                       onDownload={() => downloadFile(file)}

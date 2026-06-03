@@ -142,7 +142,18 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     const selectedIds = query.ids
       ? new Set(query.ids.split(',').map((s) => s.trim()).filter(Boolean))
       : null;
-    const scope = selectedIds ? 'selected' : query.folderId ? 'folder' : (query.scope ?? 'all');
+    const folderIdList = query.folderIds
+      ? query.folderIds.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+    const wantFavorites = query.favorites === '1';
+    // 'multi' = the download-picker union (any of N sets + optionally favorites).
+    const scope = selectedIds
+      ? 'selected'
+      : folderIdList.length > 0 || wantFavorites
+        ? 'multi'
+        : query.folderId
+          ? 'folder'
+          : (query.scope ?? 'all');
 
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) { set.status = 404; return { error: 'not_found' }; }
@@ -180,6 +191,30 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       fileRows = fileRows.filter((f) => favIds.has(f.id));
     } else if (selectedIds) {
       fileRows = fileRows.filter((f) => selectedIds.has(f.id));
+    } else if (scope === 'multi') {
+      // Union of the requested sets (non-admins can't reach hidden ones) and,
+      // when flagged, the client's favorites.
+      let okFolders = new Set<string>();
+      if (folderIdList.length > 0) {
+        const folders = await db.query.galleryFolders.findMany({
+          where: eq(galleryFolders.galleryId, gallery.id),
+        });
+        okFolders = new Set(
+          folders
+            .filter((f) => folderIdList.includes(f.id) && (isAdmin || !f.hidden))
+            .map((f) => f.id),
+        );
+      }
+      let favIds = new Set<string>();
+      if (wantFavorites && gallerySession) {
+        const favs = await db.query.favorites.findMany({
+          where: and(eq(favorites.galleryId, gallery.id), eq(favorites.sessionToken, gallerySession.token)),
+        });
+        favIds = new Set(favs.map((f) => f.fileId));
+      }
+      fileRows = fileRows.filter(
+        (f) => (f.folderId && okFolders.has(f.folderId)) || favIds.has(f.id),
+      );
     } else if (query.folderId) {
       fileRows = fileRows.filter((f) => f.folderId === query.folderId);
     }
@@ -209,6 +244,7 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     const { archive } = buildZipStream(entries);
     const suffix = scope === 'favorites' ? '-favorites'
       : scope === 'selected' ? '-selected'
+      : scope === 'multi' ? '-selection'
       : scope === 'folder' ? `-${slugify(folderName ?? 'folder')}`
       : '';
     const zipName = `${slugify(gallery.title) || 'gallery'}${suffix}.zip`;
@@ -229,5 +265,7 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       scope: t.Optional(t.Union([t.Literal('all'), t.Literal('favorites'), t.Literal('selected')])),
       ids: t.Optional(t.String()),
       folderId: t.Optional(t.String()),
+      folderIds: t.Optional(t.String()),
+      favorites: t.Optional(t.String()),
     }),
   });

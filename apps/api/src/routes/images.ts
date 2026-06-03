@@ -87,4 +87,41 @@ export const imageRoutes = new Elysia()
       photoId: t.String(),
       size: t.Union([t.Literal('thumb'), t.Literal('preview'), t.Literal('original')]),
     }),
+  })
+
+  // GET /img/:galleryId/cover — serves the gallery cover: the standalone
+  // uploaded cover (coverImageKey) if set, else the chosen gallery photo's
+  // preview. Same access model as thumb/preview (admin / unlocked / public).
+  .get('/img/:galleryId/cover', async (ctx) => {
+    const { galleryId } = ctx.params;
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.id, galleryId) });
+    if (!gallery) {
+      ctx.set.status = 404;
+      return { error: 'not_found' };
+    }
+
+    const isAdminOwner = ctx.currentPhotographer && gallery.photographerId === ctx.currentPhotographer.id;
+    const isUnlockedClient = ctx.gallerySession?.galleryId === gallery.id && galleryIsAccessible(gallery);
+    const isPublicAccessible = !gallery.passwordHash && galleryIsAccessible(gallery);
+    if (!isAdminOwner && !isUnlockedClient && !isPublicAccessible) {
+      ctx.set.status = 401;
+      return { error: 'unauthenticated' };
+    }
+
+    let key = gallery.coverImageKey;
+    if (!key && gallery.coverFileId) {
+      const cover = await db.query.files.findFirst({ where: eq(files.id, gallery.coverFileId) });
+      key = cover?.s3KeyPreview ?? null;
+    }
+    if (!key) {
+      ctx.set.status = 404;
+      return { error: 'no_cover' };
+    }
+
+    const url = await presignGet(key, env.PRESIGN_TTL_SECONDS);
+    ctx.set.status = 302;
+    ctx.set.headers['location'] = url;
+    return '';
+  }, {
+    params: t.Object({ galleryId: t.String() }),
   });
