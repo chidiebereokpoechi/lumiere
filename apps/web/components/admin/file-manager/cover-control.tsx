@@ -2,7 +2,11 @@
 
 import { useRef, useState } from "react";
 import type { GalleryFile } from "@/lib/api/files";
-import { apiClientMutation, apiErrorMessage, mutateJson } from "@/lib/api-client";
+import {
+  apiClientMutation,
+  apiErrorMessage,
+  mutateJson,
+} from "@/lib/api-client";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { ImageIcon } from "@/components/ui/icons";
@@ -17,7 +21,8 @@ export interface CoverState {
 // Thumbnail URL for a cover state. `?k=` busts the browser cache when a new
 // standalone cover is uploaded (the /cover path is stable but its bytes change).
 function coverThumb(galleryId: string, c: CoverState): string | null {
-  if (c.imageKey) return `/img/${galleryId}/cover?k=${encodeURIComponent(c.imageKey)}`;
+  if (c.imageKey)
+    return `/img/${galleryId}/cover?k=${encodeURIComponent(c.imageKey)}`;
   if (c.fileId) return `/img/${galleryId}/${c.fileId}/thumb`;
   return null;
 }
@@ -42,8 +47,8 @@ export function CoverControl({
   const thumb = coverThumb(galleryId, cover);
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold tracking-wider text-ink-subtle">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs font-bold tracking-wider text-ink-muted">
           Cover
         </span>
         <button
@@ -153,7 +158,11 @@ function CoverModal({
   }
 
   return (
-    <Modal onClose={onClose} className="w-[min(95vw,40rem)]" labelledBy="cover-title">
+    <Modal
+      onClose={onClose}
+      className="w-[min(95vw,40rem)]"
+      labelledBy="cover-title"
+    >
       <h2
         id="cover-title"
         className="text-lg font-extrabold tracking-tight text-ink-strong"
@@ -211,7 +220,9 @@ function CoverModal({
       </div>
 
       {images.length === 0 ? (
-        <p className="mt-3 text-sm text-ink-subtle">No images in this gallery yet.</p>
+        <p className="mt-3 text-sm text-ink-subtle">
+          No images in this gallery yet.
+        </p>
       ) : (
         <div className="mt-3 grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
           {images.map((f) => {
@@ -237,7 +248,11 @@ function CoverModal({
       )}
 
       <div className="mt-5 flex justify-end">
-        <Button variant="secondary" onClick={onClose} className="tracking-wider">
+        <Button
+          variant="secondary"
+          onClick={onClose}
+          className="tracking-wider"
+        >
           Done
         </Button>
       </div>
@@ -288,7 +303,7 @@ function FocalPicker({
       ref={boxRef}
       onPointerDown={onPointerDown}
       style={{ touchAction: "none" }}
-      className="mt-3 relative aspect-16/9 w-full overflow-hidden rounded-md border border-border bg-surface-sunken cursor-crosshair select-none"
+      className="mt-3 relative aspect-video w-full overflow-hidden rounded-md border border-border bg-surface-sunken cursor-crosshair select-none"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

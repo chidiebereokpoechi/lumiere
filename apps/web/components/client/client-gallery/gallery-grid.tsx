@@ -16,6 +16,7 @@ import {
 export interface GalleryGridHandlers {
   canDownload: boolean;
   canFavorite: boolean;
+  desktop: boolean;
   actionVis: string;
   selectionMode: boolean;
   suppressClickRef: React.MutableRefObject<boolean>;
@@ -23,6 +24,7 @@ export interface GalleryGridHandlers {
   onToggleSelect: (id: string, shift: boolean) => void;
   onBeginDragSelect: (id: string, e: React.PointerEvent) => void;
   onToggleFavorite: (id: string) => void;
+  onBulkFavorite: () => void;
   onLongPress: (id: string) => void;
 }
 
@@ -146,6 +148,7 @@ function GalleryTile({
   fill,
   canDownload,
   canFavorite,
+  desktop,
   actionVis,
   selectionMode,
   suppressClickRef,
@@ -153,6 +156,7 @@ function GalleryTile({
   onToggleSelect,
   onBeginDragSelect,
   onToggleFavorite,
+  onBulkFavorite,
   onLongPress,
 }: GalleryGridHandlers & {
   f: ClientFile;
@@ -189,20 +193,29 @@ function GalleryTile({
     <>
       <button
         type="button"
-        onPointerDown={onPressStart}
+        onPointerDown={(e) => {
+          // In selection mode, dragging anywhere on the tile range-selects;
+          // otherwise a hold opens the quick-action menu.
+          if (selectionMode) onBeginDragSelect(f.id, e);
+          else onPressStart(e);
+        }}
         onPointerMove={onPressMove}
         onPointerUp={cancelLong}
         onPointerCancel={cancelLong}
         onContextMenu={(e) => e.preventDefault()}
-        onClick={() => {
+        onClick={(e) => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            return;
+          }
           if (lpFired.current) {
             lpFired.current = false;
             return;
           }
-          if (selectionMode) onToggleSelect(f.id, false);
+          if (selectionMode) onToggleSelect(f.id, e.shiftKey);
           else onOpen(f.id);
         }}
-        className={`block w-full text-left focus-visible:outline-none ${fill ? "h-full" : ""}`}
+        className={`block w-full text-left focus-visible:outline-none select-none [-webkit-touch-callout:none] ${fill ? "h-full" : ""}`}
       >
         {f.type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -210,6 +223,7 @@ function GalleryTile({
             src={f.thumbUrl ?? ""}
             alt=""
             loading="lazy"
+            draggable={false}
             style={
               !fill && f.width && f.height
                 ? { aspectRatio: `${f.width} / ${f.height}` }
@@ -227,6 +241,7 @@ function GalleryTile({
                 src={f.thumbUrl}
                 alt=""
                 loading="lazy"
+                draggable={false}
                 style={
                   !fill && f.width && f.height
                     ? { aspectRatio: `${f.width} / ${f.height}` }
@@ -255,6 +270,7 @@ function GalleryTile({
             src={f.thumbUrl}
             alt=""
             loading="lazy"
+            draggable={false}
             className={`block w-full object-cover ${fill ? "h-full" : "aspect-square"} ${isSelected ? "brightness-90" : ""}`}
           />
         ) : (
@@ -276,9 +292,11 @@ function GalleryTile({
         )}
       </button>
 
-      {(selectionMode || canFavorite) && (
+      {/* Bottom gradient — backs the heart; shown whenever a heart shows
+          (favorited always, or on hover where the heart is interactive). */}
+      {(isFavorite || (desktop && canFavorite)) && (
         <div
-          className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected || selectionMode ? "opacity-100" : actionVis}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/35 to-transparent transition-opacity ${isFavorite ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
         />
       )}
 
@@ -305,18 +323,37 @@ function GalleryTile({
           <Check size={20} />
         </button>
       )}
-      {canFavorite && !selectionMode && (
+      {/* Desktop: interactive heart (hover to add; in selection mode it acts on
+          the whole selection). Touch: read-only favorited badge only — favorite
+          from the lightbox or long-press menu there. */}
+      {desktop && canFavorite ? (
         <button
           type="button"
-          onClick={() => onToggleFavorite(f.id)}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (selectionMode) onBulkFavorite();
+            else onToggleFavorite(f.id);
+          }}
           aria-pressed={isFavorite}
           aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-          className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all drop-shadow ${
-            isFavorite ? "text-heart opacity-100" : `text-white ${actionVis}`
+          className={`absolute bottom-2.5 right-2.5 inline-flex items-center justify-center transition-all drop-shadow ${
+            isFavorite
+              ? "text-heart opacity-100"
+              : "text-white opacity-0 group-hover:opacity-100"
           }`}
         >
           {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
         </button>
+      ) : (
+        isFavorite && (
+          <span
+            aria-label="Favorited"
+            className="pointer-events-none absolute bottom-2.5 right-2.5 text-heart drop-shadow"
+          >
+            <Heart size={24} />
+          </span>
+        )
       )}
       {isSelected && (
         <div className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-accent" />

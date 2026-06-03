@@ -6,15 +6,15 @@ import {
   Heart,
   ImageIcon,
 } from "@/components/ui/icons";
-import { Button } from "@/components/ui/button";
 
-// Fixed bottom action bar shown while in selection mode. Respects the iOS
-// home-indicator inset. Bulk favorite / add-to-list / save / download act on the
-// current selection; Done exits selection mode.
+// Bottom sheet shown in selection mode — same language as the long-press and
+// add-to-list sheets: a header (count + Done) over labeled action rows that act
+// on the current selection. Disabled until something is selected.
 export function SelectionBar({
   count,
   canDownload,
   canFavorite,
+  allFavorited,
   showSavePhotos,
   savingPhotos,
   onDone,
@@ -26,6 +26,7 @@ export function SelectionBar({
   count: number;
   canDownload: boolean;
   canFavorite: boolean;
+  allFavorited: boolean;
   showSavePhotos: boolean;
   savingPhotos: boolean;
   onDone: () => void;
@@ -36,63 +37,76 @@ export function SelectionBar({
 }) {
   const disabled = count === 0;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface px-4 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center justify-between gap-2 flex-wrap flex-col">
-        <div className="flex justify-between items-center gap-4 w-full sm:w-auto">
-          <span className="text-sm font-semibold text-ink-strong tabular-nums">
-            {count > 0 ? `${count} selected` : "Select items"}
-          </span>
-          <button
-            type="button"
-            onClick={onDone}
-            className="px-2 py-2.5 text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
-          >
-            Done
-          </button>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {canFavorite && (
-            <Button
-              variant="secondary"
-              onClick={onFavorite}
-              disabled={disabled}
-              className="px-3.5 tracking-wider"
-            >
-              <Heart size={24} />
-            </Button>
-          )}
-          <Button
-            variant="secondary"
-            onClick={onAddToList}
+    <div className="fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)] p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="flex items-center justify-between px-3 pt-1 pb-1">
+        <span className="text-sm font-extrabold tracking-wider text-ink-strong tabular-nums">
+          {count > 0 ? `${count} selected` : "Select items"}
+        </span>
+        <button
+          type="button"
+          onClick={onDone}
+          className="px-2 py-1 text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
+        >
+          Done
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:flex-wrap">
+        {canFavorite && (
+          <Row
+            icon={<Heart size={20} />}
+            label={allFavorited ? "Unfavorite" : "Favorite"}
+            onClick={onFavorite}
             disabled={disabled}
-            className="px-3.5 tracking-wider"
-          >
-            <Bookmark size={24} />
-          </Button>
-          {/* Save photos straight to the camera roll on touch devices */}
-          {canDownload && showSavePhotos && (
-            <Button
-              variant="secondary"
-              onClick={onSavePhotos}
-              disabled={savingPhotos || disabled}
-              className="px-3.5 tracking-wider"
-            >
-              <ImageIcon size={24} />
-              {savingPhotos ? "Preparing…" : "Save to photos"}
-            </Button>
-          )}
-          {canDownload && (
-            <Button
-              variant="secondary"
-              onClick={onDownload}
-              disabled={disabled}
-              className="px-3.5 tracking-wider"
-            >
-              <Download size={24} />
-            </Button>
-          )}
-        </div>
+          />
+        )}
+        <Row
+          icon={<Bookmark size={20} />}
+          label="Add to list"
+          onClick={onAddToList}
+          disabled={disabled}
+        />
+        {canDownload && showSavePhotos && (
+          <Row
+            icon={<ImageIcon size={20} />}
+            label={savingPhotos ? "Preparing…" : "Save to photos"}
+            onClick={onSavePhotos}
+            disabled={disabled || savingPhotos}
+          />
+        )}
+        {canDownload && (
+          <Row
+            icon={<Download size={20} />}
+            label="Download"
+            onClick={onDownload}
+            disabled={disabled}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+function Row({
+  icon,
+  label,
+  onClick,
+  disabled,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex sm:flex-1 items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold text-ink-strong hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+    >
+      <span className="text-ink-muted">{icon}</span>
+      {label}
+    </button>
   );
 }

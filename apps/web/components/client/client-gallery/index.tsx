@@ -16,7 +16,7 @@ import { useDragSelect } from "@/hooks/use-drag-select";
 import { useCoverGate } from "@/hooks/use-cover-gate";
 import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog } from "@/components/ui/dialog";
-import { Download } from "@/components/ui/icons";
+import { Download, Zip } from "@/components/ui/icons";
 import { GalleryCover } from "./gallery-cover";
 import { GalleryTab } from "./gallery-tab";
 import { GalleryGrid } from "./gallery-grid";
@@ -85,6 +85,10 @@ export function ClientGallery({
     ? "opacity-100"
     : "opacity-0 group-hover:opacity-100";
 
+  // Selection mode (declared early so the cover gate can stand down while it's
+  // active — otherwise the reveal pull fights drag-to-select at the gallery top).
+  const [selectionMode, setSelectionMode] = useState(false);
+
   // The cover is a full-screen overlay above the gallery that tracks the gesture
   // live and settles cleanly. Deep-linking to a collection skips it. Entering is
   // easy; coming back takes a deliberate hard pull (see useCoverGate).
@@ -93,7 +97,7 @@ export function ClientGallery({
     progress: coverProgress,
     dragging: coverDragging,
     dismiss,
-  } = useCoverGate(!initialCollection);
+  } = useCoverGate(!initialCollection, { disabled: selectionMode });
   const enterGallery = useCallback(() => {
     dismiss();
     window.scrollTo({ top: 0 });
@@ -159,7 +163,7 @@ export function ClientGallery({
   const fileIds = useMemo(() => files.map((f) => f.id), [files]);
 
   // Selection (shift-range) + drag-to-select share the same anchor.
-  const { selected, setSelected, toggle, clear, anchorRef } =
+  const { selected, setSelected, toggle, clear, selectAll, anchorRef } =
     useRangeSelect(fileIds);
   const { beginDragSelect, dragSelecting, suppressClickRef } = useDragSelect({
     items: files,
@@ -338,10 +342,11 @@ export function ClientGallery({
   // Download picker (multi-set + favorites → one ZIP).
   const [downloadOpen, setDownloadOpen] = useState(false);
   const downloadPicked = useCallback(
-    (folderIds: string[], favs: boolean) => {
+    (folderIds: string[], favs: boolean, listFileIds: string[]) => {
       const parts: string[] = [];
       if (folderIds.length) parts.push(`folderIds=${folderIds.join(",")}`);
       if (favs) parts.push("favorites=1");
+      if (listFileIds.length) parts.push(`ids=${listFileIds.join(",")}`);
       if (parts.length === 0) return;
       triggerDownload(parts.join("&"));
       setDownloadOpen(false);
@@ -418,7 +423,6 @@ export function ClientGallery({
 
   // Explicit selection mode (Apple-Photos-style): checkboxes appear, tapping a
   // tile toggles it. Entered via the Select button or long-press; Done exits.
-  const [selectionMode, setSelectionMode] = useState(false);
   const enterSelection = useCallback(
     (id?: string) => {
       setSelectionMode(true);
@@ -430,10 +434,42 @@ export function ClientGallery({
     setSelectionMode(false);
     clear();
   }, [clear]);
+
+  // Deselecting the last item (one at a time) drops out of selection mode.
+  // Tracked with a flag so entering empty (Select button) doesn't immediately
+  // exit; `suppressExit` lets "Deselect all" clear without leaving.
+  const hadSelection = useRef(false);
+  const suppressExit = useRef(false);
+  useEffect(() => {
+    if (!selectionMode) {
+      hadSelection.current = false;
+      suppressExit.current = false;
+      return;
+    }
+    if (selected.size > 0) hadSelection.current = true;
+    else if (hadSelection.current && !suppressExit.current)
+      setSelectionMode(false);
+    suppressExit.current = false;
+  }, [selected, selectionMode]);
+  const deselectAll = useCallback(() => {
+    suppressExit.current = true;
+    clear();
+  }, [clear]);
+  const allSelected = files.length > 0 && selected.size === files.length;
+
+  // Switching the active set/collection exits selection mode + clears it.
+  useEffect(() => {
+    setSelectionMode(false);
+    clear();
+  }, [view, clear]);
   const bulkFavorite = useCallback(() => {
     if (selected.size === 0) return;
     requireEmail(() => {
-      for (const id of selected) if (!favorites.has(id)) toggleFavorite(id);
+      // All already favorited → unfavorite the selection; otherwise favorite it.
+      const allFav = [...selected].every((id) => favorites.has(id));
+      for (const id of selected) {
+        if (allFav ? favorites.has(id) : !favorites.has(id)) toggleFavorite(id);
+      }
     });
   }, [selected, favorites, requireEmail, toggleFavorite]);
 
@@ -473,13 +509,21 @@ export function ClientGallery({
           </div>
           {allFiles.length > 0 && (
             <div className="flex items-center gap-4 shrink-0">
-              {(canFavorite || canDownload) && !selectionMode && (
+              {(canFavorite || canDownload) && (
                 <button
                   type="button"
-                  onClick={() => enterSelection()}
-                  className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong"
+                  onClick={() => {
+                    if (!selectionMode) enterSelection();
+                    else if (allSelected) deselectAll();
+                    else selectAll();
+                  }}
+                  className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong whitespace-nowrap"
                 >
-                  Select
+                  {!selectionMode
+                    ? "Select"
+                    : allSelected
+                      ? "Deselect all"
+                      : "Select all"}
                 </button>
               )}
               {canDownload && (
@@ -490,13 +534,13 @@ export function ClientGallery({
                   title="Download"
                   className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
                 >
-                  <Download size={24} />
+                  <Zip size={24} />
                 </button>
               )}
             </div>
           )}
         </div>
-        {allFiles.length > 0 && (
+        {allFiles.length > 0 && !(coarse && selectionMode) && (
           <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
             {folders.map((f) => (
               <GalleryTab
@@ -518,11 +562,8 @@ export function ClientGallery({
           </nav>
         )}
         {/* Client-made lists get their own row, distinct from the sets above. */}
-        {lists.length > 0 && (
+        {lists.length > 0 && !(coarse && selectionMode) && (
           <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
-            <span className="shrink-0 text-xs font-bold tracking-wider text-ink-subtle">
-              Lists
-            </span>
             {lists.map((l) => (
               <GalleryTab
                 key={l.id}
@@ -561,11 +602,13 @@ export function ClientGallery({
           canFavorite={canFavorite}
           actionVis={actionVis}
           selectionMode={selectionMode}
+          desktop={!coarse}
           suppressClickRef={suppressClickRef}
           onOpen={setOpenId}
           onToggleSelect={toggle}
           onBeginDragSelect={gridMode ? beginDragSelect : () => {}}
           onToggleFavorite={(id) => requireEmail(() => toggleFavorite(id))}
+          onBulkFavorite={bulkFavorite}
           onLongPress={setSheetId}
         />
       </section>
@@ -582,13 +625,28 @@ export function ClientGallery({
           count={selected.size}
           canDownload={canDownload}
           canFavorite={canFavorite}
+          allFavorited={
+            selected.size > 0 && [...selected].every((id) => favorites.has(id))
+          }
           showSavePhotos={coarse && selectedImages.length > 0}
           savingPhotos={savingPhotos}
           onDone={exitSelection}
-          onFavorite={bulkFavorite}
-          onAddToList={() => openPicker([...selected])}
-          onSavePhotos={() => sharePhotos(selectedImages)}
-          onDownload={downloadSelected}
+          onFavorite={() => {
+            bulkFavorite();
+            exitSelection();
+          }}
+          onAddToList={() => {
+            openPicker([...selected]);
+            exitSelection();
+          }}
+          onSavePhotos={() => {
+            sharePhotos(selectedImages);
+            exitSelection();
+          }}
+          onDownload={() => {
+            downloadSelected();
+            exitSelection();
+          }}
         />
       )}
 
@@ -641,6 +699,7 @@ export function ClientGallery({
         <DownloadModal
           folders={folders}
           folderCounts={folderCounts}
+          lists={lists}
           canFavorite={canFavorite}
           favoritesCount={favorites.size}
           onClose={() => setDownloadOpen(false)}

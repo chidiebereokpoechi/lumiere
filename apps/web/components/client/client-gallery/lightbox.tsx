@@ -8,6 +8,7 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  Close,
   Comment,
   Download,
   FileDoc,
@@ -62,6 +63,14 @@ export function Lightbox({
   // Reset transient playing state whenever the open item changes.
   useEffect(() => setMediaPlaying(false), [file.id]);
 
+  // Lock the page scroll behind the lightbox while it's open.
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -102,7 +111,7 @@ export function Lightbox({
           aria-label="Close"
           className="h-10 w-10 -ml-1"
         >
-          <ChevronLeft size={24} />
+          <Close size={24} />
         </IconButton>
         <div className="flex items-center gap-1">
           {canFavorite && (

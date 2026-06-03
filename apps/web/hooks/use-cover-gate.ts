@@ -17,7 +17,7 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
  */
 export function useCoverGate(
   initialShown: boolean,
-  { revealFraction = 0.55, dismissFraction = 0.15 } = {},
+  { revealFraction = 0.55, dismissFraction = 0.15, disabled = false } = {},
 ) {
   const [shown, setShown] = useState(initialShown);
   const [progress, setProgress] = useState(initialShown ? 1 : 0);
@@ -25,6 +25,10 @@ export function useCoverGate(
 
   const shownRef = useRef(shown);
   shownRef.current = shown;
+  // While disabled (e.g. selection mode), let gestures fall through to the page
+  // so drag-to-select / scroll aren't hijacked by the cover reveal.
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
   const progressRef = useRef(progress);
   const setProg = useCallback((p: number) => {
     progressRef.current = p;
@@ -71,6 +75,10 @@ export function useCoverGate(
     };
 
     const onTouchStart = (e: TouchEvent) => {
+      if (disabledRef.current && !shownRef.current) {
+        startY.v = null;
+        return;
+      }
       startY.v = shownRef.current || atTop() ? (e.touches[0]?.clientY ?? null) : null;
     };
     const onTouchMove = (e: TouchEvent) => {
@@ -100,6 +108,7 @@ export function useCoverGate(
     };
 
     const onWheel = (e: WheelEvent) => {
+      if (disabledRef.current && !shownRef.current) return;
       if (shownRef.current) {
         if (e.deltaY <= 0) return; // scrolling up on the cover does nothing
         e.preventDefault();

@@ -288,7 +288,9 @@ export function FileManager({
     const ids = [...selected];
     setSelected(new Set());
     setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
-    setCover((c) => (c.fileId && ids.includes(c.fileId) ? { ...c, fileId: null } : c));
+    setCover((c) =>
+      c.fileId && ids.includes(c.fileId) ? { ...c, fileId: null } : c,
+    );
     await Promise.all(
       ids.map((id) =>
         apiClientMutation(`/api/galleries/${galleryId}/files/${id}`, {
@@ -393,9 +395,39 @@ export function FileManager({
             onChange={setCover}
           />
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-bold tracking-wider text-ink-subtle">
+            <span className="text-xs font-bold tracking-wider text-ink-muted">
               Sets
             </span>
+          </div>
+          <div className="space-y-4">
+            {folders.map((f) => (
+              <FolderRow
+                key={f.id}
+                id={f.id}
+                active={activeFolder === f.id}
+                isDropTarget={dropFolderId === f.id || fileOverFolder === f.id}
+                hidden={f.hidden}
+                onClick={() => setActiveFolder(f.id)}
+                label={f.name}
+                count={f.photoCount}
+                onRename={() => renameFolder(f)}
+                onToggleHidden={() => toggleFolderHidden(f)}
+                onDelete={
+                  folders.length > 1 ? () => deleteFolder(f) : undefined
+                }
+                onFileEnter={() => setFileOverFolder(f.id)}
+                onFileLeave={() =>
+                  setFileOverFolder((c) => (c === f.id ? null : c))
+                }
+                onFileDrop={(fl) => {
+                  setFileOverFolder(null);
+                  handleFiles(fl, f.id);
+                }}
+                draggingFolder={draggingFolderId === f.id}
+                reorderable={folders.length > 1}
+                onReorderStart={(e) => beginFolderDrag(f.id, e)}
+              />
+            ))}
             <button
               type="button"
               data-newfolder
@@ -441,36 +473,6 @@ export function FileManager({
             >
               <Plus size={16} />
             </button>
-          </div>
-          <div className="space-y-4">
-            {folders.map((f) => (
-              <FolderRow
-                key={f.id}
-                id={f.id}
-                active={activeFolder === f.id}
-                isDropTarget={dropFolderId === f.id || fileOverFolder === f.id}
-                hidden={f.hidden}
-                onClick={() => setActiveFolder(f.id)}
-                label={f.name}
-                count={f.photoCount}
-                onRename={() => renameFolder(f)}
-                onToggleHidden={() => toggleFolderHidden(f)}
-                onDelete={
-                  folders.length > 1 ? () => deleteFolder(f) : undefined
-                }
-                onFileEnter={() => setFileOverFolder(f.id)}
-                onFileLeave={() =>
-                  setFileOverFolder((c) => (c === f.id ? null : c))
-                }
-                onFileDrop={(fl) => {
-                  setFileOverFolder(null);
-                  handleFiles(fl, f.id);
-                }}
-                draggingFolder={draggingFolderId === f.id}
-                reorderable={folders.length > 1}
-                onReorderStart={(e) => beginFolderDrag(f.id, e)}
-              />
-            ))}
           </div>
         </aside>
 

@@ -146,14 +146,17 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       ? query.folderIds.split(',').map((s) => s.trim()).filter(Boolean)
       : [];
     const wantFavorites = query.favorites === '1';
-    // 'multi' = the download-picker union (any of N sets + optionally favorites).
-    const scope = selectedIds
-      ? 'selected'
-      : folderIdList.length > 0 || wantFavorites
+    // 'multi' = the download-picker union (any of N sets + favorites + list
+    // files passed as ids). Pure ids (no sets/favorites) stays the 'selected'
+    // single-scope path used by the selection bar.
+    const scope =
+      folderIdList.length > 0 || wantFavorites
         ? 'multi'
-        : query.folderId
-          ? 'folder'
-          : (query.scope ?? 'all');
+        : selectedIds
+          ? 'selected'
+          : query.folderId
+            ? 'folder'
+            : (query.scope ?? 'all');
 
     const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
     if (!gallery) { set.status = 404; return { error: 'not_found' }; }
@@ -189,7 +192,7 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
       });
       const favIds = new Set(favs.map((f) => f.fileId));
       fileRows = fileRows.filter((f) => favIds.has(f.id));
-    } else if (selectedIds) {
+    } else if (scope === 'selected' && selectedIds) {
       fileRows = fileRows.filter((f) => selectedIds.has(f.id));
     } else if (scope === 'multi') {
       // Union of the requested sets (non-admins can't reach hidden ones) and,
@@ -213,7 +216,10 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
         favIds = new Set(favs.map((f) => f.fileId));
       }
       fileRows = fileRows.filter(
-        (f) => (f.folderId && okFolders.has(f.folderId)) || favIds.has(f.id),
+        (f) =>
+          (f.folderId && okFolders.has(f.folderId)) ||
+          favIds.has(f.id) ||
+          (selectedIds?.has(f.id) ?? false),
       );
     } else if (query.folderId) {
       fileRows = fileRows.filter((f) => f.folderId === query.folderId);

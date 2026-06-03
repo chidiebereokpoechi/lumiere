@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ClientList } from "@/lib/api/lists";
-import { Check } from "@/components/ui/icons";
-import { Modal } from "@/components/ui/modal";
+import { Bookmark, Check, Plus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/ui/text-input";
 
-// Toggle file(s) in/out of lists, or create a new list and add them.
+// Bottom sheet to add file(s) to lists — Instagram-bookmarks / Spotify-playlist
+// style: a "New list" row on top, then the lists with a tick when the target is
+// already in them. Toggling is immediate; tapping the backdrop / Escape closes.
 export function ListPickerModal({
   fileIds,
   lists,
@@ -21,80 +22,129 @@ export function ListPickerModal({
   onToggle: (listId: string, member: boolean) => void;
   onCreate: (name: string) => Promise<void>;
 }) {
+  const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // A list "contains" the target when every targeted file is in it.
   const contains = (l: ClientList) =>
     fileIds.every((id) => l.fileIds.includes(id));
 
+  async function submitNew(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || pending) return;
+    setPending(true);
+    try {
+      await onCreate(name.trim());
+      setName("");
+      setCreating(false);
+      onClose();
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
-    <Modal onClose={onClose} labelledBy="list-picker-title">
-      <h2
-        id="list-picker-title"
-        className="text-lg font-extrabold tracking-tight text-ink-strong"
+    <div
+      className="fixed inset-0 z-60 bg-black/40 flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="list-picker-title"
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:w-[min(92vw,24rem)] max-h-[80svh] flex flex-col bg-surface border-t sm:border border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)]"
       >
-        Add to list
-      </h2>
-      <p className="mt-1 text-sm text-ink-muted">
-        {fileIds.length === 1 ? "1 item" : `${fileIds.length} items`}
-      </p>
-      <ul className="mt-4 space-y-1 max-h-64 overflow-y-auto">
-        {lists.length === 0 && (
-          <li className="text-sm text-ink-subtle py-2">
-            No lists yet — create one below.
-          </li>
-        )}
-        {lists.map((l) => {
-          const member = contains(l);
-          return (
-            <li key={l.id}>
-              <button
-                type="button"
-                onClick={() => onToggle(l.id, !member)}
-                className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-surface-2"
+        <div className="px-4 pt-3 pb-2">
+          <p
+            id="list-picker-title"
+            className="text-sm font-extrabold tracking-wider text-ink-strong"
+          >
+            Add to list
+          </p>
+          <p className="text-xs text-ink-subtle">
+            {fileIds.length === 1 ? "1 item" : `${fileIds.length} items`}
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          {/* New list */}
+          {creating ? (
+            <form
+              onSubmit={submitNew}
+              className="flex items-center gap-2 px-3 py-2"
+            >
+              <TextInput
+                value={name}
+                onChange={setName}
+                autoFocus
+                placeholder="New list name…"
+                className="flex-1 px-3 py-2"
+              />
+              <Button
+                type="submit"
+                disabled={!name.trim() || pending}
+                className="tracking-wider"
               >
-                <span
-                  className={`h-5 w-5 inline-flex items-center justify-center rounded border-2 ${member ? "bg-accent border-accent text-white" : "border-border"}`}
-                >
-                  {member && <Check size={24} />}
+                {pending ? "…" : "Create"}
+              </Button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold text-ink-strong hover:bg-surface-2"
+            >
+              <span className="h-9 w-9 inline-flex items-center justify-center bg-surface-2 text-ink-muted">
+                <Plus size={20} />
+              </span>
+              New list
+            </button>
+          )}
+
+          {lists.map((l) => {
+            const member = contains(l);
+            return (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => {
+                  onToggle(l.id, !member);
+                  onClose();
+                }}
+                aria-pressed={member}
+                className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left hover:bg-surface-2"
+              >
+                <span className="h-9 w-9 shrink-0 inline-flex items-center justify-center bg-surface-2 text-ink-muted">
+                  <Bookmark size={20} />
                 </span>
-                <span className="flex-1 text-sm text-ink-strong">{l.name}</span>
-                <span className="text-xs text-ink-subtle tabular-nums">
-                  {l.fileIds.length}
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold text-ink-strong truncate">
+                    {l.name}
+                  </span>
+                  <span className="block text-xs text-ink-subtle tabular-nums">
+                    {l.fileIds.length} item{l.fileIds.length === 1 ? "" : "s"}
+                  </span>
+                </span>
+                <span
+                  className={`h-6 w-6 shrink-0 inline-flex items-center justify-center border-2 ${member ? "bg-accent border-accent text-white" : "border-border text-transparent"}`}
+                >
+                  <Check size={16} />
                 </span>
               </button>
-            </li>
-          );
-        })}
-      </ul>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (name.trim()) {
-            await onCreate(name.trim());
-            setName("");
-          }
-        }}
-        className="mt-4 flex items-center gap-2 border-t border-border pt-4"
-      >
-        <TextInput
-          value={name}
-          onChange={setName}
-          placeholder="New list name…"
-          className="flex-1 px-3 py-2"
-        />
-        <Button type="submit" disabled={!name.trim()} className="tracking-wider">
-          Create
-        </Button>
-      </form>
-      <div className="mt-4 flex justify-end">
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
-        >
-          Done
-        </button>
+            );
+          })}
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 }

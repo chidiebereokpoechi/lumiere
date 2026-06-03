@@ -44,7 +44,7 @@ export function GalleryCover({
         transform: `translateY(${ty}%)`,
         transition: dragging
           ? "none"
-          : "transform 500ms cubic-bezier(0.22,1,0.36,1)",
+          : "transform 850ms cubic-bezier(0.22,1,0.36,1)",
       }}
       className={`fixed inset-0 z-50 w-full overflow-hidden ${progress === 0 ? "pointer-events-none" : ""}`}
     >
