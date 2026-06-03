@@ -56,7 +56,7 @@ export default async function ClientGalleryPage({ params }: Props) {
         body: "Reach out to the creator if you need access.",
       },
       draft: {
-        heading: "This gallery isn’t published yet",
+        heading: "This gallery isn't published yet",
         body: "Check back soon, or reach out to the creator.",
       },
     }[access.state];

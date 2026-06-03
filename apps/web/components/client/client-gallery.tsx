@@ -127,6 +127,8 @@ export function ClientGallery({
   }, []);
   // Comments live behind a toggle in the lightbox to keep it uncluttered.
   const [showComments, setShowComments] = useState(false);
+  // Whether the open lightbox media is actively playing — gates swipe nav.
+  const [mediaPlaying, setMediaPlaying] = useState(false);
 
   // The current view — a folder, favorites, or a list — selected from one row.
   // Mutually exclusive: picking any one clears the others. The view is mirrored
@@ -521,9 +523,11 @@ export function ClientGallery({
   const close = useCallback(() => {
     setOpenId(null);
     setShowComments(false);
+    setMediaPlaying(false);
   }, []);
   const step = useCallback(
     (dir: number) => {
+      setMediaPlaying(false);
       setOpenId((cur) => {
         if (cur === null || files.length === 0) return cur;
         const i = files.findIndex((f) => f.id === cur);
@@ -1040,17 +1044,10 @@ export function ClientGallery({
           <div
             className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12 touch-pan-y"
             onClick={close}
-            // Swipe only for stills/files — video & audio own their gestures.
-            onTouchStart={
-              open.type === "image" || open.type === "file"
-                ? onTouchStart
-                : undefined
-            }
-            onTouchEnd={
-              open.type === "image" || open.type === "file"
-                ? onTouchEnd
-                : undefined
-            }
+            // Swipe is allowed unless the open media is actively playing (so a
+            // playing video/audio keeps its own gestures); paused media swipes.
+            onTouchStart={mediaPlaying ? undefined : onTouchStart}
+            onTouchEnd={mediaPlaying ? undefined : onTouchEnd}
           >
             <div
               className="max-h-full max-w-full flex items-center justify-center"
@@ -1068,7 +1065,9 @@ export function ClientGallery({
                 <video
                   src={open.streamUrl ?? ""}
                   controls
-                  autoPlay
+                  onPlay={() => setMediaPlaying(true)}
+                  onPause={() => setMediaPlaying(false)}
+                  onEnded={() => setMediaPlaying(false)}
                   className="max-h-[78svh] max-w-full"
                 />
               ) : open.type === "audio" ? (
@@ -1077,6 +1076,7 @@ export function ClientGallery({
                   src={open.streamUrl ?? ""}
                   title={open.filename}
                   subtitle={formatBytes(open.fileSize)}
+                  onPlayingChange={setMediaPlaying}
                 />
               ) : (
                 <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
@@ -1176,10 +1176,12 @@ function AudioPlayer({
   src,
   title,
   subtitle,
+  onPlayingChange,
 }: {
   src: string;
   title: string;
   subtitle: string;
+  onPlayingChange?: (playing: boolean) => void;
 }) {
   const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -1277,12 +1279,11 @@ function AudioPlayer({
       <audio
         ref={ref}
         src={src}
-        autoPlay
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
+        onPlay={() => { setPlaying(true); onPlayingChange?.(true); }}
+        onPause={() => { setPlaying(false); onPlayingChange?.(false); }}
         onTimeUpdate={() => setCur(ref.current?.currentTime ?? 0)}
         onLoadedMetadata={() => setDur(ref.current?.duration ?? 0)}
-        onEnded={() => setPlaying(false)}
+        onEnded={() => { setPlaying(false); onPlayingChange?.(false); }}
         className="hidden"
       />
     </div>

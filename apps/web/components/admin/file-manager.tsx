@@ -1362,17 +1362,11 @@ function AdminPreview({
             <video
               src={streamUrl}
               controls
-              autoPlay
               className="max-h-[80svh] max-w-full"
             />
           ) : file.type === "audio" ? (
             // eslint-disable-next-line jsx-a11y/media-has-caption
-            <audio
-              src={streamUrl}
-              controls
-              autoPlay
-              className="w-[min(90vw,32rem)]"
-            />
+            <audio src={streamUrl} controls className="w-[min(90vw,32rem)]" />
           ) : (
             <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
               <TypeIcon type={file.type} />
