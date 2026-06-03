@@ -13,8 +13,21 @@ import type { ClientList } from "@/lib/api/lists";
 import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog } from "@/components/ui/dialog";
 import {
-  Heart, Bookmark, Check, Download, Play, Pause, SkipBack, SkipForward,
-  Music, FileDoc, ImageIcon, Close, ChevronLeft, ChevronRight, Comment, Plus,
+  Heart,
+  Bookmark,
+  Check,
+  Download,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Music,
+  FileDoc,
+  ImageIcon,
+  Close,
+  ChevronLeft,
+  ChevronRight,
+  Comment,
 } from "@/components/ui/icons";
 
 interface Props {
@@ -647,7 +660,7 @@ export function ClientGallery({
             />
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white">
-                <Play size={22} />
+                <Play size={24} />
               </span>
             </span>
           </span>
@@ -656,9 +669,9 @@ export function ClientGallery({
             className={`flex w-full flex-col items-center justify-center gap-2 p-3 text-center ${fill ? "h-full" : "aspect-square"}`}
           >
             {f.type === "audio" ? (
-              <Music size={30} className="text-ink-muted" />
+              <Music size={24} className="text-ink-muted" />
             ) : (
-              <FileDoc size={30} className="text-ink-muted" />
+              <FileDoc size={24} className="text-ink-muted" />
             )}
             <span className="text-xs font-semibold text-ink-strong truncate max-w-full">
               {f.filename}
@@ -696,7 +709,7 @@ export function ClientGallery({
               : `border-white text-transparent ${actionVis}`
           }`}
         >
-          <Check size={16} />
+          <Check size={24} />
         </button>
       )}
       {canFavorite && !selecting && (
@@ -787,19 +800,12 @@ export function ClientGallery({
             <div className="flex items-center gap-5 shrink-0">
               <button
                 type="button"
-                onClick={allSelected ? clearSelection : selectAll}
-                className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong"
-              >
-                {allSelected ? "Clear" : "Select all"}
-              </button>
-              <button
-                type="button"
                 onClick={downloadView}
                 aria-label="Download"
                 title="Download these"
                 className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
               >
-                <Download size={22} />
+                <Download size={24} />
               </button>
             </div>
           )}
@@ -913,11 +919,11 @@ export function ClientGallery({
       {/* Selection action bar — wraps + respects the iOS home-indicator inset */}
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface px-4 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-ink-strong tabular-nums">
-              {selected.size} selected
-            </span>
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center justify-between gap-2 flex-wrap flex-col">
+            <div className="flex justify-between items-center gap-4">
+              <span className="text-sm font-semibold text-ink-strong tabular-nums">
+                {selected.size} selected
+              </span>
               <button
                 type="button"
                 onClick={clearSelection}
@@ -925,13 +931,14 @@ export function ClientGallery({
               >
                 Clear
               </button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => openPicker([...selected])}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
               >
-                <Bookmark size={15} />
-                List
+                <Bookmark size={24} />
               </button>
               {/* Save photos straight to the camera roll on touch devices */}
               {canDownload && coarse && selectedImages.length > 0 && (
@@ -939,22 +946,19 @@ export function ClientGallery({
                   type="button"
                   onClick={saveToPhotos}
                   disabled={savingPhotos}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
                 >
-                  <ImageIcon size={15} />
-                  {savingPhotos
-                    ? "Preparing…"
-                    : `Save ${selectedImages.length} to Photos`}
+                  <ImageIcon size={24} />
+                  {savingPhotos ? "Preparing…" : `Save to photos`}
                 </button>
               )}
               {canDownload && (
                 <button
                   type="button"
                   onClick={downloadSelected}
-                  className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
                 >
-                  <Download size={15} />
-                  Download {selected.size}
+                  <Download size={24} />
                 </button>
               )}
             </div>
@@ -988,7 +992,7 @@ export function ClientGallery({
                   }
                   className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${favorites.has(open.id) ? "text-accent-dark" : "text-ink-muted"}`}
                 >
-                  <Heart size={20} />
+                  <Heart size={24} />
                 </button>
               )}
               <button
@@ -997,7 +1001,7 @@ export function ClientGallery({
                 aria-label="Add to list"
                 className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
               >
-                <Bookmark size={19} />
+                <Bookmark size={24} />
               </button>
               {gallery.allowComments && (
                 <button
@@ -1006,7 +1010,7 @@ export function ClientGallery({
                   aria-label="Comments"
                   className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${showComments ? "text-ink-strong" : "text-ink-muted"}`}
                 >
-                  <Comment size={20} />
+                  <Comment size={24} />
                 </button>
               )}
               {canDownload && coarse && open.type === "image" && (
@@ -1017,7 +1021,7 @@ export function ClientGallery({
                   aria-label="Save to Photos"
                   className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong disabled:opacity-60"
                 >
-                  <ImageIcon size={20} />
+                  <ImageIcon size={24} />
                 </button>
               )}
               {canDownload && (
@@ -1026,7 +1030,7 @@ export function ClientGallery({
                   aria-label="Download"
                   className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
                 >
-                  <Download size={20} />
+                  <Download size={24} />
                 </a>
               )}
             </div>
@@ -1076,7 +1080,7 @@ export function ClientGallery({
                 />
               ) : (
                 <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
-                  <FileDoc size={40} className="mx-auto text-ink-muted" />
+                  <FileDoc size={24} className="mx-auto text-ink-muted" />
                   <p className="mt-3 text-sm font-semibold text-ink-strong truncate">
                     {open.filename}
                   </p>
@@ -1097,7 +1101,7 @@ export function ClientGallery({
                   aria-label="Previous"
                   className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
                 >
-                  <ChevronLeft size={28} />
+                  <ChevronLeft size={24} />
                 </button>
                 <button
                   type="button"
@@ -1108,7 +1112,7 @@ export function ClientGallery({
                   aria-label="Next"
                   className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
                 >
-                  <ChevronRight size={28} />
+                  <ChevronRight size={24} />
                 </button>
               </>
             )}
@@ -1211,7 +1215,7 @@ function AudioPlayer({
   return (
     <div className="w-[min(92vw,24rem)] rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
       <div className="aspect-square w-full rounded-xl overflow-hidden bg-linear-to-br from-accent/40 via-surface-sunken to-surface-strong flex items-center justify-center">
-        <Music size={72} className="text-ink-inverse/80" />
+        <Music size={24} className="text-ink-inverse/80" />
       </div>
 
       <div className="mt-4 text-center">
@@ -1241,11 +1245,11 @@ function AudioPlayer({
       <div className="mt-3 flex items-center justify-center gap-7">
         <button
           type="button"
-          onClick={() => nudge(-15)}
-          aria-label="Back 15 seconds"
+          onClick={() => nudge(-24)}
+          aria-label="Back 24 seconds"
           className="text-ink-muted hover:text-ink-strong"
         >
-          <SkipBack size={26} />
+          <SkipBack size={24} />
         </button>
         <button
           type="button"
@@ -1253,15 +1257,19 @@ function AudioPlayer({
           aria-label={playing ? "Pause" : "Play"}
           className="h-16 w-16 inline-flex items-center justify-center rounded-full bg-ink-strong text-ink-inverse hover:opacity-90 transition-opacity"
         >
-          {playing ? <Pause size={26} /> : <Play size={28} className="ml-0.5" />}
+          {playing ? (
+            <Pause size={24} />
+          ) : (
+            <Play size={24} className="ml-0.5" />
+          )}
         </button>
         <button
           type="button"
-          onClick={() => nudge(15)}
-          aria-label="Forward 15 seconds"
+          onClick={() => nudge(24)}
+          aria-label="Forward 24 seconds"
           className="text-ink-muted hover:text-ink-strong"
         >
-          <SkipForward size={26} />
+          <SkipForward size={24} />
         </button>
       </div>
 
@@ -1323,7 +1331,7 @@ function Tab({
           aria-label="Delete list"
           className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
         >
-          <Close size={14} />
+          <Close size={24} />
         </button>
       )}
     </span>
@@ -1463,7 +1471,7 @@ function ListPickerModal({
                   <span
                     className={`h-5 w-5 inline-flex items-center justify-center rounded border-2 ${member ? "bg-accent border-accent text-accent-ink" : "border-border"}`}
                   >
-                    {member && <Check size={13} />}
+                    {member && <Check size={24} />}
                   </span>
                   <span className="flex-1 text-sm text-ink-strong">
                     {l.name}
