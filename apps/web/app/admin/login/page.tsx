@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { LoginInput } from '@lumiere/types';
-import { apiClient, ApiError } from '@/lib/api-client';
-import { Field, TextInput, Button, FormError } from '@/components/admin/form';
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { LoginInput } from "@lumiere/types";
+import { apiClient, ApiError } from "@/lib/api-client";
+import { Field, TextInput, Button, FormError } from "@/components/admin/form";
 
 export default function LoginPage() {
   return (
@@ -17,10 +17,10 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const from = params.get('from') ?? '/admin';
+  const from = params.get("from") ?? "/admin";
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -29,25 +29,26 @@ function LoginForm() {
     setError(null);
     const parsed = LoginInput.safeParse({ email, password });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Invalid input');
+      setError(parsed.error.issues[0]?.message ?? "Invalid input");
       return;
     }
     setPending(true);
     try {
-      await apiClient('/api/auth/login', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
+      await apiClient("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify(parsed.data),
       });
       router.push(from);
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 401) setError('Email or password incorrect.');
-        else if (err.status === 429) setError('Too many attempts. Try again in a few minutes.');
-        else setError('Sign-in failed. Try again.');
+        if (err.status === 401) setError("Email or password incorrect.");
+        else if (err.status === 429)
+          setError("Too many attempts. Try again in a few minutes.");
+        else setError("Sign-in failed. Try again.");
       } else {
-        setError('Network error. Try again.');
+        setError("Network error. Try again.");
       }
       setPending(false);
     }
@@ -60,7 +61,7 @@ function LoginForm() {
 
   // Some browsers/managers swallow implicit submit; submit explicitly on Enter.
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       void submit();
     }
@@ -69,7 +70,7 @@ function LoginForm() {
   return (
     <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
       <div className="w-full max-w-md">
-        <p className="text-center text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
+        <p className="text-center text-xs font-bold tracking-[0.28em] text-ink-muted">
           Lumière
         </p>
 
@@ -111,7 +112,7 @@ function LoginForm() {
 
             <div className="pt-1">
               <Button type="submit" disabled={pending}>
-                {pending ? 'Signing in…' : 'Continue →'}
+                {pending ? "Signing in…" : "Continue →"}
               </Button>
             </div>
           </form>

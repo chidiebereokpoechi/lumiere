@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import type React from 'react';
+import type React from "react";
 
 // Spenny-language form primitives — slate surfaces, 2px borders, focus ring.
 // Typography is regular-sized (text-sm body, text-xs eyebrow labels),
@@ -18,7 +18,7 @@ export function Field({ id, label, hint, required, children }: FieldProps) {
     <div>
       <label
         htmlFor={id}
-        className="flex items-baseline justify-between gap-3 text-xs font-bold text-ink-muted mb-2 uppercase tracking-wider"
+        className="flex items-baseline justify-between gap-3 text-xs font-bold text-ink-muted mb-2 tracking-wider"
       >
         <span>
           {label}
@@ -38,7 +38,7 @@ export function Field({ id, label, hint, required, children }: FieldProps) {
 interface TextInputProps {
   id: string;
   name?: string;
-  type?: 'text' | 'email' | 'password' | 'url' | 'date';
+  type?: "text" | "email" | "password" | "url" | "date";
   required?: boolean;
   placeholder?: string;
   autoComplete?: string;
@@ -48,7 +48,16 @@ interface TextInputProps {
   onBlur?: () => void;
 }
 export function TextInput({
-  id, name, type = 'text', required, placeholder, autoComplete, value, onChange, onKeyDown, onBlur,
+  id,
+  name,
+  type = "text",
+  required,
+  placeholder,
+  autoComplete,
+  value,
+  onChange,
+  onKeyDown,
+  onBlur,
 }: TextInputProps) {
   return (
     <input
@@ -77,7 +86,13 @@ interface TextareaProps {
   onBlur?: () => void;
 }
 export function Textarea({
-  id, name, rows = 3, placeholder, value, onChange, onBlur,
+  id,
+  name,
+  rows = 3,
+  placeholder,
+  value,
+  onChange,
+  onBlur,
 }: TextareaProps) {
   return (
     <textarea
@@ -94,24 +109,27 @@ export function Textarea({
 }
 
 interface ButtonProps {
-  type?: 'button' | 'submit';
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  type?: "button" | "submit";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
   disabled?: boolean;
   onClick?: () => void;
   children: React.ReactNode;
 }
 export function Button({
-  type = 'button', variant = 'primary', disabled, onClick, children,
+  type = "button",
+  variant = "primary",
+  disabled,
+  onClick,
+  children,
 }: ButtonProps) {
   const cls = {
     primary:
-      'bg-accent text-accent-ink border-accent hover:bg-accent-dark hover:border-accent-dark hover:text-white',
+      "bg-accent text-accent-ink border-accent hover:bg-accent-dark hover:border-accent-dark hover:text-white",
     secondary:
-      'bg-surface text-ink-strong border-border hover:bg-surface-2 hover:border-border-strong',
+      "bg-surface text-ink-strong border-border hover:bg-surface-2 hover:border-border-strong",
     ghost:
-      'bg-transparent text-ink-muted border-transparent hover:bg-surface-2 hover:text-ink-strong',
-    danger:
-      'bg-negative text-white border-negative hover:opacity-90',
+      "bg-transparent text-ink-muted border-transparent hover:bg-surface-2 hover:text-ink-strong",
+    danger: "bg-negative text-white border-negative hover:opacity-90",
   }[variant];
   return (
     <button
@@ -126,7 +144,7 @@ export function Button({
 }
 
 // Re-export the custom listbox (no native <select>) under the form API.
-export { Select } from '@/components/ui/select';
+export { Select } from "@/components/ui/select";
 
 interface ToggleProps {
   id: string;
@@ -135,14 +153,22 @@ interface ToggleProps {
   label: string;
   description?: string;
 }
-export function Toggle({ id, checked, onChange, label, description }: ToggleProps) {
+export function Toggle({
+  id,
+  checked,
+  onChange,
+  label,
+  description,
+}: ToggleProps) {
   return (
     <label
       htmlFor={id}
       className="flex items-start justify-between gap-4 py-2 cursor-pointer"
     >
       <div className="flex-1">
-        <span className="block text-sm font-semibold text-ink-strong">{label}</span>
+        <span className="block text-sm font-semibold text-ink-strong">
+          {label}
+        </span>
         {description && (
           <span className="block mt-1 text-xs text-ink-muted leading-relaxed">
             {description}
@@ -156,12 +182,12 @@ export function Toggle({ id, checked, onChange, label, description }: ToggleProp
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ease-out ${
-          checked ? 'bg-accent' : 'bg-surface-sunken'
+          checked ? "bg-accent" : "bg-surface-sunken"
         }`}
       >
         <span
           className={`block h-5 w-7 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.1)] transition-transform duration-200 ease-out ${
-            checked ? 'translate-x-4' : 'translate-x-0'
+            checked ? "translate-x-4" : "translate-x-0"
           }`}
         />
       </button>

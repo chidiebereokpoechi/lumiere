@@ -914,9 +914,9 @@ export function FileManager({
       {/* Two-column: sets sidebar + media grid */}
       <div className="flex gap-6 items-start">
         {/* Sets sidebar */}
-        <aside className="w-60 shrink-0 bg-red-500 p-3">
+        <aside className="w-60 h-full shrink-0 border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-ink-subtle">
+            <span className="text-xs font-bold tracking-wider text-ink-subtle">
               Sets
             </span>
             <button
@@ -1015,14 +1015,14 @@ export function FileManager({
         {/* Media column */}
         <div className="flex-1 min-w-0 space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-lg font-extrabold uppercase tracking-wider text-ink-strong truncate">
+            <h2 className="text-lg font-extrabold tracking-wider text-ink-strong truncate">
               {folders.find((f) => f.id === activeFolder)?.name ?? "Media"}
             </h2>
             <span className="text-sm text-ink-subtle tabular-nums">
               {order.length}
             </span>
             <div className="ml-auto flex items-center gap-1.5">
-              <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider text-ink-subtle">
+              <span className="hidden sm:inline text-xs font-bold tracking-wider text-ink-subtle">
                 Sort
               </span>
               <Select
@@ -1042,7 +1042,7 @@ export function FileManager({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
             >
               <svg
                 width="14"
@@ -1125,7 +1125,7 @@ export function FileManager({
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <p className="text-base font-bold uppercase tracking-wider">
+                <p className="text-base font-bold tracking-wider">
                   Drop into this folder
                 </p>
               </div>
@@ -1252,7 +1252,7 @@ export function FileManager({
             <button
               type="button"
               onClick={() => setSelected(new Set())}
-              className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+              className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
             >
               Clear
             </button>
@@ -1619,7 +1619,7 @@ function FileTile({
         )}
 
         {!dragging && isCover && (
-          <span className="absolute bottom-2 left-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">
+          <span className="absolute bottom-2 left-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold tracking-widest">
             Cover
           </span>
         )}
@@ -1759,7 +1759,7 @@ function TileMenu({
           {otherFolders.length > 0 && (
             <>
               <div className="my-1 mx-1 h-px bg-border" />
-              <p className="px-2.5 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-ink-subtle">
+              <p className="px-2.5 pt-1 pb-0.5 text-[10px] font-bold tracking-wider text-ink-subtle">
                 Move to
               </p>
               {otherFolders.map((f) => (
@@ -1893,9 +1893,9 @@ function FolderRow({
         }
       }}
       title={hidden ? "Hidden from clients" : undefined}
-      className={`group/row flex items-center gap-1 rounded-md border px-2.5 py-2 transition-colors ${
+      className={`group/row flex items-center gap-1 rounded-md border px-4 py-4 transition-colors ${
         isDropTarget
-          ? "bg-accent text-accent-ink border-accent ring-2 ring-accent/40"
+          ? "bg-accent text-ink-inverse border-accent ring-2 ring-accent/40"
           : active
             ? "bg-surface-strong text-ink-inverse border-surface-strong"
             : "bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong"
@@ -2075,7 +2075,7 @@ function Spinner() {
 
 function Badge({ children }: { children: React.ReactNode }) {
   return (
-    <span className="absolute top-2 left-1/2 -translate-x-1/2 rounded bg-surface-strong text-ink-inverse px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest">
+    <span className="absolute top-2 left-1/2 -translate-x-1/2 rounded bg-surface-strong text-ink-inverse px-1.5 py-0.5 text-[9px] font-extrabold tracking-widest">
       {children}
     </span>
   );

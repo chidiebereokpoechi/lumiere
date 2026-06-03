@@ -611,7 +611,10 @@ export function ClientGallery({
     <>
       <button
         type="button"
-        onClick={() => { if (selecting) toggleSelect(f.id, false); else setOpenId(f.id); }}
+        onClick={() => {
+          if (selecting) toggleSelect(f.id, false);
+          else setOpenId(f.id);
+        }}
         className={`block w-full text-left focus-visible:outline-none ${fill ? "h-full" : ""}`}
       >
         {f.type === "image" ? (
@@ -620,11 +623,17 @@ export function ClientGallery({
             src={f.thumbUrl ?? ""}
             alt=""
             loading="lazy"
-            style={!fill && f.width && f.height ? { aspectRatio: `${f.width} / ${f.height}` } : undefined}
+            style={
+              !fill && f.width && f.height
+                ? { aspectRatio: `${f.width} / ${f.height}` }
+                : undefined
+            }
             className={`block w-full object-cover transition-[filter] duration-300 ${fill ? "h-full" : "h-auto"} ${isSelected ? "brightness-90" : ""}`}
           />
         ) : f.type === "video" ? (
-          <span className={`relative block w-full bg-black ${fill ? "h-full" : ""}`}>
+          <span
+            className={`relative block w-full bg-black ${fill ? "h-full" : ""}`}
+          >
             <video
               src={`${f.streamUrl ?? ""}#t=0.1`}
               preload="metadata"
@@ -634,40 +643,101 @@ export function ClientGallery({
             />
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
               </span>
             </span>
           </span>
         ) : (
-          <span className={`flex w-full flex-col items-center justify-center gap-2 p-3 text-center ${fill ? "h-full" : "aspect-square"}`}>
+          <span
+            className={`flex w-full flex-col items-center justify-center gap-2 p-3 text-center ${fill ? "h-full" : "aspect-square"}`}
+          >
             {f.type === "audio" ? (
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+              <svg
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-ink-muted"
+              >
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
             ) : (
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
+              <svg
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-ink-muted"
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
             )}
-            <span className="text-xs font-semibold text-ink-strong truncate max-w-full">{f.filename}</span>
-            <span className="text-[11px] text-ink-subtle">{formatBytes(f.fileSize)}</span>
+            <span className="text-xs font-semibold text-ink-strong truncate max-w-full">
+              {f.filename}
+            </span>
+            <span className="text-[11px] text-ink-subtle">
+              {formatBytes(f.fileSize)}
+            </span>
           </span>
         )}
       </button>
 
       {(canDownload || canFavorite) && (
-        <div className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected ? "opacity-100" : actionVis}`} />
+        <div
+          className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected ? "opacity-100" : actionVis}`}
+        />
       )}
 
       {canDownload && (
         <button
           type="button"
           onPointerDown={(e) => beginDragSelect(f.id, e)}
-          onClick={(e) => { if (suppressClickRef.current) { suppressClickRef.current = false; return; } toggleSelect(f.id, e.shiftKey); }}
+          onClick={(e) => {
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
+            toggleSelect(f.id, e.shiftKey);
+          }}
           aria-pressed={isSelected}
           aria-label={isSelected ? "Deselect" : "Select"}
           style={{ touchAction: "none" }}
           className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
-            isSelected ? "bg-accent border-accent text-accent-ink opacity-100" : `border-white text-transparent ${actionVis}`
+            isSelected
+              ? "bg-accent border-accent text-accent-ink opacity-100"
+              : `border-white text-transparent ${actionVis}`
           }`}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </button>
       )}
       {canFavorite && !selecting && (
@@ -677,13 +747,28 @@ export function ClientGallery({
           aria-pressed={favorites.has(f.id)}
           aria-label={favorites.has(f.id) ? "Remove favorite" : "Add favorite"}
           className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all ${
-            favorites.has(f.id) ? "text-white opacity-100 drop-shadow" : `text-white/90 drop-shadow ${actionVis}`
+            favorites.has(f.id)
+              ? "text-white opacity-100 drop-shadow"
+              : `text-white/90 drop-shadow ${actionVis}`
           }`}
         >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill={favorites.has(f.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill={favorites.has(f.id) ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" />
+          </svg>
         </button>
       )}
-      {isSelected && <div className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-accent" />}
+      {isSelected && (
+        <div className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-accent" />
+      )}
     </>
   );
 
@@ -708,11 +793,11 @@ export function ClientGallery({
           className={`relative h-full flex flex-col items-center justify-center text-center px-6 ${gallery.coverFileId ? "text-white" : "text-ink-strong"}`}
         >
           {eventLine && (
-            <p className="text-xs font-bold uppercase tracking-[0.32em] opacity-90">
+            <p className="text-xs font-bold tracking-[0.32em] opacity-90">
               {eventLine}
             </p>
           )}
-          <h1 className="mt-4 text-5xl sm:text-6xl font-extrabold uppercase tracking-tight">
+          <h1 className="mt-4 text-5xl sm:text-6xl font-extrabold tracking-tight">
             {gallery.title}
           </h1>
           {gallery.subtitle && (
@@ -723,7 +808,7 @@ export function ClientGallery({
           <button
             type="button"
             onClick={() => scrollToGrid()}
-            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold uppercase tracking-[0.25em] transition-colors ${
+            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold tracking-[0.25em] transition-colors ${
               gallery.coverFileId
                 ? "border-white/70 text-white hover:bg-white hover:text-black"
                 : "border-border text-ink-strong hover:bg-surface-strong hover:text-ink-inverse hover:border-surface-strong"
@@ -741,7 +826,7 @@ export function ClientGallery({
       >
         <div className="px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-lg font-extrabold uppercase tracking-wider text-ink-strong">
+            <p className="truncate text-lg font-extrabold tracking-wider text-ink-strong">
               {gallery.title}
             </p>
             {gallery.subtitle && (
@@ -755,7 +840,7 @@ export function ClientGallery({
               <button
                 type="button"
                 onClick={allSelected ? clearSelection : selectAll}
-                className="text-sm font-bold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+                className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong"
               >
                 {allSelected ? "Clear" : "Select all"}
               </button>
@@ -811,7 +896,14 @@ export function ClientGallery({
                 label={l.name}
                 count={l.fileIds.length}
                 onDelete={async () => {
-                  if (await confirmDialog({ title: 'Delete list', message: `Delete "${l.name}"?`, confirmLabel: 'Delete', danger: true }))
+                  if (
+                    await confirmDialog({
+                      title: "Delete list",
+                      message: `Delete "${l.name}"?`,
+                      confirmLabel: "Delete",
+                      danger: true,
+                    })
+                  )
                     deleteList(l.id);
                 }}
               />
@@ -846,7 +938,12 @@ export function ClientGallery({
                     key={f.id}
                     data-fid={f.id}
                     className="group absolute overflow-hidden bg-surface-sunken"
-                    style={{ top: box.top, left: box.left, width: box.width, height: box.height }}
+                    style={{
+                      top: box.top,
+                      left: box.left,
+                      width: box.width,
+                      height: box.height,
+                    }}
                   >
                     {tileInner(f, selected.has(f.id), true)}
                   </div>
@@ -889,14 +986,14 @@ export function ClientGallery({
               <button
                 type="button"
                 onClick={clearSelection}
-                className="px-2 py-2.5 text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+                className="px-2 py-2.5 text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={() => openPicker([...selected])}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:border-border-strong transition-colors"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
               >
                 <svg
                   width="15"
@@ -918,7 +1015,7 @@ export function ClientGallery({
                   type="button"
                   onClick={saveToPhotos}
                   disabled={savingPhotos}
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:border-border-strong transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors disabled:opacity-60"
                 >
                   <svg
                     width="15"
@@ -943,7 +1040,7 @@ export function ClientGallery({
                 <button
                   type="button"
                   onClick={downloadSelected}
-                  className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
                 >
                   <svg
                     width="15"
@@ -1113,8 +1210,16 @@ export function ClientGallery({
             className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12 touch-pan-y"
             onClick={close}
             // Swipe only for stills/files — video & audio own their gestures.
-            onTouchStart={open.type === "image" || open.type === "file" ? onTouchStart : undefined}
-            onTouchEnd={open.type === "image" || open.type === "file" ? onTouchEnd : undefined}
+            onTouchStart={
+              open.type === "image" || open.type === "file"
+                ? onTouchStart
+                : undefined
+            }
+            onTouchEnd={
+              open.type === "image" || open.type === "file"
+                ? onTouchEnd
+                : undefined
+            }
           >
             <div
               className="max-h-full max-w-full flex items-center justify-center"
@@ -1271,32 +1376,73 @@ export function ClientGallery({
 }
 
 // Music-player-style audio surface: artwork, title, scrubber, transport.
-function AudioPlayer({ src, title, subtitle }: { src: string; title: string; subtitle: string }) {
+function AudioPlayer({
+  src,
+  title,
+  subtitle,
+}: {
+  src: string;
+  title: string;
+  subtitle: string;
+}) {
   const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(0);
 
   const fmt = (s: number) => {
-    if (!Number.isFinite(s) || s < 0) return '0:00';
+    if (!Number.isFinite(s) || s < 0) return "0:00";
     const m = Math.floor(s / 60);
-    return `${m}:${Math.floor(s % 60).toString().padStart(2, '0')}`;
+    return `${m}:${Math.floor(s % 60)
+      .toString()
+      .padStart(2, "0")}`;
   };
-  const toggle = () => { const a = ref.current; if (!a) return; if (a.paused) void a.play(); else a.pause(); };
-  const seek = (v: number) => { const a = ref.current; if (a) { a.currentTime = v; setCur(v); } };
-  const nudge = (d: number) => { const a = ref.current; if (a) seek(Math.min(dur || a.duration || 0, Math.max(0, a.currentTime + d))); };
+  const toggle = () => {
+    const a = ref.current;
+    if (!a) return;
+    if (a.paused) void a.play();
+    else a.pause();
+  };
+  const seek = (v: number) => {
+    const a = ref.current;
+    if (a) {
+      a.currentTime = v;
+      setCur(v);
+    }
+  };
+  const nudge = (d: number) => {
+    const a = ref.current;
+    if (a)
+      seek(Math.min(dur || a.duration || 0, Math.max(0, a.currentTime + d)));
+  };
 
   return (
     <div className="w-[min(92vw,24rem)] rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
       <div className="aspect-square w-full rounded-xl overflow-hidden bg-linear-to-br from-accent/40 via-surface-sunken to-surface-strong flex items-center justify-center">
-        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ink-inverse/80">
-          <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+        <svg
+          width="72"
+          height="72"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-ink-inverse/80"
+        >
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
         </svg>
       </div>
 
       <div className="mt-4 text-center">
         <p className="text-base font-bold text-ink-strong truncate">{title}</p>
-        {subtitle && <p className="mt-0.5 text-xs text-ink-subtle tabular-nums">{subtitle}</p>}
+        {subtitle && (
+          <p className="mt-0.5 text-xs text-ink-subtle tabular-nums">
+            {subtitle}
+          </p>
+        )}
       </div>
 
       <input
@@ -1315,16 +1461,68 @@ function AudioPlayer({ src, title, subtitle }: { src: string; title: string; sub
       </div>
 
       <div className="mt-3 flex items-center justify-center gap-7">
-        <button type="button" onClick={() => nudge(-15)} aria-label="Back 15 seconds" className="text-ink-muted hover:text-ink-strong">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 19 2 12 11 5 11 19" /><polyline points="22 19 13 12 22 5 22 19" /></svg>
+        <button
+          type="button"
+          onClick={() => nudge(-15)}
+          aria-label="Back 15 seconds"
+          className="text-ink-muted hover:text-ink-strong"
+        >
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="11 19 2 12 11 5 11 19" />
+            <polyline points="22 19 13 12 22 5 22 19" />
+          </svg>
         </button>
-        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="h-16 w-16 inline-flex items-center justify-center rounded-full bg-ink-strong text-ink-inverse hover:opacity-90 transition-opacity">
-          {playing
-            ? <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-            : <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z" /></svg>}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={playing ? "Pause" : "Play"}
+          className="h-16 w-16 inline-flex items-center justify-center rounded-full bg-ink-strong text-ink-inverse hover:opacity-90 transition-opacity"
+        >
+          {playing ? (
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="5" width="4" height="14" rx="1" />
+              <rect x="14" y="5" width="4" height="14" rx="1" />
+            </svg>
+          ) : (
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="ml-0.5"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
         </button>
-        <button type="button" onClick={() => nudge(15)} aria-label="Forward 15 seconds" className="text-ink-muted hover:text-ink-strong">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 19 22 12 13 5 13 19" /><polyline points="2 19 11 12 2 5 2 19" /></svg>
+        <button
+          type="button"
+          onClick={() => nudge(15)}
+          aria-label="Forward 15 seconds"
+          className="text-ink-muted hover:text-ink-strong"
+        >
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="13 19 22 12 13 5 13 19" />
+            <polyline points="2 19 11 12 2 5 2 19" />
+          </svg>
         </button>
       </div>
 
@@ -1361,7 +1559,7 @@ function Tab({
 }) {
   return (
     <span
-      className={`group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border pl-4 ${onDelete ? "pr-2" : "pr-4"} py-2.5 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+      className={`group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border pl-4 ${onDelete ? "pr-2" : "pr-4"} py-2.5 text-sm font-bold tracking-wider whitespace-nowrap transition-colors ${
         active
           ? "bg-surface-strong text-ink-inverse border-surface-strong"
           : "bg-surface text-ink-muted border-border hover:bg-surface-2 hover:text-ink-strong hover:border-border-strong"
@@ -1468,14 +1666,14 @@ function EmailModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+            className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
           >
             {pending ? "Saving…" : "Continue"}
           </button>
@@ -1582,7 +1780,7 @@ function ListPickerModal({
           <button
             type="submit"
             disabled={!name.trim()}
-            className="rounded-md bg-accent border border-accent px-3 py-2 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="rounded-md bg-accent border border-accent px-3 py-2 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
           >
             Create
           </button>
@@ -1591,7 +1789,7 @@ function ListPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong"
+            className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
           >
             Done
           </button>
@@ -1659,7 +1857,7 @@ function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
 
   return (
     <div className="p-5">
-      <h3 className="text-xs font-extrabold tracking-[0.22em] uppercase text-ink-muted mb-3">
+      <h3 className="text-xs font-extrabold tracking-[0.22em] text-ink-muted mb-3">
         Comments
       </h3>
       {loading ? (
@@ -1717,7 +1915,7 @@ function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
           <button
             type="submit"
             disabled={pending || !body.trim()}
-            className="inline-flex items-center rounded-md bg-accent border border-accent px-3.5 py-2 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="inline-flex items-center rounded-md bg-accent border border-accent px-3.5 py-2 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
           >
             {pending ? "Posting…" : "Post"}
           </button>

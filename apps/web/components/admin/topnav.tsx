@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { apiClientMutation } from '@/lib/api-client';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { apiClientMutation } from "@/lib/api-client";
 
 interface TopnavProps {
   title: string;
@@ -19,18 +19,20 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
   async function signOut() {
     setSigningOut(true);
     try {
-      await apiClientMutation('/api/auth/logout', { method: 'POST' });
+      await apiClientMutation("/api/auth/logout", { method: "POST" });
     } catch {
       /* even if logout fails on the server, clear UI state */
     }
-    router.push('/admin/login');
+    router.push("/admin/login");
     router.refresh();
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-6 bg-bg/90 backdrop-blur border-b border-border">
+    <header className="sticky top-0 z-30 flex items-center justify-between p-4 bg-bg/90 backdrop-blur border-b border-border">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">{title}</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">
+          {title}
+        </h1>
         {subtitle && (
           <p className="mt-1.5 text-sm text-ink-muted">{subtitle}</p>
         )}
@@ -47,7 +49,9 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
             className="flex items-center gap-2.5 rounded-md bg-surface border border-border px-3 py-2 text-sm font-semibold text-ink-strong hover:bg-surface-2 transition-colors"
           >
             <Avatar name={user.name || user.email} />
-            <span className="hidden sm:inline">{user.name || user.email.split('@')[0]}</span>
+            <span className="hidden sm:inline">
+              {user.name || user.email.split("@")[0]}
+            </span>
           </button>
           {menuOpen && (
             <>
@@ -63,8 +67,12 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
                 className="absolute right-0 z-20 mt-2 w-56 rounded-md bg-surface border border-border p-2"
               >
                 <div className="px-3 py-2.5">
-                  <p className="text-sm font-semibold text-ink-strong truncate">{user.name}</p>
-                  <p className="text-xs text-ink-muted truncate mt-0.5">{user.email}</p>
+                  <p className="text-sm font-semibold text-ink-strong truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-ink-muted truncate mt-0.5">
+                    {user.email}
+                  </p>
                 </div>
                 <div className="my-1 mx-1 h-px bg-border" />
                 <button
@@ -73,7 +81,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
                   disabled={signingOut}
                   className="w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-ink-strong hover:bg-surface-2 disabled:opacity-50"
                 >
-                  {signingOut ? 'Signing out…' : 'Sign out'}
+                  {signingOut ? "Signing out…" : "Sign out"}
                 </button>
               </div>
             </>

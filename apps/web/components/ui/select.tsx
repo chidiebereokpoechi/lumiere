@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Check } from '@/components/ui/icons';
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -44,7 +45,7 @@ export function Select<T extends string>({
         className="flex w-full items-center justify-between gap-2 rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-left text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors"
       >
         <span className={current ? '' : 'text-ink-subtle'}>{current?.label ?? placeholder ?? 'Select…'}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 text-ink-subtle transition-transform ${open ? 'rotate-180' : ''}`}><polyline points="6 9 12 15 18 9" /></svg>
+        <ChevronDown className={`shrink-0 text-ink-subtle transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
       </button>
       {open && (
         <ul
@@ -65,9 +66,7 @@ export function Select<T extends string>({
                   }`}
                 >
                   <span className="truncate">{o.label}</span>
-                  {active && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-accent-dark"><polyline points="20 6 9 17 4 12" /></svg>
-                  )}
+                  {active && <Check className="shrink-0 text-accent-dark" size={16} />}
                 </button>
               </li>
             );

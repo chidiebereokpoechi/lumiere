@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Topnav } from "@/components/admin/topnav";
 import { StatusControl } from "@/components/admin/status-control";
+import { External } from "@/components/ui/icons";
 
 type TabKey = "settings" | "media" | "comments" | "lists" | "analytics";
 
@@ -29,7 +30,7 @@ export function GalleryHeader({
     <>
       <Topnav
         title={title}
-        subtitle={`/g/${slug}${passwordProtected ? " · password-protected" : " · public"}`}
+        subtitle={`/g/${slug} · ${passwordProtected ? "password-protected" : "no password"}`}
         user={user}
         action={
           <>
@@ -38,23 +39,10 @@ export function GalleryHeader({
               href={`/g/${slug}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.25"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-              Client view
+              <External size={15} />
+              Preview
             </Link>
           </>
         }
@@ -99,34 +87,21 @@ export function GalleryHeader({
 function Tab({
   href,
   active,
-  disabled,
   children,
 }: {
   href: string;
   active?: boolean;
-  disabled?: boolean;
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors";
-  if (disabled) {
-    return (
-      <span
-        className={`${base} bg-surface-2 text-ink-subtle border-border cursor-not-allowed`}
-      >
-        {children}
-        <span className="ml-1 text-xs uppercase tracking-widest text-ink-subtle">
-          soon
-        </span>
-      </span>
-    );
-  }
+    "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-bold tracking-wider transition-colors";
+
   return (
     <Link
       href={href}
       className={`${base} ${
         active
-          ? "bg-surface-strong text-ink-inverse border-surface-strong"
+          ? "bg-accent text-ink-inverse border-accent"
           : "bg-surface text-ink-muted border-border hover:bg-surface-2 hover:text-ink-strong hover:border-border-strong"
       }`}
     >

@@ -12,7 +12,7 @@ export default async function AdminGalleriesPage() {
   const [me, galleries] = await Promise.all([fetchMe(), fetchGalleries()]);
 
   return (
-    <div>
+    <div className="min-h-dvh bg-bg">
       <Topnav
         title="Galleries"
         subtitle={
@@ -98,7 +98,7 @@ function StatusPill({ status }: { status: "active" | "archived" | "draft" }) {
         : "bg-surface-sunken text-ink-muted border-border";
   return (
     <span
-      className={`absolute top-2 left-2 rounded-md border px-2 py-1 text-xs font-extrabold uppercase tracking-widest ${cls}`}
+      className={`absolute top-2 left-2 rounded-md border px-2 py-1 text-xs font-extrabold tracking-widest ${cls}`}
     >
       {status}
     </span>
@@ -137,7 +137,7 @@ function NewGalleryButton() {
   return (
     <Link
       href="/admin/galleries/new"
-      className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
       <svg
         width="14"
@@ -158,7 +158,7 @@ function NewGalleryButton() {
 function EmptyState() {
   return (
     <div className="max-w-2xl rounded-xl bg-surface border border-border p-10">
-      <p className="text-xs font-bold tracking-[0.28em] uppercase text-ink-muted">
+      <p className="text-xs font-bold tracking-[0.28em] text-ink-muted">
         Nothing here yet
       </p>
       <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-ink-strong">
