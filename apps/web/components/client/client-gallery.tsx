@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import justifiedLayout from "justified-layout";
 import { apiClient, ApiError } from "@/lib/api-client";
 import type {
   ClientFile,
@@ -570,6 +571,121 @@ export function ClientGallery({
   // opening the lightbox (and we hide the heart so the tile reads as selectable).
   const selecting = coarse && selected.size > 0;
 
+  // Layout mode from the gallery setting: 'grid' packs justified rows (uniform
+  // row height, edges flush); anything else keeps the masonry columns.
+  const gridMode = gallery.layout === "grid";
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [gridW, setGridW] = useState(0);
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    setGridW(el.clientWidth);
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w) setGridW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Justified layout: image/video drive aspect; audio/file are square tiles.
+  const justified = useMemo(() => {
+    if (!gridMode || gridW <= 0) return null;
+    const ratios = files.map((f) =>
+      (f.type === "image" || f.type === "video") && f.width && f.height
+        ? f.width / f.height
+        : 1,
+    );
+    const target = gridW < 640 ? 220 : gridW < 1024 ? 300 : 360;
+    return justifiedLayout(ratios, {
+      containerWidth: gridW,
+      targetRowHeight: target,
+      boxSpacing: 8,
+      containerPadding: 0,
+    });
+  }, [gridMode, gridW, files]);
+
+  // Inner content of a tile (media + overlays). `fill` = the wrapper has a fixed
+  // box (justified grid) so media covers it; otherwise media keeps natural ratio.
+  const tileInner = (f: ClientFile, isSelected: boolean, fill: boolean) => (
+    <>
+      <button
+        type="button"
+        onClick={() => { if (selecting) toggleSelect(f.id, false); else setOpenId(f.id); }}
+        className={`block w-full text-left focus-visible:outline-none ${fill ? "h-full" : ""}`}
+      >
+        {f.type === "image" ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={f.thumbUrl ?? ""}
+            alt=""
+            loading="lazy"
+            style={!fill && f.width && f.height ? { aspectRatio: `${f.width} / ${f.height}` } : undefined}
+            className={`block w-full object-cover transition-[filter] duration-300 ${fill ? "h-full" : "h-auto"} ${isSelected ? "brightness-90" : ""}`}
+          />
+        ) : f.type === "video" ? (
+          <span className={`relative block w-full bg-black ${fill ? "h-full" : ""}`}>
+            <video
+              src={`${f.streamUrl ?? ""}#t=0.1`}
+              preload="metadata"
+              muted
+              playsInline
+              className={`block w-full ${fill ? "h-full object-cover" : "h-auto"}`}
+            />
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+              </span>
+            </span>
+          </span>
+        ) : (
+          <span className={`flex w-full flex-col items-center justify-center gap-2 p-3 text-center ${fill ? "h-full" : "aspect-square"}`}>
+            {f.type === "audio" ? (
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
+            ) : (
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>
+            )}
+            <span className="text-xs font-semibold text-ink-strong truncate max-w-full">{f.filename}</span>
+            <span className="text-[11px] text-ink-subtle">{formatBytes(f.fileSize)}</span>
+          </span>
+        )}
+      </button>
+
+      {(canDownload || canFavorite) && (
+        <div className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected ? "opacity-100" : actionVis}`} />
+      )}
+
+      {canDownload && (
+        <button
+          type="button"
+          onPointerDown={(e) => beginDragSelect(f.id, e)}
+          onClick={(e) => { if (suppressClickRef.current) { suppressClickRef.current = false; return; } toggleSelect(f.id, e.shiftKey); }}
+          aria-pressed={isSelected}
+          aria-label={isSelected ? "Deselect" : "Select"}
+          style={{ touchAction: "none" }}
+          className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
+            isSelected ? "bg-accent border-accent text-accent-ink opacity-100" : `border-white text-transparent ${actionVis}`
+          }`}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        </button>
+      )}
+      {canFavorite && !selecting && (
+        <button
+          type="button"
+          onClick={() => requireEmail(() => toggleFavorite(f.id))}
+          aria-pressed={favorites.has(f.id)}
+          aria-label={favorites.has(f.id) ? "Remove favorite" : "Add favorite"}
+          className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all ${
+            favorites.has(f.id) ? "text-white opacity-100 drop-shadow" : `text-white/90 drop-shadow ${actionVis}`
+          }`}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill={favorites.has(f.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" /></svg>
+        </button>
+      )}
+      {isSelected && <div className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-accent" />}
+    </>
+  );
+
   return (
     <main className="min-h-dvh bg-bg pb-24">
       {/* Cover — full-screen intro with a scroll cue. */}
@@ -706,187 +822,52 @@ export function ClientGallery({
       {/* Edge-to-edge masonry — minimal chrome, photo-forward. min-height fills
           the viewport so short galleries still scroll the cover fully away. */}
       <section ref={sectionRef} className="px-4 sm:px-8 pt-4 min-h-svh">
-        {files.length === 0 ? (
-          <p className="text-center text-sm text-ink-muted py-24">
-            {view.kind === "list"
-              ? "This list is empty."
-              : view.kind === "favorites"
-                ? "No favorites yet."
-                : "Nothing in this folder yet."}
-          </p>
-        ) : (
-          <div
-            className={`columns-2 md:columns-3 xl:columns-4 gap-1 ${dragSelecting ? "touch-none select-none" : ""}`}
-          >
-            {files.map((f) => {
-              const isSelected = selected.has(f.id);
-              return (
+        <div ref={measureRef} className="w-full">
+          {files.length === 0 ? (
+            <p className="text-center text-sm text-ink-muted py-24">
+              {view.kind === "list"
+                ? "This list is empty."
+                : view.kind === "favorites"
+                  ? "No favorites yet."
+                  : "Nothing in this folder yet."}
+            </p>
+          ) : gridMode && justified ? (
+            // Justified rows — uniform row height, edges flush.
+            <div
+              className={`relative w-full ${dragSelecting ? "touch-none select-none" : ""}`}
+              style={{ height: justified.containerHeight }}
+            >
+              {files.map((f, i) => {
+                const box = justified.boxes[i];
+                if (!box) return null;
+                return (
+                  <div
+                    key={f.id}
+                    data-fid={f.id}
+                    className="group absolute overflow-hidden bg-surface-sunken"
+                    style={{ top: box.top, left: box.left, width: box.width, height: box.height }}
+                  >
+                    {tileInner(f, selected.has(f.id), true)}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              className={`columns-2 md:columns-3 xl:columns-4 gap-1 ${dragSelecting ? "touch-none select-none" : ""}`}
+            >
+              {files.map((f) => (
                 <div
                   key={f.id}
                   data-fid={f.id}
                   className="group relative mb-1 break-inside-avoid overflow-hidden bg-surface-sunken"
                 >
-                  <button
-                    type="button"
-                    onClick={() => { if (selecting) toggleSelect(f.id, false); else setOpenId(f.id); }}
-                    className="block w-full text-left focus-visible:outline-none"
-                  >
-                    {f.type === "image" ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={f.thumbUrl ?? ""}
-                        alt=""
-                        loading="lazy"
-                        style={
-                          f.width && f.height
-                            ? { aspectRatio: `${f.width} / ${f.height}` }
-                            : undefined
-                        }
-                        className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? "brightness-90" : ""}`}
-                      />
-                    ) : f.type === "video" ? (
-                      <span className="relative block w-full bg-black">
-                        <video
-                          src={`${f.streamUrl ?? ""}#t=0.1`}
-                          preload="metadata"
-                          muted
-                          playsInline
-                          className="block w-full h-auto"
-                        />
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white">
-                            <svg
-                              width="22"
-                              height="22"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </span>
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="flex aspect-square w-full flex-col items-center justify-center gap-2 p-3 text-center">
-                        {f.type === "audio" ? (
-                          <svg
-                            width="30"
-                            height="30"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.75"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-ink-muted"
-                          >
-                            <path d="M9 18V5l12-2v13" />
-                            <circle cx="6" cy="18" r="3" />
-                            <circle cx="18" cy="16" r="3" />
-                          </svg>
-                        ) : (
-                          <svg
-                            width="30"
-                            height="30"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.75"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-ink-muted"
-                          >
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                            <polyline points="14 2 14 8 20 8" />
-                          </svg>
-                        )}
-                        <span className="text-xs font-semibold text-ink-strong truncate max-w-full">
-                          {f.filename}
-                        </span>
-                        <span className="text-[11px] text-ink-subtle">
-                          {formatBytes(f.fileSize)}
-                        </span>
-                      </span>
-                    )}
-                  </button>
-
-                  {/* Soft top gradient so the white controls read on any image */}
-                  {(canDownload || canFavorite) && (
-                    <div
-                      className={`pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/35 to-transparent transition-opacity ${isSelected ? "opacity-100" : actionVis}`}
-                    />
-                  )}
-
-                  {canDownload && (
-                    <button
-                      type="button"
-                      onPointerDown={(e) => beginDragSelect(f.id, e)}
-                      onClick={(e) => {
-                        if (suppressClickRef.current) {
-                          suppressClickRef.current = false;
-                          return;
-                        }
-                        toggleSelect(f.id, e.shiftKey);
-                      }}
-                      aria-pressed={isSelected}
-                      aria-label={isSelected ? "Deselect" : "Select"}
-                      style={{ touchAction: "none" }}
-                      className={`absolute top-2.5 left-2.5 h-7 w-7 inline-flex items-center justify-center rounded-full border-2 transition-all ${
-                        isSelected
-                          ? "bg-accent border-accent text-accent-ink opacity-100"
-                          : `border-white text-transparent ${actionVis}`
-                      }`}
-                    >
-                      <svg
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </button>
-                  )}
-                  {canFavorite && !selecting && (
-                    <button
-                      type="button"
-                      onClick={() => requireEmail(() => toggleFavorite(f.id))}
-                      aria-pressed={favorites.has(f.id)}
-                      aria-label={
-                        favorites.has(f.id) ? "Remove favorite" : "Add favorite"
-                      }
-                      className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all ${
-                        favorites.has(f.id)
-                          ? "text-white opacity-100 drop-shadow"
-                          : `text-white/90 drop-shadow ${actionVis}`
-                      }`}
-                    >
-                      <svg
-                        width="26"
-                        height="26"
-                        viewBox="0 0 24 24"
-                        fill={favorites.has(f.id) ? "currentColor" : "none"}
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" />
-                      </svg>
-                    </button>
-                  )}
-                  {isSelected && (
-                    <div className="pointer-events-none absolute inset-0 ring-2 ring-inset ring-accent" />
-                  )}
+                  {tileInner(f, selected.has(f.id), false)}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {gallery.allowComments && (
