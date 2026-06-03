@@ -23,7 +23,7 @@ export {
   VscEdit as Pen,
   VscEye as Eye,
   VscEyeClosed as EyeOff,
-  VscSave as Download,
+  VscGitFetch as Download,
   VscCloudUpload as Upload,
   VscFileMedia as ImageIcon,
   VscPlay as Play,
