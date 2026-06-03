@@ -13,6 +13,12 @@ export const FolderPatchInput = z.object({
 }).partial().strict();
 export type FolderPatchInput = z.infer<typeof FolderPatchInput>;
 
+// Reorder folders: position becomes each id's index in the array.
+export const FolderReorderInput = z.object({
+  folderIds: z.array(z.string().min(1)).min(1),
+}).strict();
+export type FolderReorderInput = z.infer<typeof FolderReorderInput>;
+
 // Bulk-assign files to a folder.
 export const FileMoveInput = z.object({
   fileIds: z.array(z.string().min(1)).min(1),

@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   ChevronRight,
   SpinnerIcon,
+  Grip,
 } from "@/components/ui/icons";
 
 // Anything above this uploads directly to storage via presigned multipart
@@ -124,6 +125,56 @@ export function FileManager({
       prev.map((t) => (t.key === key ? { ...t, ...patch } : t)),
     );
   }, []);
+
+  // ---- set (folder) reorder — pointer-drag the sidebar list ----
+  const [draggingFolderId, setDraggingFolderId] = useState<string | null>(null);
+  const persistFolderOrder = useCallback(
+    (ids: string[]) => {
+      void apiClientMutation(`/api/galleries/${galleryId}/folders/reorder`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ folderIds: ids }),
+      }).catch((err) => {
+        setError(err instanceof ApiError ? `Reorder failed (${err.status})` : "Network error");
+        void refreshFolders();
+      });
+    },
+    [galleryId, refreshFolders],
+  );
+  const beginFolderDrag = useCallback(
+    (id: string, e: React.PointerEvent) => {
+      e.preventDefault();
+      setDraggingFolderId(id);
+      document.body.style.userSelect = "none";
+      const onMove = (ev: PointerEvent) => {
+        const el = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
+        const overId = el?.closest<HTMLElement>("[data-folder]")?.dataset.folder;
+        if (!overId || overId === id) return;
+        setFolders((prev) => {
+          const from = prev.findIndex((f) => f.id === id);
+          const to = prev.findIndex((f) => f.id === overId);
+          if (from === -1 || to === -1 || from === to) return prev;
+          const copy = [...prev];
+          const [moved] = copy.splice(from, 1);
+          copy.splice(to, 0, moved!);
+          return copy;
+        });
+      };
+      const onUp = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        document.body.style.userSelect = "";
+        setDraggingFolderId(null);
+        setFolders((cur) => {
+          persistFolderOrder(cur.map((f) => f.id));
+          return cur;
+        });
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    },
+    [persistFolderOrder],
+  );
 
   const settle = useCallback(
     (_key: string) => {
@@ -930,11 +981,11 @@ export function FileManager({
       {tiles.length > 0 && <UploadSummary tiles={tiles} />}
 
       {/* Two-column: sets sidebar + media grid */}
-      <div className="flex gap-6 items-start">
+      <div className="flex gap-4 items-start">
         {/* Sets sidebar */}
         <aside className="w-80 h-full shrink-0 border border-border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold tracking-wider text-ink-subtle">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-bold tracking-wider text-ink-subtle">
               Sets
             </span>
             <button
@@ -986,12 +1037,12 @@ export function FileManager({
                   }
                 })();
               }}
-              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? "bg-accent text-white border-accent ring-4 ring-accent/40" : "border-border text-ink-muted hover:text-ink-strong hover:border-border-strong"}`}
+              className={`inline-flex h-5 w-5 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? "bg-accent text-white border-accent ring-4 ring-accent/40" : "border-border text-ink-muted hover:text-ink-strong hover:border-border-strong"}`}
             >
               <Plus size={15} />
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {folders.map((f) => (
               <FolderRow
                 key={f.id}
@@ -1015,6 +1066,9 @@ export function FileManager({
                   setFileOverFolder(null);
                   handleFiles(fl, f.id);
                 }}
+                draggingFolder={draggingFolderId === f.id}
+                reorderable={folders.length > 1}
+                onReorderStart={(e) => beginFolderDrag(f.id, e)}
               />
             ))}
           </div>
@@ -1022,14 +1076,14 @@ export function FileManager({
 
         {/* Media column */}
         <div className="flex-1 min-w-0 space-y-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-lg font-extrabold tracking-wider text-ink-strong truncate">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h2 className="text-xl font-extrabold tracking-wider text-ink-strong truncate">
               {folders.find((f) => f.id === activeFolder)?.name ?? "Media"}
             </h2>
             <span className="text-sm text-ink-subtle tabular-nums">
               {order.length}
             </span>
-            <div className="ml-auto flex items-center gap-1.5">
+            <div className="ml-auto flex items-center gap-4">
               <span className="hidden sm:inline text-xs font-bold tracking-wider text-ink-subtle">
                 Sort
               </span>
@@ -1038,7 +1092,7 @@ export function FileManager({
                 onChange={(v) => applySort(v)}
                 className="w-40"
                 options={[
-                  { value: "manual", label: "Manual" },
+                  { value: "manual", label: "Manual sort" },
                   { value: "name-asc", label: "Name A-Z" },
                   { value: "name-desc", label: "Name Z-A" },
                   { value: "newest", label: "Newest" },
@@ -1050,7 +1104,7 @@ export function FileManager({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark transition-colors"
             >
               <Upload size={15} />
               Upload
@@ -1497,7 +1551,12 @@ function FileTile({
           <>
             {file.s3KeyThumbnail ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/img/${galleryId}/${file.id}/thumb`} alt={name} draggable={false} className="h-full w-full object-contain bg-black" />
+              <img
+                src={`/img/${galleryId}/${file.id}/thumb`}
+                alt={name}
+                draggable={false}
+                className="h-full w-full object-contain bg-black"
+              />
             ) : (
               <video
                 src={`${streamUrl}#t=0.1`}
@@ -1517,7 +1576,12 @@ function FileTile({
         ) : file.s3KeyThumbnail ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/img/${galleryId}/${file.id}/thumb`} alt={name} draggable={false} className="h-full w-full object-cover" />
+            <img
+              src={`/img/${galleryId}/${file.id}/thumb`}
+              alt={name}
+              draggable={false}
+              className="h-full w-full object-cover"
+            />
             <Badge>{file.type === "audio" ? "Audio" : "File"}</Badge>
           </>
         ) : (
@@ -1714,6 +1778,9 @@ function FolderRow({
   onFileEnter,
   onFileLeave,
   onFileDrop,
+  reorderable,
+  draggingFolder,
+  onReorderStart,
 }: {
   id: string;
   active: boolean;
@@ -1728,6 +1795,9 @@ function FolderRow({
   onFileEnter?: () => void;
   onFileLeave?: () => void;
   onFileDrop?: (files: FileList) => void;
+  reorderable?: boolean;
+  draggingFolder?: boolean;
+  onReorderStart?: (e: React.PointerEvent) => void;
 }) {
   const hasFiles = (e: React.DragEvent) =>
     e.dataTransfer.types.includes("Files");
@@ -1769,8 +1839,21 @@ function FolderRow({
           : active
             ? "bg-surface-strong text-ink-inverse border-surface-strong"
             : "bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong"
-      } ${dim}`}
+      } ${dim} ${draggingFolder ? "opacity-60 ring-2 ring-accent" : ""}`}
     >
+      {reorderable && (
+        <button
+          type="button"
+          aria-label="Reorder set"
+          title="Drag to reorder"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => { e.stopPropagation(); onReorderStart?.(e); }}
+          style={{ touchAction: "none" }}
+          className={`-ml-1 shrink-0 cursor-grab active:cursor-grabbing ${active || isDropTarget ? "text-ink-inverse/60 hover:text-ink-inverse" : "text-ink-subtle hover:text-ink-strong"}`}
+        >
+          <Grip size={15} />
+        </button>
+      )}
       <span className="flex-1 min-w-0 inline-flex items-center gap-1.5 text-left text-sm font-semibold">
         {hidden && <EyeOff size={14} className="shrink-0" />}
         <span className="truncate">{label}</span>

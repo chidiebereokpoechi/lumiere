@@ -94,7 +94,7 @@ function Tab({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-bold tracking-wider transition-colors";
+    "inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-bold tracking-wider transition-colors";
 
   return (
     <Link

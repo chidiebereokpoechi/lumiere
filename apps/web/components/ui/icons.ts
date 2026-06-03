@@ -28,6 +28,7 @@ export {
   CgFileDocument as FileDoc,
   CgArrowLeft as ArrowLeft,
   CgArrowRight as ArrowRight,
+  CgMenu as Grip,
   CgPlayPauseO as Pause,
   CgPlayTrackPrev as SkipBack,
   CgPlayTrackNext as SkipForward,

@@ -85,7 +85,7 @@ export function CommentsSection({
         )}
 
         {posted ? (
-          <p className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm text-ink-muted">
+          <p className="rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-sm text-ink-muted">
             Thanks — your comment was submitted and will appear once the creator
             approves it.
           </p>

@@ -46,9 +46,8 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            className="flex items-center gap-2.5 rounded-md bg-surface border border-border px-3 py-2 text-sm font-semibold text-ink-strong hover:bg-surface-2 transition-colors"
+            className="flex items-center gap-2.5 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-semibold text-ink-strong hover:bg-surface-2 transition-colors"
           >
-            <Avatar name={user.name || user.email} />
             <span className="hidden sm:inline">
               {user.name || user.email.split("@")[0]}
             </span>

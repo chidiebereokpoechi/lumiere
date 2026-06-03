@@ -479,7 +479,7 @@ function WatermarkPreview({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-lg ${compact ? "aspect-[4/3]" : "aspect-video"} bg-linear-to-br from-slate-500 via-slate-700 to-slate-900`}
+      className={`relative w-full overflow-hidden rounded-lg ${compact ? "aspect-4/3" : "aspect-video"} bg-linear-to-br from-slate-500 via-slate-700 to-slate-900`}
     >
       <div className={`absolute inset-0 flex p-3 ${align[draft.position]}`}>
         {draft.type === "text" ? (

@@ -1,6 +1,6 @@
 import { Elysia } from 'elysia';
 import { eq, and, asc, sql, max } from 'drizzle-orm';
-import { FolderCreateInput, FolderPatchInput } from '@lumiere/types';
+import { FolderCreateInput, FolderPatchInput, FolderReorderInput } from '@lumiere/types';
 import { db } from '../../db';
 import { galleries, galleryFolders, files } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
@@ -78,6 +78,31 @@ export const folderRoutes = new Elysia({ prefix: '/api/galleries/:galleryId/fold
     const id = newId();
     await db.insert(galleryFolders).values({ id, galleryId: gallery.id, name: parsed.data.name, position });
     return db.query.galleryFolders.findFirst({ where: eq(galleryFolders.id, id) });
+  })
+
+  // POST /reorder — position becomes each id's index (folders the client sees in order).
+  .post('/reorder', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+
+    const gallery = await db.query.galleries.findFirst({
+      where: and(eq(galleries.id, ctx.params.galleryId), eq(galleries.photographerId, me.id)),
+    });
+    if (!gallery) { ctx.set.status = 404; return { error: 'gallery_not_found' }; }
+
+    const parsed = parseBody(ctx, FolderReorderInput);
+    if (!parsed.ok) return parsed.error;
+
+    db.transaction((tx) => {
+      parsed.data.folderIds.forEach((fid, i) => {
+        tx.update(galleryFolders).set({ position: i })
+          .where(and(eq(galleryFolders.id, fid), eq(galleryFolders.galleryId, gallery.id))).run();
+      });
+    });
+    return { ok: true };
   })
 
   // PATCH /:folderId — rename, reorder, or set folder cover.

@@ -200,7 +200,7 @@ export function FormError({ message }: { message: string | null }) {
   return (
     <div
       role="alert"
-      className="rounded-md bg-accent-soft border border-accent/40 px-4 py-3 text-sm font-semibold text-ink-strong"
+      className="rounded-md bg-accent-soft border border-accent/40 px-4 py-2.5 text-sm font-semibold text-ink-strong"
     >
       {message}
     </div>
