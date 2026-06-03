@@ -533,86 +533,96 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
 
       {tiles.length > 0 && <UploadSummary tiles={tiles} />}
 
-      {/* Folder rail */}
-      <div className="flex flex-wrap items-center gap-2">
-        {folders.map((f) => (
-          <FolderChip
-            key={f.id}
-            id={f.id}
-            active={activeFolder === f.id}
-            isDropTarget={dropFolderId === f.id || fileOverFolder === f.id}
-            hidden={f.hidden}
-            onClick={() => setActiveFolder(f.id)}
-            label={f.name}
-            count={f.photoCount}
-            onRename={() => renameFolder(f)}
-            onToggleHidden={() => toggleFolderHidden(f)}
-            onDelete={folders.length > 1 ? () => deleteFolder(f) : undefined}
-            onFileEnter={() => setFileOverFolder(f.id)}
-            onFileLeave={() => setFileOverFolder((c) => (c === f.id ? null : c))}
-            onFileDrop={(fl) => { setFileOverFolder(null); handleFiles(fl, f.id); }}
-          />
-        ))}
-        <button
-          type="button"
-          data-newfolder
-          onClick={createFolder}
-          onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDropNew(true); } }}
-          onDragLeave={() => setDropNew(false)}
-          onDrop={(e) => {
-            if (!e.dataTransfer.types.includes('Files')) return;
-            e.preventDefault(); e.stopPropagation(); setDropNew(false);
-            const fl = e.dataTransfer.files;
-            const name = window.prompt('New folder name')?.trim();
-            if (!name || !fl.length) return;
-            void (async () => {
-              try {
-                const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }) });
-                await refreshFolders();
-                setActiveFolder(created.id);
-                handleFiles(fl, created.id);
-              } catch (err) { setError(err instanceof ApiError ? `Could not create folder (${err.status})` : 'Network error'); }
-            })();
-          }}
-          className={`inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-sm font-semibold transition-all duration-150 ${dropNew ? 'scale-110 bg-accent text-accent-ink border-accent ring-4 ring-accent/40' : 'border-border text-ink-muted hover:border-border-strong hover:text-ink-strong'}`}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          New folder
-        </button>
-        <label className="ml-auto inline-flex items-center gap-1.5 text-sm text-ink-muted">
-          <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider text-ink-subtle">Sort</span>
-          <select
-            value={sortMode}
-            onChange={(e) => applySort(e.target.value as SortMode)}
-            className="rounded-md bg-surface-2 border border-border px-2.5 py-1.5 text-sm text-ink-strong focus:border-accent transition-colors"
-          >
-            <option value="manual">Manual</option>
-            <option value="name-asc">Name A–Z</option>
-            <option value="name-desc">Name Z–A</option>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="size-desc">Largest</option>
-          </select>
-        </label>
-        <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-          Upload
-        </button>
-        <input ref={inputRef} type="file" multiple hidden onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }} />
-      </div>
-      {selected.size > 0 && <p className="text-xs text-ink-subtle">Drag a selected item onto a folder to move {selected.size > 1 ? 'them' : 'it'}.</p>}
-      {canDrag && selected.size === 0 && order.length > 1 && (
-        <p className="text-xs text-ink-subtle">Drag to reorder — this is the order clients see. Drop onto a folder to move.</p>
-      )}
+      {/* Two-column: sets sidebar + media grid */}
+      <div className="flex gap-6 items-start">
+        {/* Sets sidebar */}
+        <aside className="w-52 shrink-0">
+          <div className="flex items-center justify-between px-1 pb-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-ink-subtle">Sets</p>
+            <button
+              type="button"
+              data-newfolder
+              onClick={createFolder}
+              title="Add set"
+              onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDropNew(true); } }}
+              onDragLeave={() => setDropNew(false)}
+              onDrop={(e) => {
+                if (!e.dataTransfer.types.includes('Files')) return;
+                e.preventDefault(); e.stopPropagation(); setDropNew(false);
+                const fl = e.dataTransfer.files;
+                const name = window.prompt('New set name')?.trim();
+                if (!name || !fl.length) return;
+                void (async () => {
+                  try {
+                    const created = await apiClientMutation<Folder>(`/api/galleries/${galleryId}/folders`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }) });
+                    await refreshFolders();
+                    setActiveFolder(created.id);
+                    handleFiles(fl, created.id);
+                  } catch (err) { setError(err instanceof ApiError ? `Could not create set (${err.status})` : 'Network error'); }
+                })();
+              }}
+              className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-dashed transition-all ${dropNew ? 'bg-accent text-accent-ink border-accent ring-4 ring-accent/40' : 'border-border text-ink-muted hover:text-ink-strong hover:border-border-strong'}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+          </div>
+          <div className="space-y-1">
+            {folders.map((f) => (
+              <FolderRow
+                key={f.id}
+                id={f.id}
+                active={activeFolder === f.id}
+                isDropTarget={dropFolderId === f.id || fileOverFolder === f.id}
+                hidden={f.hidden}
+                onClick={() => setActiveFolder(f.id)}
+                label={f.name}
+                count={f.photoCount}
+                onRename={() => renameFolder(f)}
+                onToggleHidden={() => toggleFolderHidden(f)}
+                onDelete={folders.length > 1 ? () => deleteFolder(f) : undefined}
+                onFileEnter={() => setFileOverFolder(f.id)}
+                onFileLeave={() => setFileOverFolder((c) => (c === f.id ? null : c))}
+                onFileDrop={(fl) => { setFileOverFolder(null); handleFiles(fl, f.id); }}
+              />
+            ))}
+          </div>
+        </aside>
 
-      {/* Folder content — drop boundary */}
-      <div
-        className="relative space-y-6 min-h-64"
-        onDragEnter={(e) => { if (e.dataTransfer.types.includes('Files')) { dragDepth.current += 1; setDragging(true); } }}
-        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
-        onDragLeave={() => { dragDepth.current = Math.max(0, dragDepth.current - 1); if (dragDepth.current === 0) setDragging(false); }}
-        onDrop={(e) => { if (!e.dataTransfer.types.includes('Files')) return; e.preventDefault(); dragDepth.current = 0; setDragging(false); if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files); }}
-      >
+        {/* Media column */}
+        <div className="flex-1 min-w-0 space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-lg font-extrabold uppercase tracking-wider text-ink-strong truncate">{folders.find((f) => f.id === activeFolder)?.name ?? 'Media'}</h2>
+            <span className="text-sm text-ink-subtle tabular-nums">{order.length}</span>
+            <label className="ml-auto inline-flex items-center gap-1.5 text-sm text-ink-muted">
+              <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider text-ink-subtle">Sort</span>
+              <select value={sortMode} onChange={(e) => applySort(e.target.value as SortMode)} className="rounded-md bg-surface-2 border border-border px-2.5 py-1.5 text-sm text-ink-strong focus:border-accent transition-colors">
+                <option value="manual">Manual</option>
+                <option value="name-asc">Name A–Z</option>
+                <option value="name-desc">Name Z–A</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="size-desc">Largest</option>
+              </select>
+            </label>
+            <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+              Upload
+            </button>
+            <input ref={inputRef} type="file" multiple hidden onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }} />
+          </div>
+          {selected.size > 0 && <p className="text-xs text-ink-subtle">Drag a selected item onto a set to move {selected.size > 1 ? 'them' : 'it'}.</p>}
+          {canDrag && selected.size === 0 && order.length > 1 && (
+            <p className="text-xs text-ink-subtle">Drag to reorder — this is the order clients see. Drop onto a set to move.</p>
+          )}
+
+          {/* Folder content — drop boundary */}
+          <div
+            className="relative space-y-6 min-h-64"
+            onDragEnter={(e) => { if (e.dataTransfer.types.includes('Files')) { dragDepth.current += 1; setDragging(true); } }}
+            onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
+            onDragLeave={() => { dragDepth.current = Math.max(0, dragDepth.current - 1); if (dragDepth.current === 0) setDragging(false); }}
+            onDrop={(e) => { if (!e.dataTransfer.types.includes('Files')) return; e.preventDefault(); dragDepth.current = 0; setDragging(false); if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files); }}
+          >
         {dragging && (
           <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center gap-2 bg-accent-soft/70 backdrop-blur-sm border-2 border-dashed border-accent text-accent-ink">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
@@ -673,6 +683,8 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
             ))}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* Selection move bar */}
@@ -963,54 +975,59 @@ function TypeIcon({ type }: { type: GalleryFile['type'] }) {
   return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="text-ink-muted"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><polyline points="14 2 14 8 20 8" /></svg>;
 }
 
-function FolderChip({
+// Vertical set/folder row for the sidebar: select, count, drop-target for file
+// drags, plus hover actions (hide / rename / delete).
+function FolderRow({
   id, active, isDropTarget, hidden, onClick, label, count, onRename, onDelete, onToggleHidden, onFileEnter, onFileLeave, onFileDrop,
 }: {
   id: string; active: boolean; isDropTarget?: boolean; hidden?: boolean; onClick: () => void; label: string; count: number;
   onRename?: () => void; onDelete?: () => void; onToggleHidden?: () => void; onFileEnter?: () => void; onFileLeave?: () => void; onFileDrop?: (files: FileList) => void;
 }) {
   const hasFiles = (e: React.DragEvent) => e.dataTransfer.types.includes('Files');
-  const dim = hidden && !active && !isDropTarget ? 'opacity-60 border-dashed' : '';
+  const dim = hidden && !active && !isDropTarget ? 'opacity-60' : '';
   const iconTint = active || isDropTarget ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-ink-strong';
   return (
-    <span
+    <div
       data-folder={id}
       onDragEnter={(e) => { if (hasFiles(e)) onFileEnter?.(); }}
       onDragOver={(e) => { if (hasFiles(e)) e.preventDefault(); }}
       onDragLeave={() => onFileLeave?.()}
       onDrop={(e) => { if (hasFiles(e)) { e.preventDefault(); e.stopPropagation(); onFileDrop?.(e.dataTransfer.files); } }}
       title={hidden ? 'Hidden from clients' : undefined}
-      className={`group/chip inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-semibold origin-center transition-all duration-200 ease-out ${
-        isDropTarget ? 'scale-110 bg-accent text-accent-ink border-accent ring-4 ring-accent/40 shadow-[0_6px_20px_rgba(0,0,0,0.18)]'
+      className={`group/row flex items-center gap-1 rounded-md border px-2.5 py-2 transition-colors ${
+        isDropTarget ? 'bg-accent text-accent-ink border-accent ring-2 ring-accent/40'
           : active ? 'bg-surface-strong text-ink-inverse border-surface-strong' : 'bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong'
       } ${dim}`}
     >
-      <button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 focus-visible:outline-none">
+      <button type="button" onClick={onClick} className="flex-1 min-w-0 inline-flex items-center gap-1.5 text-left text-sm font-semibold focus-visible:outline-none">
         {hidden && (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>
         )}
-        {label}<span className={`tabular-nums text-xs ${active || isDropTarget ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
+        <span className="truncate">{label}</span>
       </button>
-      {onToggleHidden && (
-        <button type="button" onClick={onToggleHidden} title={hidden ? 'Show to clients' : 'Hide from clients'} className={`opacity-0 group-hover/chip:opacity-100 ${iconTint}`}>
-          {hidden ? (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z" /><circle cx="12" cy="12" r="3" /></svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>
-          )}
-        </button>
-      )}
-      {onRename && (
-        <button type="button" onClick={onRename} title="Rename" className={`opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-ink-strong'}`}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-        </button>
-      )}
-      {onDelete && (
-        <button type="button" onClick={onDelete} title="Delete folder" className={`opacity-0 group-hover/chip:opacity-100 ${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-negative'}`}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-        </button>
-      )}
-    </span>
+      <span className={`tabular-nums text-xs shrink-0 group-hover/row:hidden ${active || isDropTarget ? 'text-ink-inverse/70' : 'text-ink-subtle'}`}>{count}</span>
+      <span className="hidden group-hover/row:inline-flex items-center gap-1 shrink-0">
+        {onToggleHidden && (
+          <button type="button" onClick={onToggleHidden} title={hidden ? 'Show to clients' : 'Hide from clients'} className={iconTint}>
+            {hidden ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-8 10-8 10 8 10 8-3 8-10 8-10-8-10-8Z" /><circle cx="12" cy="12" r="3" /></svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>
+            )}
+          </button>
+        )}
+        {onRename && (
+          <button type="button" onClick={onRename} title="Rename" className={iconTint}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+          </button>
+        )}
+        {onDelete && (
+          <button type="button" onClick={onDelete} title="Delete set" className={`${active ? 'text-ink-inverse/80 hover:text-ink-inverse' : 'text-ink-subtle hover:text-negative'}`}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        )}
+      </span>
+    </div>
   );
 }
 
