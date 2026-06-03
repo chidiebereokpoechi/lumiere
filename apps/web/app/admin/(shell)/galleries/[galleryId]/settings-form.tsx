@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation';
 import { GalleryPatchInput } from '@lumiere/types';
 import { apiClientMutation, ApiError } from '@/lib/api-client';
 import type { GalleryDetail } from '@/lib/api/galleries';
+import type { WatermarkPreset } from '@/lib/api/watermarks';
 import { Field, TextInput, Textarea, Select, Toggle, Button, FormError } from '@/components/admin/form';
 
 interface Props {
   gallery: GalleryDetail;
+  watermarks: WatermarkPreset[];
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-export function SettingsForm({ gallery }: Props) {
+export function SettingsForm({ gallery, watermarks }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [saveState, setSaveState] = useState<SaveState>('idle');
@@ -35,6 +37,7 @@ export function SettingsForm({ gallery }: Props) {
   const [allowComments, setAllowComments] = useState(gallery.allowComments === 1);
   const [allowDownload, setAllowDownload] = useState(gallery.allowDownload === 1);
   const [notifyOnView, setNotifyOnView] = useState(gallery.notifyOnView === 1);
+  const [watermarkPresetId, setWatermarkPresetId] = useState(gallery.watermarkPresetId ?? '');
   const [customCss, setCustomCss] = useState(gallery.customCss ?? '');
 
   // Password: changed explicitly (not auto-saved) so typing can't accidentally
@@ -60,6 +63,7 @@ export function SettingsForm({ gallery }: Props) {
       allowComments,
       allowDownload,
       notifyOnView,
+      watermarkPresetId: watermarkPresetId || null,
       customCss: emptyToNull(customCss),
     };
     const parsed = GalleryPatchInput.safeParse(patch);
@@ -83,7 +87,7 @@ export function SettingsForm({ gallery }: Props) {
     }
   }, [gallery.id, title, subtitle, status, downloadMode, layout, clientName, clientEmail,
       eventDate, eventType, expiresAt, gracePeriodDays, allowFavorites, allowComments,
-      allowDownload, notifyOnView, customCss]);
+      allowDownload, notifyOnView, watermarkPresetId, customCss]);
 
   // Debounced auto-save: persist ~600ms after the last change. Skip the initial
   // mount so loading the form doesn't fire a save.
@@ -218,6 +222,24 @@ export function SettingsForm({ gallery }: Props) {
             { value: 'selected', label: 'Selected favorites get full, rest watermarked' },
             { value: 'none', label: 'Disabled' },
           ]} />
+        </Field>
+        <Field
+          id="watermarkPresetId"
+          label="Watermark"
+          hint={watermarks.length === 0 ? 'none created yet' : 'applied to image previews'}
+        >
+          <Select
+            id="watermarkPresetId"
+            value={watermarkPresetId}
+            onChange={setWatermarkPresetId}
+            options={[
+              { value: '', label: watermarks.length === 0 ? 'No watermarks — create one first' : 'None' },
+              ...watermarks.map((w) => ({ value: w.id, label: `${w.name} (${w.type})` })),
+            ]}
+          />
+          <p className="mt-1.5 text-xs text-ink-subtle">
+            Changing this reprocesses existing photos; clearing it removes the watermarked copies.
+          </p>
         </Field>
       </Section>
 
