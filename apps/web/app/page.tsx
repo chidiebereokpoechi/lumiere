@@ -1,4 +1,3 @@
-import { ThemeToggle } from '@/components/theme-toggle';
 import { apiServer, ApiError } from '@/lib/api-client';
 import type { HealthResponse } from '@lumiere/types';
 
@@ -30,12 +29,10 @@ export default async function HomePage() {
             Self-hosted gallery delivery.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-muted">
-            Frontend scaffold. Satoshi loaded, design tokens wired, theme
-            switching alive — built on top of a Bun + Elysia backend talking
-            to RustFS over the LAN.
+            Frontend scaffold. Satoshi loaded, design tokens wired — built on
+            top of a Bun + Elysia backend talking to RustFS over the LAN.
           </p>
         </div>
-        <ThemeToggle />
       </header>
 
       <section className="mt-16">

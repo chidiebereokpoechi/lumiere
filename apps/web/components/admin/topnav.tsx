@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { apiClientMutation } from '@/lib/api-client';
-import { ThemeToggle } from '@/components/theme-toggle';
 
 interface TopnavProps {
   title: string;
@@ -39,7 +38,6 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
 
       <div className="flex items-center gap-3">
         {action}
-        <ThemeToggle />
         <div className="relative">
           <button
             type="button"

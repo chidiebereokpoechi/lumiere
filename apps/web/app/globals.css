@@ -74,54 +74,6 @@
   color-scheme: light;
 }
 
-[data-theme="dark"] {
-  --bg: #0b1220;
-  --surface: #111827;
-  --surface-2: #0f172a;
-  --surface-sunken: #060a14;
-  --surface-strong: #f8fafc;
-
-  --border: #1f2937;
-  --border-strong: #334155;
-
-  --ink: #cbd5e1;
-  --ink-strong: #f8fafc;
-  --ink-muted: #94a3b8;
-  --ink-subtle: #64748b;
-  --ink-inverse: #0f172a;
-
-  --accent: #ffbba8;
-  --accent-hover: #ffcebd;
-  --accent-dark: #d87a5a;
-  --accent-soft: #2c1f1c;
-  --accent-ink: #0e1014;
-
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0b1220;
-    --surface: #111827;
-    --surface-2: #0f172a;
-    --surface-sunken: #060a14;
-    --surface-strong: #f8fafc;
-    --border: #1f2937;
-    --border-strong: #334155;
-    --ink: #cbd5e1;
-    --ink-strong: #f8fafc;
-    --ink-muted: #94a3b8;
-    --ink-subtle: #64748b;
-    --ink-inverse: #0f172a;
-    --accent: #ffbba8;
-    --accent-hover: #ffcebd;
-    --accent-dark: #d87a5a;
-    --accent-soft: #2c1f1c;
-    --accent-ink: #0e1014;
-    color-scheme: dark;
-  }
-}
-
 @theme inline {
   --font-sans:
     "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
