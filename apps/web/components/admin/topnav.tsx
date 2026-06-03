@@ -29,7 +29,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
   }
 
   return (
-    <header className="flex items-center justify-between px-8 py-6 bg-bg border-b border-border">
+    <header className="sticky top-0 z-30 flex items-center justify-between px-8 py-6 bg-bg/90 backdrop-blur border-b border-border">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">{title}</h1>
         {subtitle && (
