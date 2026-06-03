@@ -1,19 +1,19 @@
 "use client";
 
 import type { ClientFile } from "@/lib/api/client-gallery";
-import { FileDoc, Heart, ImageIcon, Music, Play } from "@/components/ui/icons";
+import { Folder, Heart } from "@/components/ui/icons";
 
 export interface AlbumItem {
   key: string;
   label: string;
   count: number;
-  peek: ClientFile[]; // up to 4, for the cover mosaic
+  peek: ClientFile[]; // peek[0] is used as the cover
   favorite?: boolean;
   onOpen: () => void;
 }
 
-// iOS-Photos-style landing: a grid of album cards under "Collections" (sets) and
-// "Your lists". Each card shows a 2×2 peek of its contents.
+// iOS-Photos-ish landing: album cards are squares with the set's first image as
+// a cover, the icon + name + count layered over it.
 export function AlbumsLanding({
   collections,
   yourLists,
@@ -22,7 +22,7 @@ export function AlbumsLanding({
   yourLists: AlbumItem[];
 }) {
   return (
-    <div className="px-2 sm:px-8 pb-24 space-y-8">
+    <div className="flex flex-col px-2 sm:px-8 gap-4 sm:gap-8">
       {collections.length > 0 && (
         <AlbumSection title="Collections" items={collections} />
       )}
@@ -36,7 +36,7 @@ export function AlbumsLanding({
 function AlbumSection({ title, items }: { title: string; items: AlbumItem[] }) {
   return (
     <section>
-      <h2 className="mb-3 text-sm font-bold tracking-wider text-ink-subtle">
+      <h2 className="mb-2 sm:mb-4 text-sm font-bold tracking-wider text-ink-muted">
         {title}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
@@ -50,62 +50,48 @@ function AlbumSection({ title, items }: { title: string; items: AlbumItem[] }) {
 
 function AlbumCard({ item }: { item: AlbumItem }) {
   const { label, count, peek, favorite, onOpen } = item;
+  const Icon = favorite ? Heart : Folder;
+  const cover = peek.find((f) => f.thumbUrl)?.thumbUrl ?? null;
+
   return (
     <button type="button" onClick={onOpen} className="block w-full text-left">
       <div className="relative aspect-square w-full overflow-hidden rounded-md bg-surface-sunken">
-        {peek.length === 0 ? (
-          <div className="h-full w-full flex items-center justify-center text-ink-subtle">
-            <ImageIcon size={24} />
-          </div>
-        ) : peek.length === 1 ? (
-          <PeekThumb f={peek[0]!} />
-        ) : (
-          <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
-            {[0, 1, 2, 3].map((i) =>
-              peek[i] ? (
-                <PeekThumb key={i} f={peek[i]!} />
-              ) : (
-                <div key={i} className="bg-surface" />
-              ),
-            )}
-          </div>
+        {cover && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover}
+              alt=""
+              loading="lazy"
+              draggable={false}
+              className="absolute inset-0 h-full w-full object-cover select-none"
+            />
+            <div className="absolute inset-0 bg-black/40" />
+          </>
         )}
-        {favorite && (
-          <span className="absolute top-2 right-2 text-heart drop-shadow">
-            <Heart size={20} />
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 p-3 text-center pointer-events-none">
+          <Icon
+            size={32}
+            className={
+              favorite
+                ? "text-heart drop-shadow"
+                : cover
+                  ? "text-white drop-shadow"
+                  : "text-ink-muted"
+            }
+          />
+          <span
+            className={`text-sm font-semibold truncate max-w-full ${cover ? "text-white drop-shadow" : "text-ink-strong"}`}
+          >
+            {label}
           </span>
-        )}
-      </div>
-      <div className="mt-2 flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold text-ink-strong truncate">
-          {label}
-        </span>
-        <span className="shrink-0 text-xs text-ink-subtle tabular-nums">
-          {count}
-        </span>
+          <span
+            className={`text-xs tabular-nums ${cover ? "text-white/80 drop-shadow" : "text-ink-subtle"}`}
+          >
+            {count}
+          </span>
+        </div>
       </div>
     </button>
-  );
-}
-
-function PeekThumb({ f }: { f: ClientFile }) {
-  if (f.thumbUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={f.thumbUrl}
-        alt=""
-        loading="lazy"
-        draggable={false}
-        className="h-full w-full object-cover select-none"
-      />
-    );
-  }
-  const Glyph =
-    f.type === "audio" ? Music : f.type === "video" ? Play : FileDoc;
-  return (
-    <span className="flex h-full w-full items-center justify-center bg-surface text-ink-muted">
-      <Glyph size={20} />
-    </span>
   );
 }

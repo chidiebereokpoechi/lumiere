@@ -202,7 +202,10 @@ function GalleryTile({
         onPointerMove={onPressMove}
         onPointerUp={cancelLong}
         onPointerCancel={cancelLong}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onLongPress(f.id); // right-click opens the quick-action menu on desktop
+        }}
         onClick={(e) => {
           if (suppressClickRef.current) {
             suppressClickRef.current = false;

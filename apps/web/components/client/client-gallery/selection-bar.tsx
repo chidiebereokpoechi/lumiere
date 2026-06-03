@@ -2,6 +2,7 @@
 
 import {
   Bookmark,
+  Close,
   Download,
   Heart,
   ImageIcon,
@@ -20,6 +21,7 @@ export function SelectionBar({
   onDone,
   onFavorite,
   onAddToList,
+  onRemoveFromList,
   onSavePhotos,
   onDownload,
 }: {
@@ -32,6 +34,7 @@ export function SelectionBar({
   onDone: () => void;
   onFavorite: () => void;
   onAddToList: () => void;
+  onRemoveFromList?: () => void;
   onSavePhotos: () => void;
   onDownload: () => void;
 }) {
@@ -66,6 +69,14 @@ export function SelectionBar({
           onClick={onAddToList}
           disabled={disabled}
         />
+        {onRemoveFromList && (
+          <Row
+            icon={<Close size={20} />}
+            label="Remove from list"
+            onClick={onRemoveFromList}
+            disabled={disabled}
+          />
+        )}
         {canDownload && showSavePhotos && (
           <Row
             icon={<ImageIcon size={20} />}

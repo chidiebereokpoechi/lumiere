@@ -56,7 +56,7 @@ export function Select<T extends string>({
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-left text-sm text-ink-strong hover:border-border-strong focus:border-accent transition-colors"
       >
-        <span className={current ? '' : 'text-ink-subtle'}>{current?.label ?? placeholder ?? 'Select…'}</span>
+        <span className={`min-w-0 flex-1 truncate ${current ? '' : 'text-ink-subtle'}`}>{current?.label ?? placeholder ?? 'Select…'}</span>
         <ChevronDown className={`shrink-0 text-ink-subtle transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
       </button>
       {open && (

@@ -5,6 +5,7 @@ import type { ClientFile } from "@/lib/api/client-gallery";
 import {
   Bookmark,
   Check,
+  Close,
   Download,
   Heart,
   HeartOpen,
@@ -22,6 +23,7 @@ export function ItemActionSheet({
   onSelect,
   onFavorite,
   onAddToList,
+  onRemoveFromList,
   onDownload,
   onShare,
   onClose,
@@ -34,6 +36,7 @@ export function ItemActionSheet({
   onSelect: () => void;
   onFavorite: () => void;
   onAddToList: () => void;
+  onRemoveFromList?: () => void;
   onDownload: () => void;
   onShare: () => void;
   onClose: () => void;
@@ -79,6 +82,13 @@ export function ItemActionSheet({
           label="Add to list"
           onClick={act(onAddToList)}
         />
+        {onRemoveFromList && (
+          <SheetItem
+            icon={<Close size={20} />}
+            label="Remove from list"
+            onClick={act(onRemoveFromList)}
+          />
+        )}
         {canShare && (
           <SheetItem
             icon={<ImageIcon size={20} />}

@@ -595,6 +595,15 @@ export function ClientGallery({
   const [listMenuId, setListMenuId] = useState<string | null>(null);
   const listMenu = listMenuId ? lists.find((l) => l.id === listMenuId) : null;
 
+  // When viewing a list, expose quick removal of items from it.
+  const currentListId = view.kind === "list" ? view.id : null;
+  const removeFromList = useCallback(
+    (ids: string[]) => {
+      if (currentListId) setMembership(currentListId, ids, false);
+    },
+    [currentListId, setMembership],
+  );
+
   const gridMode = gallery.layout === "grid";
   const emptyText =
     view.kind === "list"
@@ -781,6 +790,14 @@ export function ClientGallery({
             openPicker([...selected]);
             exitSelection();
           }}
+          onRemoveFromList={
+            currentListId
+              ? () => {
+                  removeFromList([...selected]);
+                  exitSelection();
+                }
+              : undefined
+          }
           onSavePhotos={() => {
             sharePhotos(selectedImages);
             exitSelection();
@@ -859,6 +876,9 @@ export function ClientGallery({
           onSelect={() => enterSelection(sheetFile.id)}
           onFavorite={() => requireEmail(() => toggleFavorite(sheetFile.id))}
           onAddToList={() => openPicker([sheetFile.id])}
+          onRemoveFromList={
+            currentListId ? () => removeFromList([sheetFile.id]) : undefined
+          }
           onDownload={() => triggerDownload(`ids=${sheetFile.id}`)}
           onShare={() => sharePhotos([sheetFile])}
           onClose={() => setSheetId(null)}
