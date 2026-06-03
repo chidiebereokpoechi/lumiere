@@ -45,7 +45,12 @@ export default async function GalleryMediaPage({ params }: Props) {
           gallerySlug={gallery.slug}
           initialFiles={files}
           initialFolders={folders}
-          initialCoverFileId={gallery.coverFileId}
+          initialCover={{
+            fileId: gallery.coverFileId,
+            imageKey: gallery.coverImageKey,
+            focalX: gallery.coverFocalX,
+            focalY: gallery.coverFocalY,
+          }}
         />
       </div>
     </div>

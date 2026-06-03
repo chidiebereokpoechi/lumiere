@@ -27,6 +27,9 @@ export interface GalleryDetail {
   title: string;
   subtitle: string | null;
   coverFileId: string | null;
+  coverImageKey: string | null;
+  coverFocalX: number | null;
+  coverFocalY: number | null;
   passwordHash: string | null;
   status: 'active' | 'archived' | 'draft' | null;
   downloadMode: 'none' | 'watermarked' | 'full' | 'selected' | null;

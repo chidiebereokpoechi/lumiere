@@ -9,6 +9,9 @@ export interface MinimalGallery {
   title: string;
   subtitle: string | null;
   coverFileId: string | null;
+  coverUrl: string | null;
+  coverFocalX: number | null;
+  coverFocalY: number | null;
   layout: 'grid' | 'masonry' | 'slideshow';
   colorTheme: string;
   customCss: string | null;

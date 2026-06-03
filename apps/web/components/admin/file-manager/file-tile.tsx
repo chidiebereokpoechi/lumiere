@@ -22,7 +22,6 @@ export function FileTile({
   onToggleSelect,
   onOpen,
   onDelete,
-  onSetCover,
   onRename,
   onCopyName,
   onDownload,
@@ -43,7 +42,6 @@ export function FileTile({
   onToggleSelect: (shift: boolean) => void;
   onOpen: () => void;
   onDelete: () => void;
-  onSetCover: () => void;
   onRename: () => void;
   onCopyName: () => void;
   onDownload: () => void;
@@ -153,8 +151,6 @@ export function FileTile({
         {!dragging && (
           <TileMenu
             file={file}
-            ready={ready}
-            isCover={isCover}
             busy={busy}
             folders={folders}
             activeFolder={activeFolder}
@@ -162,7 +158,6 @@ export function FileTile({
             onDownload={onDownload}
             onRename={onRename}
             onCopyName={onCopyName}
-            onSetCover={onSetCover}
             onMove={onMove}
             onDelete={onDelete}
           />
@@ -181,8 +176,6 @@ export function FileTile({
 // Per-tile ⋯ actions menu.
 function TileMenu({
   file,
-  ready,
-  isCover,
   busy,
   folders,
   activeFolder,
@@ -190,13 +183,10 @@ function TileMenu({
   onDownload,
   onRename,
   onCopyName,
-  onSetCover,
   onMove,
   onDelete,
 }: {
   file: GalleryFile;
-  ready: boolean;
-  isCover: boolean;
   busy: boolean;
   folders: Folder[];
   activeFolder: string;
@@ -204,7 +194,6 @@ function TileMenu({
   onDownload: () => void;
   onRename: () => void;
   onCopyName: () => void;
-  onSetCover: () => void;
   onMove: (folderId: string) => void;
   onDelete: () => void;
 }) {
@@ -246,9 +235,6 @@ function TileMenu({
           <MenuItem onClick={run(onOpen)} label="Open" />
           <MenuItem onClick={run(onDownload)} label="Download" />
           <MenuItem onClick={run(onRename)} label="Rename" />
-          {file.type === "image" && ready && !isCover && (
-            <MenuItem onClick={run(onSetCover)} label="Set as cover" />
-          )}
           <MenuItem onClick={run(onCopyName)} label="Copy filename" />
           {otherFolders.length > 0 && (
             <>

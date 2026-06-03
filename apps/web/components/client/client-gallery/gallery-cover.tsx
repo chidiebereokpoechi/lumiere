@@ -32,19 +32,22 @@ export function GalleryCover({
 
   return (
     <header className="relative h-svh min-h-136 w-full overflow-hidden">
-      {gallery.coverFileId ? (
+      {gallery.coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`/img/${gallery.id}/${gallery.coverFileId}/preview`}
+          src={gallery.coverUrl}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
+          style={{
+            objectPosition: `${gallery.coverFocalX ?? 50}% ${gallery.coverFocalY ?? 50}%`,
+          }}
         />
       ) : (
         <div className="absolute inset-0 bg-surface-sunken" />
       )}
-      {gallery.coverFileId && <div className="absolute inset-0 bg-black/35" />}
+      {gallery.coverUrl && <div className="absolute inset-0 bg-black/35" />}
       <div
-        className={`relative h-full flex flex-col items-center justify-center text-center px-4 ${gallery.coverFileId ? "text-white" : "text-ink-strong"}`}
+        className={`relative h-full flex flex-col items-center justify-center text-center px-4 ${gallery.coverUrl ? "text-white" : "text-ink-strong"}`}
       >
         {eventLine && (
           <p className="text-xs font-bold tracking-wider opacity-90">
