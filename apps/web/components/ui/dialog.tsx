@@ -38,24 +38,26 @@ let push: ((r: Req) => void) | null = null;
 export function confirmDialog(
   opts: Omit<ConfirmReq, "kind" | "resolve">,
 ): Promise<boolean> {
-  return new Promise(
-    (resolve) =>
-      push?.({ ...opts, kind: "confirm", resolve }) ?? resolve(false),
-  );
+  return new Promise((resolve) => {
+    if (push) push({ ...opts, kind: "confirm", resolve });
+    else resolve(false);
+  });
 }
 export function promptDialog(
   opts: Omit<PromptReq, "kind" | "resolve">,
 ): Promise<string | null> {
-  return new Promise(
-    (resolve) => push?.({ ...opts, kind: "prompt", resolve }) ?? resolve(null),
-  );
+  return new Promise((resolve) => {
+    if (push) push({ ...opts, kind: "prompt", resolve });
+    else resolve(null);
+  });
 }
 export function alertDialog(
   opts: Omit<AlertReq, "kind" | "resolve">,
 ): Promise<void> {
-  return new Promise(
-    (resolve) => push?.({ ...opts, kind: "alert", resolve }) ?? resolve(),
-  );
+  return new Promise((resolve) => {
+    if (push) push({ ...opts, kind: "alert", resolve });
+    else resolve();
+  });
 }
 
 export function DialogHost() {
