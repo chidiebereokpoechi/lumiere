@@ -45,6 +45,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const inflight = useRef(0);
 
@@ -270,6 +271,61 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
     } catch (err) { setCover(prev); setError(err instanceof ApiError ? `Could not set cover (${err.status})` : 'Network error'); }
     finally { setBusyId(null); }
   }
+
+  async function renameFile(file: GalleryFile) {
+    const next = window.prompt('Rename file', file.displayName ?? file.filenameOriginal)?.trim();
+    if (next === undefined) return;
+    const displayName = next === '' ? null : next;
+    setFiles((prev) => prev.map((f) => (f.id === file.id ? { ...f, displayName } : f)));
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}/files/${file.id}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ displayName }),
+      });
+    } catch (err) { setError(err instanceof ApiError ? `Rename failed (${err.status})` : 'Network error'); void refreshFiles(); }
+  }
+
+  async function copyFilename(file: GalleryFile) {
+    try { await navigator.clipboard.writeText(file.filenameOriginal); }
+    catch { setError('Clipboard unavailable'); }
+  }
+
+  function downloadFile(file: GalleryFile) {
+    const a = document.createElement('a');
+    a.href = `/api/gallery/${gallerySlug}/files/${file.id}/download`;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // Apply a sort to the active folder: reorder + persist positions (manual is
+  // a no-op — drag order stays). The client respects position, so this sticks.
+  type SortMode = 'manual' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'size-desc';
+  const [sortMode, setSortMode] = useState<SortMode>('manual');
+  const applySort = useCallback((mode: SortMode) => {
+    setSortMode(mode);
+    if (mode === 'manual') return;
+    const inFolder = files.filter((f) => f.folderId === activeFolder);
+    const name = (f: GalleryFile) => (f.displayName ?? f.filenameOriginal).toLowerCase();
+    const sorted = [...inFolder].sort((a, b) => {
+      switch (mode) {
+        case 'name-asc': return name(a).localeCompare(name(b));
+        case 'name-desc': return name(b).localeCompare(name(a));
+        case 'newest': return b.createdAt - a.createdAt;
+        case 'oldest': return a.createdAt - b.createdAt;
+        case 'size-desc': return (b.fileSize ?? 0) - (a.fileSize ?? 0);
+        default: return 0;
+      }
+    });
+    const ids = sorted.map((f) => f.id);
+    orderRef.current = ids;
+    setOrder(ids);
+    const posOf = new Map(ids.map((k, i) => [k, i]));
+    setFiles((ps) => ps.map((f) => (posOf.has(f.id) ? { ...f, position: posOf.get(f.id)! } : f)));
+    void apiClientMutation(`/api/galleries/${galleryId}/files/reorder`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ fileIds: ids }),
+    }).catch((err) => { setError(err instanceof ApiError ? `Sort failed (${err.status})` : 'Network error'); void refreshFiles(); });
+  }, [files, activeFolder, galleryId, refreshFiles]);
 
   // Shift-click selects the contiguous range (in display order) from the last
   // plain-clicked anchor — additive, never deselecting the existing selection.
@@ -523,7 +579,22 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           New folder
         </button>
-        <button type="button" onClick={() => inputRef.current?.click()} className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
+        <label className="ml-auto inline-flex items-center gap-1.5 text-sm text-ink-muted">
+          <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider text-ink-subtle">Sort</span>
+          <select
+            value={sortMode}
+            onChange={(e) => applySort(e.target.value as SortMode)}
+            className="rounded-md bg-surface-2 border border-border px-2.5 py-1.5 text-sm text-ink-strong focus:border-accent transition-colors"
+          >
+            <option value="manual">Manual</option>
+            <option value="name-asc">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="size-desc">Largest</option>
+          </select>
+        </label>
+        <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
           Upload
         </button>
@@ -567,11 +638,18 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
                   busy={busyId === file.id}
                   reorderable={canDrag}
                   dragging={draggingIds.has(file.id)}
+                  folders={folders}
+                  activeFolder={activeFolder}
                   onRef={(n) => registerTile(file.id, n)}
                   onPointerDownReorder={(e) => beginDrag(file.id, e)}
                   onToggleSelect={(shift) => toggleSelect(file.id, shift)}
+                  onOpen={() => setPreviewId(file.id)}
                   onDelete={() => onDelete(file)}
                   onSetCover={() => onSetCover(file)}
+                  onRename={() => renameFile(file)}
+                  onCopyName={() => copyFilename(file)}
+                  onDownload={() => downloadFile(file)}
+                  onMove={(folderId) => moveFiles([file.id], folderId)}
                 />
               );
             })}
@@ -648,18 +726,107 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
           </div>
         </div>
       )}
+
+      {/* Admin preview (Open) */}
+      {previewId && (() => {
+        const pf = fileById.get(previewId);
+        if (!pf) return null;
+        const idx = order.indexOf(previewId);
+        const step = (d: number) => {
+          if (order.length === 0) return;
+          const n = order[(idx + d + order.length) % order.length];
+          if (n) setPreviewId(n);
+        };
+        return (
+          <AdminPreview
+            file={pf}
+            galleryId={galleryId}
+            gallerySlug={gallerySlug}
+            index={idx}
+            total={order.length}
+            onClose={() => setPreviewId(null)}
+            onStep={step}
+          />
+        );
+      })()}
+    </div>
+  );
+}
+
+// Minimal admin media preview — light surface, keyboard + arrow nav.
+function AdminPreview({
+  file, galleryId, gallerySlug, index, total, onClose, onStep,
+}: {
+  file: GalleryFile; galleryId: string; gallerySlug: string; index: number; total: number;
+  onClose: () => void; onStep: (d: number) => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') onStep(-1);
+      else if (e.key === 'ArrowRight') onStep(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose, onStep]);
+
+  const name = file.displayName ?? file.filenameOriginal;
+  const streamUrl = `/api/gallery/${gallerySlug}/files/${file.id}/stream`;
+  return (
+    <div className="fixed inset-0 z-50 bg-bg flex flex-col" onClick={onClose}>
+      <div className="shrink-0 flex items-center justify-between px-4 h-14" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} aria-label="Close" className="h-10 w-10 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+        </button>
+        <a href={`/api/gallery/${gallerySlug}/files/${file.id}/download`} aria-label="Download" className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+        </a>
+      </div>
+      <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12" onClick={onClose}>
+        <div className="max-h-full max-w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          {file.type === 'image' ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`/img/${galleryId}/${file.id}/preview`} alt={name} className="max-h-[80svh] max-w-full object-contain" />
+          ) : file.type === 'video' ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <video src={streamUrl} controls autoPlay className="max-h-[80svh] max-w-full" />
+          ) : file.type === 'audio' ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption
+            <audio src={streamUrl} controls autoPlay className="w-[min(90vw,32rem)]" />
+          ) : (
+            <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
+              <TypeIcon type={file.type} />
+              <p className="mt-3 text-sm font-semibold text-ink-strong truncate">{name}</p>
+            </div>
+          )}
+        </div>
+        {total > 1 && (
+          <>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onStep(-1); }} aria-label="Previous" className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <button type="button" onClick={(e) => { e.stopPropagation(); onStep(1); }} aria-label="Next" className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          </>
+        )}
+      </div>
+      <div className="shrink-0 text-center pt-1 pb-3" onClick={(e) => e.stopPropagation()}>
+        <p className="text-xs text-ink-muted tabular-nums truncate px-6">{name}{total > 1 ? `  ·  ${index + 1} / ${total}` : ''}</p>
+      </div>
     </div>
   );
 }
 
 function FileTile({
-  file, galleryId, gallerySlug, isCover, selected, busy, reorderable, dragging,
-  onRef, onPointerDownReorder, onToggleSelect, onDelete, onSetCover,
+  file, galleryId, gallerySlug, isCover, selected, busy, reorderable, dragging, folders, activeFolder,
+  onRef, onPointerDownReorder, onToggleSelect, onOpen, onDelete, onSetCover, onRename, onCopyName, onDownload, onMove,
 }: {
   file: GalleryFile; galleryId: string; gallerySlug: string; isCover: boolean; selected: boolean; busy: boolean;
-  reorderable: boolean; dragging: boolean;
+  reorderable: boolean; dragging: boolean; folders: Folder[]; activeFolder: string;
   onRef: (n: HTMLElement | null) => void; onPointerDownReorder: (e: React.PointerEvent<HTMLElement>) => void;
-  onToggleSelect: (shift: boolean) => void; onDelete: () => void; onSetCover: () => void;
+  onToggleSelect: (shift: boolean) => void; onOpen: () => void; onDelete: () => void; onSetCover: () => void;
+  onRename: () => void; onCopyName: () => void; onDownload: () => void; onMove: (folderId: string) => void;
 }) {
   const name = file.displayName ?? file.filenameOriginal;
   const ready = file.uploadStatus !== 'processing' && file.uploadStatus !== 'error';
@@ -697,7 +864,7 @@ function FileTile({
         </div>
       )}
 
-      {!dragging && isCover && <span className="absolute top-2 right-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">Cover</span>}
+      {!dragging && isCover && <span className="absolute bottom-2 left-2 rounded-md bg-surface-strong text-ink-inverse px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest">Cover</span>}
 
       {!dragging && (
         <button type="button" onClick={(e) => onToggleSelect(e.shiftKey)} onPointerDown={(e) => e.stopPropagation()} aria-pressed={selected} aria-label={selected ? 'Deselect' : 'Select'}
@@ -709,20 +876,83 @@ function FileTile({
       {!dragging && selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-lg" />}
 
       {!dragging && (
-        <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1.5 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-linear-to-t from-black/50 to-transparent">
-          {file.type === 'image' && ready && !isCover && (
-            <button type="button" onClick={onSetCover} onPointerDown={(e) => e.stopPropagation()} disabled={busy} title="Set as cover" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-surface/90 text-ink-strong hover:bg-surface disabled:opacity-50">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15 8.5 22 9.3 17 14 18.2 21 12 17.5 5.8 21 7 14 2 9.3 9 8.5 12 2" /></svg>
-            </button>
-          )}
-          <button type="button" onClick={onDelete} onPointerDown={(e) => e.stopPropagation()} disabled={busy} title="Delete" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-surface/90 text-negative hover:bg-surface disabled:opacity-50">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-          </button>
-        </div>
+        <TileMenu
+          file={file} ready={ready} isCover={isCover} busy={busy} folders={folders} activeFolder={activeFolder}
+          onOpen={onOpen} onDownload={onDownload} onRename={onRename} onCopyName={onCopyName}
+          onSetCover={onSetCover} onMove={onMove} onDelete={onDelete}
+        />
       )}
     </div>
     <span title={name} className="px-0.5 text-[11px] leading-tight text-ink-muted truncate">{name}</span>
     </div>
+  );
+}
+
+// Per-tile ⋯ actions menu.
+function TileMenu({
+  file, ready, isCover, busy, folders, activeFolder,
+  onOpen, onDownload, onRename, onCopyName, onSetCover, onMove, onDelete,
+}: {
+  file: GalleryFile; ready: boolean; isCover: boolean; busy: boolean; folders: Folder[]; activeFolder: string;
+  onOpen: () => void; onDownload: () => void; onRename: () => void; onCopyName: () => void;
+  onSetCover: () => void; onMove: (folderId: string) => void; onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const run = (fn: () => void) => () => { setOpen(false); fn(); };
+  const otherFolders = folders.filter((f) => f.id !== activeFolder);
+
+  return (
+    <div ref={ref} className="absolute top-2 right-2" onPointerDown={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy}
+        aria-label="Actions"
+        className={`h-8 w-8 inline-flex items-center justify-center rounded-md bg-surface/90 text-ink-strong hover:bg-surface disabled:opacity-50 transition-opacity ${open ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="12" cy="19" r="1.6" /></svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-48 rounded-md border border-border bg-surface shadow-lg p-1.5 text-sm z-20">
+          <MenuItem onClick={run(onOpen)} label="Open" />
+          <MenuItem onClick={run(onDownload)} label="Download" />
+          <MenuItem onClick={run(onRename)} label="Rename" />
+          {file.type === 'image' && ready && !isCover && <MenuItem onClick={run(onSetCover)} label="Set as cover" />}
+          <MenuItem onClick={run(onCopyName)} label="Copy filename" />
+          {otherFolders.length > 0 && (
+            <>
+              <div className="my-1 mx-1 h-px bg-border" />
+              <p className="px-2.5 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-ink-subtle">Move to</p>
+              {otherFolders.map((f) => (
+                <MenuItem key={f.id} onClick={run(() => onMove(f.id))} label={f.name} />
+              ))}
+            </>
+          )}
+          <div className="my-1 mx-1 h-px bg-border" />
+          <MenuItem onClick={run(onDelete)} label="Delete" danger />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({ onClick, label, danger }: { onClick: () => void; label: string; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left rounded px-2.5 py-1.5 truncate hover:bg-surface-2 ${danger ? 'text-negative' : 'text-ink-strong'}`}
+    >
+      {label}
+    </button>
   );
 }
 

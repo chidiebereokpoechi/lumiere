@@ -1,0 +1,71 @@
+'use client';
+
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { apiClientMutation, ApiError } from '@/lib/api-client';
+
+type Status = 'active' | 'draft' | 'archived';
+
+const LABELS: Record<Status, string> = { active: 'Published', draft: 'Draft', archived: 'Archived' };
+const DOT: Record<Status, string> = { active: 'bg-positive', draft: 'bg-ink-subtle', archived: 'bg-negative' };
+
+// Quick gallery status switch in the editor header (mirrors Settings → Status).
+export function StatusControl({ galleryId, status: initial }: { galleryId: string; status: Status }) {
+  const router = useRouter();
+  const [status, setStatus] = useState<Status>(initial);
+  const [open, setOpen] = useState(false);
+  const [, startTransition] = useTransition();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  async function choose(next: Status) {
+    setOpen(false);
+    if (next === status) return;
+    const prev = status;
+    setStatus(next);
+    try {
+      await apiClientMutation(`/api/galleries/${galleryId}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: next }),
+      });
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setStatus(prev);
+      alert(err instanceof ApiError ? `Could not update status (${err.status})` : 'Network error');
+    }
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-3.5 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
+      >
+        <span className={`h-2 w-2 rounded-full ${DOT[status]}`} />
+        {LABELS[status]}
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 z-30 mt-1.5 w-44 rounded-md border border-border bg-surface shadow-lg p-1.5">
+          {(['active', 'draft', 'archived'] as Status[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => choose(s)}
+              className={`flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-sm hover:bg-surface-2 ${s === status ? 'text-ink-strong font-semibold' : 'text-ink-muted'}`}
+            >
+              <span className={`h-2 w-2 rounded-full ${DOT[s]}`} />
+              {LABELS[s]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

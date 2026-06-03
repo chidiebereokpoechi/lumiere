@@ -34,6 +34,7 @@ export default async function GalleryMediaPage({ params }: Props) {
         title={gallery.title}
         slug={gallery.slug}
         passwordProtected={!!gallery.passwordHash}
+        status={gallery.status ?? "active"}
         user={{ name: me.name, email: me.email }}
         active="media"
       />
