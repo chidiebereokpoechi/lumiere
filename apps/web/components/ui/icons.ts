@@ -41,7 +41,7 @@ export {
 } from "react-icons/cg";
 
 export {
-  IoReorderTwoOutline as Grip,
-  IoHeartOutline as HeartOpen,
-  IoHeart as Heart,
-} from "react-icons/io5";
+  VscGrabber as Grip,
+  VscHeart as HeartOpen,
+  VscHeartFilled as Heart,
+} from "react-icons/vsc";

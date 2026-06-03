@@ -1,4 +1,5 @@
 import type { GalleryAnalytics } from "@/lib/api/analytics";
+import { formatDate } from "@/lib/format";
 
 interface Props {
   galleryId: string;
@@ -27,11 +28,7 @@ function dayAxis(since: number): string[] {
 }
 
 function whenDay(epoch: number): string {
-  return new Date(epoch * 1000).toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDate(epoch);
 }
 
 export function AnalyticsView({ galleryId, analytics }: Props) {

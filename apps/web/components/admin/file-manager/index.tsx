@@ -6,6 +6,7 @@ import {
   apiClient,
   apiClientMutation,
   apiErrorMessage,
+  mutateJson,
 } from "@/lib/api-client";
 import { downloadViaAnchor } from "@/lib/download";
 import type { GalleryFile } from "@/lib/api/files";
@@ -17,6 +18,7 @@ import { useTileSortable } from "@/hooks/use-tile-sortable";
 import { Select } from "@/components/ui/select";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Plus, Upload, Trash } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 import { FileTile } from "./file-tile";
 import { FolderRow } from "./folder-row";
 import { AdminPreview } from "./admin-preview";
@@ -106,13 +108,9 @@ export function FileManager({
     )?.trim();
     if (!name) return;
     try {
-      const created = await apiClientMutation<Folder>(
+      const created = await mutateJson<Folder>(
         `/api/galleries/${galleryId}/folders`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name }),
-        },
+        { name },
       );
       await refreshFolders();
       if (created?.id) setActiveFolder(created.id);
@@ -131,11 +129,11 @@ export function FileManager({
     )?.trim();
     if (!name || name === folder.name) return;
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
+      await mutateJson(
+        `/api/galleries/${galleryId}/folders/${folder.id}`,
+        { name },
+        "PATCH",
+      );
       await refreshFolders();
     } catch (err) {
       setError(apiErrorMessage(err, "Could not rename folder"));
@@ -143,11 +141,11 @@ export function FileManager({
   }
   async function toggleFolderHidden(folder: Folder) {
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}/folders/${folder.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ hidden: !folder.hidden }),
-      });
+      await mutateJson(
+        `/api/galleries/${galleryId}/folders/${folder.id}`,
+        { hidden: !folder.hidden },
+        "PATCH",
+      );
       await refreshFolders();
     } catch (err) {
       setError(apiErrorMessage(err, "Could not update folder"));
@@ -187,10 +185,9 @@ export function FileManager({
         prev.map((f) => (idSet.has(f.id) ? { ...f, folderId } : f)),
       );
       try {
-        await apiClientMutation(`/api/galleries/${galleryId}/files/move`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ fileIds: ids, folderId }),
+        await mutateJson(`/api/galleries/${galleryId}/files/move`, {
+          fileIds: ids,
+          folderId,
         });
         await refreshFolders();
       } catch (err) {
@@ -216,13 +213,9 @@ export function FileManager({
       )?.trim();
       if (!name) return;
       try {
-        const created = await apiClientMutation<Folder>(
+        const created = await mutateJson<Folder>(
           `/api/galleries/${galleryId}/folders`,
-          {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ name }),
-          },
+          { name },
         );
         await refreshFolders();
         await moveFiles(ids, created.id);
@@ -327,11 +320,11 @@ export function FileManager({
     const prev = cover;
     setCover(file.id);
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ coverFileId: file.id }),
-      });
+      await mutateJson(
+        `/api/galleries/${galleryId}`,
+        { coverFileId: file.id },
+        "PATCH",
+      );
     } catch (err) {
       setCover(prev);
       setError(apiErrorMessage(err, "Could not set cover"));
@@ -353,11 +346,11 @@ export function FileManager({
       prev.map((f) => (f.id === file.id ? { ...f, displayName } : f)),
     );
     try {
-      await apiClientMutation(`/api/galleries/${galleryId}/files/${file.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ displayName }),
-      });
+      await mutateJson(
+        `/api/galleries/${galleryId}/files/${file.id}`,
+        { displayName },
+        "PATCH",
+      );
     } catch (err) {
       setError(apiErrorMessage(err, "Rename failed"));
       void refreshFiles();
@@ -436,13 +429,9 @@ export function FileManager({
                   )?.trim();
                   if (!name) return;
                   try {
-                    const created = await apiClientMutation<Folder>(
+                    const created = await mutateJson<Folder>(
                       `/api/galleries/${galleryId}/folders`,
-                      {
-                        method: "POST",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({ name }),
-                      },
+                      { name },
                     );
                     await refreshFolders();
                     setActiveFolder(created.id);
@@ -514,14 +503,13 @@ export function FileManager({
                 ]}
               />
             </div>
-            <button
-              type="button"
+            <Button
               onClick={() => inputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark transition-colors"
+              className="px-3.5 tracking-wider"
             >
               <Upload size={15} />
               Upload
-            </button>
+            </Button>
             <input
               ref={inputRef}
               type="file"

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { apiClientMutation, ApiError } from "@/lib/api-client";
 import type { AdminComment } from "@/lib/api/comments";
 import { confirmDialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 function when(epoch: number): string {
   return new Date(epoch * 1000).toLocaleString("en", {
@@ -169,14 +170,13 @@ export function CommentModeration({
                       Unapprove
                     </button>
                   ) : (
-                    <button
-                      type="button"
+                    <Button
                       disabled={busyId === c.id}
                       onClick={() => setApproved(c, true)}
-                      className="rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+                      className="px-3 py-1.5 tracking-wider"
                     >
                       Approve
-                    </button>
+                    </Button>
                   )}
                   <button
                     type="button"

@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { apiClient, ApiError } from "@/lib/api-client";
 import type { ClientComment } from "@/lib/api/comments";
+import { formatDate } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { TextInput, Textarea } from "@/components/ui/text-input";
 
 function when(epoch: number): string {
-  return new Date(epoch * 1000).toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDate(epoch);
 }
 
 export function CommentsSection({
@@ -91,29 +90,27 @@ export function CommentsSection({
           </p>
         ) : (
           <form onSubmit={onSubmit} className="space-y-3">
-            <input
+            <TextInput
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={setName}
               placeholder="Your name (optional)"
-              className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle focus:border-accent transition-colors"
             />
-            <textarea
+            <Textarea
               value={body}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={setBody}
               rows={3}
               placeholder="Leave a comment…"
-              className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle focus:border-accent transition-colors resize-y"
             />
             {error && (
               <p className="text-sm font-semibold text-negative">{error}</p>
             )}
-            <button
+            <Button
               type="submit"
               disabled={pending || !body.trim()}
-              className="inline-flex items-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+              className="tracking-wider"
             >
               {pending ? "Posting…" : "Post comment"}
-            </button>
+            </Button>
           </form>
         )}
       </div>

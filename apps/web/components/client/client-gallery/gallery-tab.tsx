@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/cn";
 import { Close } from "@/components/ui/icons";
 
 // Plain text tab — a folder, favorites, or a list. Active gets a filled
@@ -28,11 +29,13 @@ export function GalleryTab({
           onClick();
         }
       }}
-      className={`group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border cursor-pointer pl-4 ${onDelete ? "pr-2" : "pr-4"} py-2.5 text-sm font-bold tracking-wider whitespace-nowrap transition-colors focus-visible:outline-none ${
+      className={cn(
+        "group/tab shrink-0 inline-flex items-center gap-1.5 rounded-md border cursor-pointer pl-4 py-2.5 text-sm font-bold tracking-wider whitespace-nowrap transition-colors focus-visible:outline-none",
+        onDelete ? "pr-2" : "pr-4",
         active
           ? "bg-surface-strong text-ink-inverse border-surface-strong"
-          : "bg-surface text-ink-muted border-border hover:bg-surface-2 hover:text-ink-strong hover:border-border-strong"
-      }`}
+          : "bg-surface text-ink-muted border-border hover:bg-surface-2 hover:text-ink-strong hover:border-border-strong",
+      )}
     >
       <span className="truncate max-w-[42vw] sm:max-w-56">{label}</span>
       <span

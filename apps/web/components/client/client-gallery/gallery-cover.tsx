@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { MinimalGallery } from "@/lib/api/client-gallery";
+import { formatDate } from "@/lib/format";
 
 // Full-screen intro cover with the event line, title, and a "View gallery" cue
 // that scrolls down to the grid.
@@ -17,7 +18,7 @@ export function GalleryCover({
       [
         gallery.eventType,
         gallery.eventDate
-          ? new Date(gallery.eventDate * 1000).toLocaleDateString("en", {
+          ? formatDate(gallery.eventDate, {
               month: "long",
               day: "numeric",
               year: "numeric",

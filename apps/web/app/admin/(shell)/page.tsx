@@ -6,6 +6,7 @@ import {
 } from "@/lib/api/galleries";
 import { Topnav } from "@/components/admin/topnav";
 import { ImageIcon, Plus } from "@/components/ui/icons";
+import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -168,9 +169,5 @@ function relativeDate(epochSeconds: number): string {
   return absoluteDate(epochSeconds);
 }
 function absoluteDate(epochSeconds: number): string {
-  return new Date(epochSeconds * 1000).toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDate(epochSeconds);
 }

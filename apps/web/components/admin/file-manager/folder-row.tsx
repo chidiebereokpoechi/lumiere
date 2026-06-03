@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/cn";
 import { Eye, EyeOff, Pen, Close, Grip } from "@/components/ui/icons";
 
 // Vertical set/folder row for the sidebar: select, count, drop-target for file
@@ -42,7 +43,7 @@ export function FolderRow({
 }) {
   const hasFiles = (e: React.DragEvent) =>
     e.dataTransfer.types.includes("Files");
-  const dim = hidden && !active && !isDropTarget ? "opacity-60" : "";
+  const dim = hidden && !active && !isDropTarget;
   const iconTint =
     active || isDropTarget
       ? "text-ink-inverse/80 hover:text-ink-inverse"
@@ -74,13 +75,16 @@ export function FolderRow({
           onClick();
         }
       }}
-      className={`group/row flex items-center gap-4 rounded-md border px-4 py-4 cursor-pointer transition-colors focus-visible:outline-none ${
+      className={cn(
+        "group/row flex items-center gap-4 rounded-md border px-4 py-4 cursor-pointer transition-colors focus-visible:outline-none",
         isDropTarget
           ? "bg-accent text-ink-inverse border-accent ring-2 ring-accent/40"
           : active
             ? "bg-surface-strong text-ink-inverse border-surface-strong"
-            : "bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong"
-      } ${dim} ${draggingFolder ? "opacity-60 ring-2 ring-accent" : ""}`}
+            : "bg-surface text-ink-muted border-border hover:text-ink-strong hover:border-border-strong",
+        dim && "opacity-60",
+        draggingFolder && "opacity-60 ring-2 ring-accent",
+      )}
     >
       {reorderable && (
         <button
@@ -93,7 +97,12 @@ export function FolderRow({
             onReorderStart?.(e);
           }}
           style={{ touchAction: "none" }}
-          className={`shrink-0 cursor-grab active:cursor-grabbing ${active || isDropTarget ? "text-ink-inverse/60 hover:text-ink-inverse" : "text-ink-subtle hover:text-ink-strong"}`}
+          className={cn(
+            "shrink-0 cursor-grab active:cursor-grabbing",
+            active || isDropTarget
+              ? "text-ink-inverse/60 hover:text-ink-inverse"
+              : "text-ink-subtle hover:text-ink-strong",
+          )}
         >
           <Grip size={15} />
         </button>
@@ -103,7 +112,10 @@ export function FolderRow({
         <span className="truncate">{label}</span>
       </span>
       <span
-        className={`tabular-nums text-xs shrink-0 group-hover/row:hidden ${active || isDropTarget ? "text-ink-inverse/70" : "text-ink-subtle"}`}
+        className={cn(
+          "tabular-nums text-xs shrink-0 group-hover/row:hidden",
+          active || isDropTarget ? "text-ink-inverse/70" : "text-ink-subtle",
+        )}
       >
         {count}
       </span>
@@ -142,7 +154,11 @@ export function FolderRow({
               onDelete();
             }}
             title="Delete set"
-            className={`${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
+            className={
+              active
+                ? "text-ink-inverse/80 hover:text-ink-inverse"
+                : "text-ink-subtle hover:text-negative"
+            }
           >
             <Close size={14} />
           </button>

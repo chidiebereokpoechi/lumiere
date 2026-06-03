@@ -10,7 +10,7 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { apiClientMutation, apiErrorMessage } from "@/lib/api-client";
+import { apiErrorMessage, mutateJson } from "@/lib/api-client";
 import type { GalleryFile } from "@/lib/api/files";
 
 export type SortMode =
@@ -169,10 +169,8 @@ export function useTileSortable({
           posOf.has(f.id) ? { ...f, position: posOf.get(f.id)! } : f,
         ),
       );
-      void apiClientMutation(`/api/galleries/${galleryId}/files/reorder`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fileIds: ids }),
+      void mutateJson(`/api/galleries/${galleryId}/files/reorder`, {
+        fileIds: ids,
       }).catch((err) => {
         onError(apiErrorMessage(err, "Sort failed"));
         refreshFiles();
@@ -300,10 +298,8 @@ export function useTileSortable({
         posOf.has(f.id) ? { ...f, position: posOf.get(f.id)! } : f,
       ),
     );
-    void apiClientMutation(`/api/galleries/${galleryId}/files/reorder`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ fileIds: finalOrder }),
+    void mutateJson(`/api/galleries/${galleryId}/files/reorder`, {
+      fileIds: finalOrder,
     }).catch((err) => {
       onError(apiErrorMessage(err, "Reorder failed"));
       refreshFiles();

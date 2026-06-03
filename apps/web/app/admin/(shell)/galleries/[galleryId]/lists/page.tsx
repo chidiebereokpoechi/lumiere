@@ -5,6 +5,7 @@ import { fetchFiles, type GalleryFile } from "@/lib/api/files";
 import { ApiError } from "@/lib/api-client";
 import { GalleryHeader } from "@/components/admin/gallery-header";
 import { ExportFilenames } from "@/components/admin/export-filenames";
+import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +14,7 @@ interface Props {
 }
 
 function when(epoch: number): string {
-  return new Date(epoch * 1000).toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDate(epoch);
 }
 
 export default async function GalleryListsPage({ params }: Props) {

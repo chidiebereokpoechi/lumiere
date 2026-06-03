@@ -1,6 +1,7 @@
 "use client";
 
 import { Bookmark, Download, ImageIcon } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 // Fixed bottom action bar shown while a selection exists. Respects the iOS
 // home-indicator inset.
@@ -39,33 +40,33 @@ export function SelectionBar({
           </button>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={onAddToList}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
+            className="px-3.5 tracking-wider"
           >
             <Bookmark size={24} />
-          </button>
+          </Button>
           {/* Save photos straight to the camera roll on touch devices */}
           {canDownload && showSavePhotos && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onSavePhotos}
               disabled={savingPhotos}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
+              className="px-3.5 tracking-wider"
             >
               <ImageIcon size={24} />
               {savingPhotos ? "Preparing…" : "Save to photos"}
-            </button>
+            </Button>
           )}
           {canDownload && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onDownload}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
+              className="px-3.5 tracking-wider"
             >
               <Download size={24} />
-            </button>
+            </Button>
           )}
         </div>
       </div>

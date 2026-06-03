@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient, ApiError } from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { TextInput } from "@/components/ui/text-input";
 
 export function PasswordGate({ slug, title }: { slug: string; title: string }) {
   const router = useRouter();
@@ -54,25 +56,24 @@ export function PasswordGate({ slug, title }: { slug: string; title: string }) {
               Enter the password the creator shared.
             </p>
           </div>
-          <input
+          <TextInput
             type="password"
             autoComplete="current-password"
             autoFocus
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             placeholder="••••••••"
-            className="w-full rounded-md bg-surface-2 border border-border px-3.5 py-2.5 text-sm text-ink-strong placeholder:text-ink-subtle hover:border-border-strong focus:border-accent transition-colors"
           />
           {error && (
             <p className="text-sm font-semibold text-negative">{error}</p>
           )}
-          <button
+          <Button
             type="submit"
             disabled={pending || !password}
-            className="w-full inline-flex items-center justify-center rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="w-full tracking-wider"
           >
             {pending ? "Unlocking…" : "View gallery"}
-          </button>
+          </Button>
         </form>
       </div>
     </main>

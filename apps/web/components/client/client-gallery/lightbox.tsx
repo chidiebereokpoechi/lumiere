@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ClientFile } from "@/lib/api/client-gallery";
+import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/format";
 import {
   Bookmark,
@@ -14,6 +15,7 @@ import {
   HeartOpen,
   ImageIcon,
 } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
 import { AudioPlayer } from "./audio-player";
 import { ItemComments } from "./item-comments";
 
@@ -95,55 +97,46 @@ export function Lightbox({
         className="shrink-0 flex items-center justify-between px-3 sm:px-5 h-14"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="h-10 w-10 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
-        >
+        <IconButton onClick={onClose} aria-label="Close" className="h-10 w-10 -ml-1">
           <ChevronLeft size={24} />
-        </button>
+        </IconButton>
         <div className="flex items-center gap-1">
           {canFavorite && (
-            <button
-              type="button"
+            <IconButton
               onClick={onToggleFavorite}
               aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-              className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${isFavorite ? "text-heart" : "text-ink-muted"}`}
+              className={cn("h-10 w-10", isFavorite && "text-heart")}
             >
               {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
-            </button>
+            </IconButton>
           )}
-          <button
-            type="button"
+          <IconButton
             onClick={onAddToList}
             aria-label="Add to list"
-            className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+            className="h-10 w-10"
           >
             <Bookmark size={24} />
-          </button>
+          </IconButton>
           {allowComments && (
-            <button
-              type="button"
+            <IconButton
               onClick={() => setShowComments((v) => !v)}
               aria-label="Comments"
-              className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${showComments ? "text-ink-strong" : "text-ink-muted"}`}
+              className={cn("h-10 w-10", showComments && "text-ink-strong")}
             >
               <Comment size={24} />
-            </button>
+            </IconButton>
           )}
           {canDownload &&
             coarse &&
             (file.type === "image" || file.type === "video") && (
-              <button
-                type="button"
+              <IconButton
                 onClick={onShare}
                 disabled={savingPhotos}
                 aria-label="Save to Photos"
-                className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong disabled:opacity-60"
+                className="h-10 w-10"
               >
                 <ImageIcon size={24} />
-              </button>
+              </IconButton>
             )}
           {canDownload && (
             <a
@@ -210,28 +203,26 @@ export function Lightbox({
         </div>
         {total > 1 && (
           <>
-            <button
-              type="button"
+            <IconButton
               onClick={(e) => {
                 e.stopPropagation();
                 onStep(-1);
               }}
               aria-label="Previous"
-              className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+              className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11"
             >
               <ChevronLeft size={24} />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
               onClick={(e) => {
                 e.stopPropagation();
                 onStep(1);
               }}
               aria-label="Next"
-              className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+              className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11"
             >
               <ChevronRight size={24} />
-            </button>
+            </IconButton>
           </>
         )}
       </div>

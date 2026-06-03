@@ -60,6 +60,35 @@ litestream.yml                # off-host SQLite replication target
 - Custom `next/image` loader in [lib/image-loader.ts](apps/web/lib/image-loader.ts) — passthrough; Elysia already serves presigned 302s, never let Next re-encode.
 - Admin gate: [proxy.ts](apps/web/proxy.ts) (Next 16 renamed `middleware.ts` to `proxy.ts`) — bounces missing JWT to `/admin/login`. First gate, not the security boundary.
 
+## Frontend architecture & conventions
+
+Follow these when adding or changing web code. They keep components small and DRY; new work should match this structure, not reintroduce the patterns it replaced.
+
+**Feature = a folder with an `index.tsx` orchestrator + leaf modules.** Big interactive surfaces are decomposed, never single mega-files. The orchestrator owns coordination/state wiring and render shell; everything else is a focused sibling.
+- Client gallery: [components/client/client-gallery/](apps/web/components/client/client-gallery/) — `index.tsx` + `gallery-cover`, `gallery-tab`, `gallery-grid` (+`GalleryTile`), `lightbox`, `audio-player`, `selection-bar`, `email-modal`, `list-picker-modal`, `item-comments`.
+- Admin media manager: [components/admin/file-manager/](apps/web/components/admin/file-manager/) — `index.tsx` + `file-tile` (+`TileMenu`), `folder-row`, `admin-preview`, `upload-summary`, `bits` (Spinner/Badge/TypeIcon).
+- Admin watermarks: [components/admin/watermark-manager/](apps/web/components/admin/watermark-manager/) — `index.tsx` + `preset-editor`, `preset-card`, `watermark-preview`, `draft.ts` (pure types/consts).
+- Import sites point at the folder (`@/components/.../file-manager`) → resolves to `index.tsx`. Don't change call sites when decomposing.
+
+**Heavy stateful logic lives in hooks under [hooks/](apps/web/hooks/), not in components.** A component that grew a tangle of refs/effects/handlers is the signal to extract.
+- Reusable: `use-range-select` (shift-click range, both galleries), `use-drag-select` (client grid drag-to-select).
+- Single-surface controllers (extracted for size/separation): `use-uploads` (upload pipeline + SSE), `use-tile-sortable` (pointer drag + FLIP + sort), `use-folder-reorder`, `use-watermark-presets` (CRUD), `use-gallery-settings` (settings controller).
+- **Forms = controller hook + pure-render component.** All field state, validation, auto-save, and mutations go in a `use-*` hook (see [use-gallery-settings.ts](apps/web/hooks/use-gallery-settings.ts)); the component just binds values/handlers. Do NOT split a cohesive form into per-section components — that creates worse prop-drilling than one render.
+
+**Shared UI primitives in [components/ui/](apps/web/components/ui/) — use them; don't hand-roll the class strings.**
+- `Button` (variants `primary`/`secondary`/`ghost`/`danger`), `TextInput`/`Textarea` (controlled, `onChange` yields the next string), `Modal` (backdrop + Esc + stopPropagation), `IconButton`, `Select`, `DateField`. All accept `className` merged last via `cn` (tailwind-merge), so callers override spacing/color without forking the component.
+- [components/admin/form.tsx](apps/web/components/admin/form.tsx) re-exports Button/TextInput/Textarea/Select from `ui/` and adds admin-only `Field`/`Toggle`/`FormError`. `@/components/admin/form` imports stay valid.
+
+**`cn()` from [lib/cn.ts](apps/web/lib/cn.ts) for any conditional className** (clsx + tailwind-merge). Never build multi-branch class strings with template literals + ternaries — that was a live bug source. A single static string needs no `cn`.
+
+**Shared utilities — reach for these instead of re-implementing:**
+- [lib/api-client.ts](apps/web/lib/api-client.ts): `apiServer` (RSC), `apiClient` (browser GET), `postJson` (client JSON POST), `mutateJson` (CSRF-protected JSON mutation — the admin-write default), `getCsrfToken`, `apiErrorMessage(err, action)` (uniform "Action (status)" / "Network error" — use everywhere instead of inline `err instanceof ApiError ? …` ternaries).
+- [lib/format.ts](apps/web/lib/format.ts): `formatBytes`, `toSlug`, `formatDate`, `dateInputToEpoch`/`epochToDateInput`.
+- [lib/download.ts](apps/web/lib/download.ts): `downloadViaAnchor(href)` for browser file downloads.
+- Icons only via [components/ui/icons.ts](apps/web/components/ui/icons.ts) (semantic aliases over react-icons).
+
+**Lint note:** `next lint` was removed in Next 16 (the `lint` script is dead — it reads `lint` as a directory). `bun run typecheck` (strict `tsc --noEmit`) is the gate; run it after each change.
+
 ## Running locally
 
 ```sh

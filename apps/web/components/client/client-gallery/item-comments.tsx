@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { apiClient, apiErrorMessage, ApiError, postJson } from "@/lib/api-client";
+import { formatDate } from "@/lib/format";
 import type { ClientComment } from "@/lib/api/comments";
+import { Button } from "@/components/ui/button";
+import { TextInput, Textarea } from "@/components/ui/text-input";
 
 // Approved comments for a single item + a submit form. Fetches lazily per file.
 export function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
@@ -79,10 +82,7 @@ export function ItemComments({ slug, fileId }: { slug: string; fileId: string })
                   {c.clientName || "Guest"}
                 </span>
                 <span className="text-[11px] text-ink-subtle tabular-nums">
-                  {new Date(c.createdAt * 1000).toLocaleDateString("en", {
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {formatDate(c.createdAt, { month: "short", day: "numeric" })}
                 </span>
               </div>
               <p className="mt-1 text-sm text-ink-muted whitespace-pre-wrap">
@@ -99,29 +99,29 @@ export function ItemComments({ slug, fileId }: { slug: string; fileId: string })
         </p>
       ) : (
         <form onSubmit={submit} className="mt-4 space-y-2">
-          <input
+          <TextInput
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={setName}
             placeholder="Your name (optional)"
-            className="w-full rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong placeholder:text-ink-subtle focus:border-accent transition-colors"
+            className="px-3 py-2"
           />
-          <textarea
+          <Textarea
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={setBody}
             rows={3}
             placeholder="Leave a comment on this item…"
-            className="w-full rounded-md bg-surface-2 border border-border px-3 py-2 text-sm text-ink-strong placeholder:text-ink-subtle focus:border-accent transition-colors resize-y"
+            className="px-3 py-2"
           />
           {error && (
             <p className="text-sm font-semibold text-negative">{error}</p>
           )}
-          <button
+          <Button
             type="submit"
             disabled={pending || !body.trim()}
-            className="inline-flex items-center rounded-md bg-accent border border-accent px-3.5 py-2 text-sm font-bold tracking-wider text-white hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors disabled:opacity-50"
+            className="px-3.5 py-2 tracking-wider"
           >
             {pending ? "Posting…" : "Post"}
-          </button>
+          </Button>
         </form>
       )}
     </div>

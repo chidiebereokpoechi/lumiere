@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { GalleryFile } from "@/lib/api/files";
 import { ChevronLeft, ChevronRight, Download } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
 import { TypeIcon } from "./bits";
 
 // Minimal admin media preview — full-bleed surface, keyboard + arrow nav.
@@ -41,14 +42,9 @@ export function AdminPreview({
         className="shrink-0 flex items-center justify-between px-4 h-14"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="h-10 w-10 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
-        >
+        <IconButton onClick={onClose} aria-label="Close" className="h-10 w-10 -ml-1">
           <ChevronLeft size={24} />
-        </button>
+        </IconButton>
         <a
           href={`/api/gallery/${gallerySlug}/files/${file.id}/download`}
           aria-label="Download"
@@ -93,28 +89,26 @@ export function AdminPreview({
         </div>
         {total > 1 && (
           <>
-            <button
-              type="button"
+            <IconButton
               onClick={(e) => {
                 e.stopPropagation();
                 onStep(-1);
               }}
               aria-label="Previous"
-              className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+              className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11"
             >
               <ChevronLeft size={26} />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
               onClick={(e) => {
                 e.stopPropagation();
                 onStep(1);
               }}
               aria-label="Next"
-              className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+              className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11"
             >
               <ChevronRight size={26} />
-            </button>
+            </IconButton>
           </>
         )}
       </div>

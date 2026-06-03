@@ -122,6 +122,23 @@ export function apiErrorMessage(err: unknown, action: string): string {
   return err instanceof ApiError ? `${action} (${err.status})` : "Network error";
 }
 
+/**
+ * CSRF-protected JSON mutation: serializes the body, sets the content-type, and
+ * attaches the CSRF header via `apiClientMutation`. The mutating sibling of
+ * `postJson` — use for admin writes (create/rename/move/reorder/etc.).
+ */
+export function mutateJson<T = unknown>(
+  path: string,
+  body: unknown,
+  method = "POST",
+): Promise<T> {
+  return apiClientMutation<T>(path, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
 function readCookie(name: string): string | undefined {
   if (typeof document === 'undefined') return undefined;
   const target = `${name}=`;

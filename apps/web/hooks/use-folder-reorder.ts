@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
-import { apiClientMutation, apiErrorMessage } from "@/lib/api-client";
+import { apiErrorMessage, mutateJson } from "@/lib/api-client";
 import type { Folder } from "@/lib/api/folders";
 
 /**
@@ -24,10 +24,8 @@ export function useFolderReorder({
 
   const persistFolderOrder = useCallback(
     (ids: string[]) => {
-      void apiClientMutation(`/api/galleries/${galleryId}/folders/reorder`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ folderIds: ids }),
+      void mutateJson(`/api/galleries/${galleryId}/folders/reorder`, {
+        folderIds: ids,
       }).catch((err) => {
         onError(apiErrorMessage(err, "Reorder failed"));
         refreshFolders();
