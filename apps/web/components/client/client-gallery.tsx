@@ -471,15 +471,19 @@ export function ClientGallery({
     else triggerDownload(`ids=${files.map((f) => f.id).join(",")}`);
   }, [view, files, triggerDownload]);
 
-  // Images among the current selection — drives the "Save to Photos" action.
+  // Photos + videos among the current selection — drives "Save to Photos"
+  // (the iOS share sheet writes both to the camera roll).
   const selectedImages = useMemo(
-    () => files.filter((f) => selected.has(f.id) && f.type === "image"),
+    () =>
+      files.filter(
+        (f) => selected.has(f.id) && (f.type === "image" || f.type === "video"),
+      ),
     [files, selected],
   );
 
-  // Save photos to the camera roll via the Web Share sheet (iOS: "Save N
-  // Images"). Fetches each image as a File, then shares. Falls back to the ZIP
-  // download when sharing files isn't supported or the fetch is blocked.
+  // Save photos/videos to the camera roll via the Web Share sheet. Fetches each
+  // as a File, then shares. Falls back to the ZIP download when sharing files
+  // isn't supported or the fetch is blocked.
   const sharePhotos = useCallback(
     async (imgs: ClientFile[]) => {
       if (imgs.length === 0 || savingPhotos) return;
@@ -490,8 +494,9 @@ export function ClientGallery({
             const res = await fetch(f.downloadUrl, { credentials: "include" });
             if (!res.ok) throw new Error("fetch_failed");
             const blob = await res.blob();
-            return new File([blob], f.filename || `${f.id}.jpg`, {
-              type: blob.type || "image/jpeg",
+            const fallbackType = f.type === "video" ? "video/mp4" : "image/jpeg";
+            return new File([blob], f.filename || `${f.id}`, {
+              type: blob.type || f.mimeType || fallbackType,
             });
           }),
         );
@@ -773,9 +778,9 @@ export function ClientGallery({
           <button
             type="button"
             onClick={() => scrollToGrid()}
-            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold tracking-wider transition-colors ${
+            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 font-bold tracking-wider transition-colors ${
               gallery.coverFileId
-                ? "border-white/70 text-white hover:bg-white hover:text-black"
+                ? "border-white text-white hover:bg-white hover:text-black"
                 : "border-border text-ink-strong hover:bg-surface-strong hover:text-ink-inverse hover:border-surface-strong"
             }`}
           >
@@ -1017,7 +1022,7 @@ export function ClientGallery({
                   <Comment size={24} />
                 </button>
               )}
-              {canDownload && coarse && open.type === "image" && (
+              {canDownload && coarse && (open.type === "image" || open.type === "video") && (
                 <button
                   type="button"
                   onClick={() => sharePhotos([open])}
@@ -1123,7 +1128,7 @@ export function ClientGallery({
             className="shrink-0 text-center pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-xs text-ink-muted tabular-nums truncate px-6">
+            <p className="text-sm text-ink-muted tabular-nums truncate px-6">
               {open.filename}
               {files.length > 1
                 ? `  ·  ${openIndex + 1} / ${files.length}`
@@ -1279,11 +1284,20 @@ function AudioPlayer({
       <audio
         ref={ref}
         src={src}
-        onPlay={() => { setPlaying(true); onPlayingChange?.(true); }}
-        onPause={() => { setPlaying(false); onPlayingChange?.(false); }}
+        onPlay={() => {
+          setPlaying(true);
+          onPlayingChange?.(true);
+        }}
+        onPause={() => {
+          setPlaying(false);
+          onPlayingChange?.(false);
+        }}
         onTimeUpdate={() => setCur(ref.current?.currentTime ?? 0)}
         onLoadedMetadata={() => setDur(ref.current?.duration ?? 0)}
-        onEnded={() => { setPlaying(false); onPlayingChange?.(false); }}
+        onEnded={() => {
+          setPlaying(false);
+          onPlayingChange?.(false);
+        }}
         className="hidden"
       />
     </div>

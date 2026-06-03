@@ -1407,7 +1407,7 @@ function AdminPreview({
         className="shrink-0 text-center pt-1 pb-3"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-xs text-ink-muted tabular-nums truncate px-6">
+        <p className="text-sm text-ink-muted tabular-nums truncate px-6">
           {name}
           {total > 1 ? `  ·  ${index + 1} / ${total}` : ""}
         </p>
@@ -1559,7 +1559,7 @@ function FileTile({
       </div>
       <span
         title={name}
-        className="px-0.5 text-[11px] leading-tight text-ink-muted truncate"
+        className="px-0.5 text-sm leading-tight text-ink-muted truncate"
       >
         {name}
       </span>
