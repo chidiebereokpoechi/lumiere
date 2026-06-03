@@ -62,7 +62,7 @@ export function Sidebar() {
         className={`flex items-center pb-4 ${collapsed ? "justify-center" : "justify-between px-2"}`}
       >
         {!collapsed && (
-          <p className="text-xs font-bold tracking-[0.28em] text-ink-muted">
+          <p className="text-xs font-bold tracking-wider text-ink-muted">
             Lumière
           </p>
         )}

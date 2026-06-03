@@ -1181,7 +1181,7 @@ export function FileManager({
 
       {/* Selection move bar */}
       {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
           <span className="text-sm font-semibold text-ink-strong tabular-nums">
             {selected.size} selected
           </span>

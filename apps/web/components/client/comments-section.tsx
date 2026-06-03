@@ -57,7 +57,7 @@ export function CommentsSection({
 
   return (
     <section className="px-4 sm:px-8 pb-12">
-      <h2 className="text-xs font-extrabold tracking-[0.22em] text-ink-muted mb-4">
+      <h2 className="text-xs font-extrabold tracking-wider text-ink-muted mb-4">
         Comments
       </h2>
       <div className="max-w-2xl space-y-6">

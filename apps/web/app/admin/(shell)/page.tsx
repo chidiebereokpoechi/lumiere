@@ -137,7 +137,7 @@ function NewGalleryButton() {
 function EmptyState() {
   return (
     <div className="max-w-2xl rounded-xl bg-surface border border-border p-10">
-      <p className="text-xs font-bold tracking-[0.28em] text-ink-muted">
+      <p className="text-xs font-bold tracking-wider text-ink-muted">
         Nothing here yet
       </p>
       <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-ink-strong">

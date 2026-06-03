@@ -100,7 +100,7 @@ export default function NewGalleryPage() {
       <div className="pb-16">
         <form onSubmit={onSubmit} className="max-w-2xl space-y-6">
           <section className="rounded-xl bg-surface border border-border p-7 space-y-6">
-            <h2 className="text-xs font-extrabold tracking-[0.22em] text-ink-muted">
+            <h2 className="text-xs font-extrabold tracking-wider text-ink-muted">
               Details
             </h2>
 

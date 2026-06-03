@@ -70,7 +70,7 @@ function LoginForm() {
   return (
     <main className="min-h-dvh grid place-items-center bg-bg px-6 py-16">
       <div className="w-full max-w-md">
-        <p className="text-center text-xs font-bold tracking-[0.28em] text-ink-muted">
+        <p className="text-center text-xs font-bold tracking-wider text-ink-muted">
           Lumière
         </p>
 

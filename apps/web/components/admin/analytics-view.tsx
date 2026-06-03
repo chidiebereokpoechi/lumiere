@@ -230,7 +230,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-surface border border-border p-5">
+    <div className="rounded-xl bg-surface border border-border p-4">
       <p className="text-xs font-extrabold tracking-wider text-ink-muted">
         {label}
       </p>
@@ -250,7 +250,7 @@ function Card({
 }) {
   return (
     <section className="rounded-xl bg-surface border border-border p-6">
-      <h2 className="text-xs font-extrabold tracking-[0.22em] text-ink-muted mb-4">
+      <h2 className="text-xs font-extrabold tracking-wider text-ink-muted mb-4">
         {title}
       </h2>
       {children}

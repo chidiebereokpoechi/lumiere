@@ -754,7 +754,7 @@ export function ClientGallery({
           className={`relative h-full flex flex-col items-center justify-center text-center px-6 ${gallery.coverFileId ? "text-white" : "text-ink-strong"}`}
         >
           {eventLine && (
-            <p className="text-xs font-bold tracking-[0.32em] opacity-90">
+            <p className="text-xs font-bold tracking-wider opacity-90">
               {eventLine}
             </p>
           )}
@@ -769,7 +769,7 @@ export function ClientGallery({
           <button
             type="button"
             onClick={() => scrollToGrid()}
-            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold tracking-[0.25em] transition-colors ${
+            className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 text-xs font-bold tracking-wider transition-colors ${
               gallery.coverFileId
                 ? "border-white/70 text-white hover:bg-white hover:text-black"
                 : "border-border text-ink-strong hover:bg-surface-strong hover:text-ink-inverse hover:border-surface-strong"
@@ -1213,7 +1213,7 @@ function AudioPlayer({
   };
 
   return (
-    <div className="w-[min(92vw,24rem)] rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
+    <div className="w-[min(92vw,24rem)] rounded-2xl border border-border bg-surface p-4 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
       <div className="aspect-square w-full rounded-xl overflow-hidden bg-linear-to-br from-accent/40 via-surface-sunken to-surface-strong flex items-center justify-center">
         <Music size={24} className="text-ink-inverse/80" />
       </div>
@@ -1585,8 +1585,8 @@ function ItemComments({ slug, fileId }: { slug: string; fileId: string }) {
   }
 
   return (
-    <div className="p-5">
-      <h3 className="text-xs font-extrabold tracking-[0.22em] text-ink-muted mb-3">
+    <div className="p-4">
+      <h3 className="text-xs font-extrabold tracking-wider text-ink-muted mb-3">
         Comments
       </h3>
       {loading ? (

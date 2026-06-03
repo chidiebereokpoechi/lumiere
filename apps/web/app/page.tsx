@@ -117,7 +117,7 @@ function StatusDot({ kind }: { kind: "ok" | "warn" | "error" }) {
 
 function SwatchCard({ label, varName }: { label: string; varName: string }) {
   return (
-    <div className="rounded-md bg-surface p-5">
+    <div className="rounded-md bg-surface p-4">
       <div
         className="h-20 w-full rounded-md"
         style={{ background: `var(${varName})` }}

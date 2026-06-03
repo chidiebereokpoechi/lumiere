@@ -56,9 +56,9 @@ export default async function GalleryListsPage({ params }: Props) {
         active="lists"
       />
 
-      <div className="p-4 pb-16">
+      <div className="flex flex-col gap-4 p-4 pb-16">
         {/* Favorites — exportable, optionally per client */}
-        <section className="rounded-lg border border-border bg-surface p-5 mb-5">
+        <section className="rounded-lg border border-border bg-surface p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-bold text-ink-strong">Favorites</h2>
             <ExportFilenames
@@ -99,11 +99,11 @@ export default async function GalleryListsPage({ params }: Props) {
             <p className="text-sm text-ink-muted">No client lists yet.</p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {lists.map((l) => (
               <section
                 key={l.id}
-                className="rounded-lg border border-border bg-surface p-5"
+                className="rounded-lg border border-border bg-surface p-4"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h2 className="text-base font-bold text-ink-strong">
