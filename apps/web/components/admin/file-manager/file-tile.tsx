@@ -52,7 +52,7 @@ export function FileTile({
     file.uploadStatus !== "processing" && file.uploadStatus !== "error";
   const streamUrl = `/api/gallery/${gallerySlug}/files/${file.id}/stream`;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="group relative flex flex-col gap-1.5">
       <div
         ref={onRef}
         data-mid={file.id}
@@ -147,22 +147,23 @@ export function FileTile({
         {!dragging && selected && (
           <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-accent rounded-lg" />
         )}
-
-        {!dragging && (
-          <TileMenu
-            file={file}
-            busy={busy}
-            folders={folders}
-            activeFolder={activeFolder}
-            onOpen={onOpen}
-            onDownload={onDownload}
-            onRename={onRename}
-            onCopyName={onCopyName}
-            onMove={onMove}
-            onDelete={onDelete}
-          />
-        )}
       </div>
+      {/* Menu lives outside the overflow-hidden media box so its dropdown
+          isn't clipped by the tile. */}
+      {!dragging && (
+        <TileMenu
+          file={file}
+          busy={busy}
+          folders={folders}
+          activeFolder={activeFolder}
+          onOpen={onOpen}
+          onDownload={onDownload}
+          onRename={onRename}
+          onCopyName={onCopyName}
+          onMove={onMove}
+          onDelete={onDelete}
+        />
+      )}
       <span
         title={name}
         className="px-0.5 text-sm leading-tight text-ink-muted truncate"
