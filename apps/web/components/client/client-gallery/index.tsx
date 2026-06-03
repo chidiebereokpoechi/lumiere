@@ -15,8 +15,8 @@ import { useRangeSelect } from "@/hooks/use-range-select";
 import { useDragSelect } from "@/hooks/use-drag-select";
 import { useCoverGate } from "@/hooks/use-cover-gate";
 import { CommentsSection } from "@/components/client/comments-section";
-import { confirmDialog } from "@/components/ui/dialog";
-import { Download, Zip } from "@/components/ui/icons";
+import { confirmDialog, promptDialog } from "@/components/ui/dialog";
+import { Download, Heart, Zip } from "@/components/ui/icons";
 import { GalleryCover } from "./gallery-cover";
 import { GalleryTab } from "./gallery-tab";
 import { GalleryGrid } from "./gallery-grid";
@@ -26,6 +26,7 @@ import { EmailModal } from "./email-modal";
 import { ListPickerModal } from "./list-picker-modal";
 import { DownloadModal } from "./download-modal";
 import { ItemActionSheet } from "./item-action-sheet";
+import { ListActionSheet } from "./list-action-sheet";
 
 interface Props {
   gallery: MinimalGallery;
@@ -161,6 +162,12 @@ export function ClientGallery({
     return allFiles.filter((f) => f.folderId === view.id);
   }, [allFiles, view, favorites, lists]);
   const fileIds = useMemo(() => files.map((f) => f.id), [files]);
+  // Favorites that actually exist in this gallery's delivered files — the raw
+  // set can hold ids for since-deleted/hidden files, so don't trust its size.
+  const favoriteCount = useMemo(
+    () => allFiles.reduce((n, f) => (favorites.has(f.id) ? n + 1 : n), 0),
+    [allFiles, favorites],
+  );
 
   // Selection (shift-range) + drag-to-select share the same anchor.
   const { selected, setSelected, toggle, clear, selectAll, anchorRef } =
@@ -288,6 +295,16 @@ export function ClientGallery({
       }).catch(() => {});
     },
     [gallery.slug, folders],
+  );
+
+  const renameList = useCallback(
+    (id: string, name: string) => {
+      setLists((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)));
+      void postJson(`/api/gallery/${gallery.slug}/lists/${id}`, { name }, "PATCH").catch(
+        () => {},
+      );
+    },
+    [gallery.slug],
   );
 
   const setMembership = useCallback(
@@ -476,6 +493,8 @@ export function ClientGallery({
   // Long-press quick-action menu target.
   const [sheetId, setSheetId] = useState<string | null>(null);
   const sheetFile = sheetId ? allFiles.find((f) => f.id === sheetId) : null;
+  const [listMenuId, setListMenuId] = useState<string | null>(null);
+  const listMenu = listMenuId ? lists.find((l) => l.id === listMenuId) : null;
 
   const gridMode = gallery.layout === "grid";
   const emptyText =
@@ -542,6 +561,16 @@ export function ClientGallery({
         </div>
         {allFiles.length > 0 && !(coarse && selectionMode) && (
           <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+            {/* With favorites, surface them first + marked with a red heart. */}
+            {canFavorite && favoriteCount > 0 && (
+              <GalleryTab
+                active={view.kind === "favorites"}
+                onClick={() => switchView({ kind: "favorites" })}
+                label="Favorites"
+                count={favoriteCount}
+                icon={<Heart size={16} className="text-heart" />}
+              />
+            )}
             {folders.map((f) => (
               <GalleryTab
                 key={f.id}
@@ -551,14 +580,6 @@ export function ClientGallery({
                 count={folderCounts.get(f.id) ?? 0}
               />
             ))}
-            {canFavorite && (
-              <GalleryTab
-                active={view.kind === "favorites"}
-                onClick={() => switchView({ kind: "favorites" })}
-                label="Favorites"
-                count={favorites.size}
-              />
-            )}
           </nav>
         )}
         {/* Client-made lists get their own row, distinct from the sets above. */}
@@ -571,17 +592,7 @@ export function ClientGallery({
                 onClick={() => switchView({ kind: "list", id: l.id })}
                 label={l.name}
                 count={l.fileIds.length}
-                onDelete={async () => {
-                  if (
-                    await confirmDialog({
-                      title: "Delete list",
-                      message: `Delete "${l.name}"?`,
-                      confirmLabel: "Delete",
-                      danger: true,
-                    })
-                  )
-                    deleteList(l.id);
-                }}
+                onMenu={() => setListMenuId(l.id)}
               />
             ))}
           </nav>
@@ -701,7 +712,7 @@ export function ClientGallery({
           folderCounts={folderCounts}
           lists={lists}
           canFavorite={canFavorite}
-          favoritesCount={favorites.size}
+          favoritesCount={favoriteCount}
           onClose={() => setDownloadOpen(false)}
           onDownload={downloadPicked}
         />
@@ -720,6 +731,35 @@ export function ClientGallery({
           onDownload={() => triggerDownload(`ids=${sheetFile.id}`)}
           onShare={() => sharePhotos([sheetFile])}
           onClose={() => setSheetId(null)}
+        />
+      )}
+
+      {listMenu && (
+        <ListActionSheet
+          name={listMenu.name}
+          onRename={async () => {
+            const next = (
+              await promptDialog({
+                title: "Rename list",
+                label: "List name",
+                defaultValue: listMenu.name,
+                confirmLabel: "Rename",
+              })
+            )?.trim();
+            if (next && next !== listMenu.name) renameList(listMenu.id, next);
+          }}
+          onDelete={async () => {
+            if (
+              await confirmDialog({
+                title: "Delete list",
+                message: `Delete "${listMenu.name}"?`,
+                confirmLabel: "Delete",
+                danger: true,
+              })
+            )
+              deleteList(listMenu.id);
+          }}
+          onClose={() => setListMenuId(null)}
         />
       )}
     </main>

@@ -63,25 +63,27 @@ export function GalleryCover({
       )}
       {gallery.coverUrl && <div className="absolute inset-0 bg-black/35" />}
       <div
-        className={`relative h-full flex flex-col items-center justify-center text-center px-4 ${gallery.coverUrl ? "text-white" : "text-ink-strong"}`}
+        className={`relative h-full flex flex-col items-center justify-center gap-8 text-center px-4 ${gallery.coverUrl ? "text-white" : "text-ink-strong"}`}
       >
-        {eventLine && (
-          <p className="text-xs font-bold tracking-wider opacity-90">
-            {eventLine}
-          </p>
-        )}
-        <h1 className="mt-4 text-5xl sm:text-6xl font-extrabold tracking-tight">
-          {gallery.title}
-        </h1>
-        {gallery.subtitle && (
-          <p className="mt-4 max-w-xl text-sm sm:text-base opacity-90">
-            {gallery.subtitle}
-          </p>
-        )}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-5xl sm:text-6xl font-extrabold">
+            {gallery.title}
+          </h1>
+          {gallery.subtitle && (
+            <p className="max-w-xl text-sm sm:text-base opacity-90">
+              {gallery.subtitle}
+            </p>
+          )}
+          {eventLine && (
+            <p className="text-xs font-bold tracking-wider opacity-90">
+              {eventLine}
+            </p>
+          )}
+        </div>
         <button
           type="button"
           onClick={onDismiss}
-          className={`mt-10 inline-flex items-center rounded-sm border px-10 py-3.5 font-bold tracking-wider transition-colors ${
+          className={`inline-flex items-center rounded-sm border px-10 py-3.5 font-bold tracking-wider transition-colors ${
             gallery.coverUrl
               ? "border-white text-white hover:bg-white hover:text-black"
               : "border-border text-ink-strong hover:bg-surface-strong hover:text-ink-inverse hover:border-surface-strong"
