@@ -663,9 +663,6 @@ export function ClientGallery({
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                <span className="hidden sm:inline text-sm font-bold uppercase tracking-wider">
-                  Download
-                </span>
               </button>
             </div>
           )}
@@ -708,7 +705,7 @@ export function ClientGallery({
 
       {/* Edge-to-edge masonry — minimal chrome, photo-forward. min-height fills
           the viewport so short galleries still scroll the cover fully away. */}
-      <section ref={sectionRef} className="px-1 sm:px-2 pt-1 min-h-svh">
+      <section ref={sectionRef} className="px-4 sm:px-8 pt-4 min-h-svh">
         {files.length === 0 ? (
           <p className="text-center text-sm text-ink-muted py-24">
             {view.kind === "list"
@@ -745,7 +742,7 @@ export function ClientGallery({
                             ? { aspectRatio: `${f.width} / ${f.height}` }
                             : undefined
                         }
-                        className={`block w-full h-auto object-cover transition-[filter,transform] duration-500 ${isSelected ? "brightness-90" : "group-hover:scale-[1.02]"}`}
+                        className={`block w-full h-auto object-cover transition-[filter] duration-300 ${isSelected ? "brightness-90" : ""}`}
                       />
                     ) : f.type === "video" ? (
                       <span className="relative block w-full bg-black">
