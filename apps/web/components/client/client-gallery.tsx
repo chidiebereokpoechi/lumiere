@@ -1245,19 +1245,7 @@ function AudioPlayer({
           aria-label="Back 15 seconds"
           className="text-ink-muted hover:text-ink-strong"
         >
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="11 19 2 12 11 5 11 19" />
-            <polyline points="22 19 13 12 22 5 22 19" />
-          </svg>
+          <SkipBack size={26} />
         </button>
         <button
           type="button"
@@ -1265,22 +1253,7 @@ function AudioPlayer({
           aria-label={playing ? "Pause" : "Play"}
           className="h-16 w-16 inline-flex items-center justify-center rounded-full bg-ink-strong text-ink-inverse hover:opacity-90 transition-opacity"
         >
-          {playing ? (
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="5" width="4" height="14" rx="1" />
-              <rect x="14" y="5" width="4" height="14" rx="1" />
-            </svg>
-          ) : (
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="ml-0.5"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          )}
+          {playing ? <Pause size={26} /> : <Play size={28} className="ml-0.5" />}
         </button>
         <button
           type="button"
@@ -1288,19 +1261,7 @@ function AudioPlayer({
           aria-label="Forward 15 seconds"
           className="text-ink-muted hover:text-ink-strong"
         >
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="13 19 22 12 13 5 13 19" />
-            <polyline points="2 19 11 12 2 5 2 19" />
-          </svg>
+          <SkipForward size={26} />
         </button>
       </div>
 
@@ -1362,18 +1323,7 @@ function Tab({
           aria-label="Delete list"
           className={`inline-flex h-5 w-5 items-center justify-center ${active ? "text-ink-inverse/80 hover:text-ink-inverse" : "text-ink-subtle hover:text-negative"}`}
         >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
+          <Close size={14} />
         </button>
       )}
     </span>
@@ -1513,20 +1463,7 @@ function ListPickerModal({
                   <span
                     className={`h-5 w-5 inline-flex items-center justify-center rounded border-2 ${member ? "bg-accent border-accent text-accent-ink" : "border-border"}`}
                   >
-                    {member && (
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
+                    {member && <Check size={13} />}
                   </span>
                   <span className="flex-1 text-sm text-ink-strong">
                     {l.name}

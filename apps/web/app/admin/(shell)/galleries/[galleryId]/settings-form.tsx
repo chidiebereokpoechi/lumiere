@@ -18,6 +18,7 @@ import {
 import { DateField } from "@/components/ui/date-field";
 import { confirmDialog } from "@/components/ui/dialog";
 import { broadcastGalleryStatus, onGalleryStatus } from "@/lib/gallery-status";
+import { Check } from "@/components/ui/icons";
 
 interface Props {
   gallery: GalleryDetail;
@@ -531,18 +532,7 @@ function SaveStatus({ state }: { state: SaveState }) {
   if (state === "saved") {
     return (
       <span className={`${base} text-ink-muted`}>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <Check size={14} />
         All changes saved
       </span>
     );
