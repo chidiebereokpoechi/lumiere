@@ -74,7 +74,7 @@ export function Sidebar() {
 
 function NavLink({ item, active, collapsed }: { item: NavItem; active: boolean; collapsed: boolean }) {
   const base =
-    `flex items-center rounded-md text-sm font-semibold uppercase tracking-wider font-[family-name:'Ika_Compact'] transition-colors ${
+    `flex items-center rounded-md text-sm font-semibold uppercase tracking-wider transition-colors ${
       collapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2.5'
     }`;
   const label = item.label;

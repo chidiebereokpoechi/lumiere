@@ -1,141 +1,18 @@
 @import "tailwindcss";
 
-/* Self-hosted Ika (TRIAL) — static weights. Ika ships discrete weights with
- * NO 600/SemiBold step: 100 Thin, 200 ExtraLight, 300 Light, 400 Regular,
- * 500 Medium, 700 Bold, 800 ExtraBold, 900 Black, 950 Ultra. */
+/* Self-hosted Satoshi (variable, weight axis 300–900) — body + headings. */
 @font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-thin.woff2") format("woff2");
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-thin-italic.woff2") format("woff2");
-  font-weight: 100;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-extralight.woff2") format("woff2");
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-extralight-italic.woff2") format("woff2");
-  font-weight: 200;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-light.woff2") format("woff2");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-light-italic.woff2") format("woff2");
-  font-weight: 300;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-regular-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-medium.woff2") format("woff2");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-medium-italic.woff2") format("woff2");
-  font-weight: 500;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-bold-italic.woff2") format("woff2");
-  font-weight: 700;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-extrabold.woff2") format("woff2");
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-extrabold-italic.woff2") format("woff2");
-  font-weight: 800;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-black.woff2") format("woff2");
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-black-italic.woff2") format("woff2");
-  font-weight: 900;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-ultra.woff2") format("woff2");
-  font-weight: 950;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Ika";
-  src: url("/fonts/ika-ultra-italic.woff2") format("woff2");
-  font-weight: 950;
-  font-style: italic;
-  font-display: swap;
-}
-
-/* Ika Compact (variable, full weight axis) — headings only, rendered Light. */
-@font-face {
-  font-family: "Ika Compact";
-  src: url("/fonts/ika-compact-variable.woff2") format("woff2");
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi-variable.woff2") format("woff2");
   font-weight: 300 900;
   font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/satoshi-variable-italic.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: italic;
   font-display: swap;
 }
 
@@ -247,7 +124,8 @@
 
 @theme inline {
   --font-sans:
-    "Ika", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
   --font-mono:
     ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
@@ -312,17 +190,17 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Ika Compact", var(--font-sans);
-  font-weight: 300;
+  font-family: var(--font-sans);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
-/* Buttons read as Ika Compact caps with tracking, matching the headings. */
+/* Buttons share the uppercase, tracked treatment as headings. */
 button {
-  font-family: "Ika Compact", var(--font-sans);
+  font-family: var(--font-sans);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 html:not(.theme-no-transition) * {

@@ -33,7 +33,7 @@ export function GalleryHeader({
             href={`/g/${slug}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-bold uppercase tracking-wider font-[family-name:'Ika_Compact'] text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
+            className="inline-flex items-center gap-2 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-ink-strong hover:bg-surface-2 hover:border-border-strong transition-colors"
           >
             <svg
               width="14"
@@ -102,7 +102,7 @@ function Tab({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-bold uppercase tracking-wider font-[family-name:'Ika_Compact'] transition-colors";
+    "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-bold uppercase tracking-wider transition-colors";
   if (disabled) {
     return (
       <span

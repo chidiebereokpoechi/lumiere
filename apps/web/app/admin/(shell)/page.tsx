@@ -108,7 +108,7 @@ function NewGalleryButton() {
   return (
     <Link
       href="/admin/galleries/new"
-      className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider font-[family-name:'Ika_Compact'] text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
+      className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors active:scale-[0.99]"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
         <path d="M12 5v14M5 12h14" />

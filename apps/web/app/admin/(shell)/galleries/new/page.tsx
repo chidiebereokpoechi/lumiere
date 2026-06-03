@@ -67,7 +67,7 @@ export default function NewGalleryPage() {
   return (
     <div>
       <header className="px-8 py-6 border-b border-border">
-        <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-bold tracking-widest uppercase font-[family-name:'Ika_Compact'] text-ink-muted hover:text-ink-strong">
+        <Link href="/admin" className="inline-flex items-center gap-1 text-xs font-bold tracking-widest uppercase text-ink-muted hover:text-ink-strong">
           ← Galleries
         </Link>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink-strong">New gallery</h1>
@@ -117,7 +117,7 @@ export default function NewGalleryPage() {
           <FormError message={error} />
 
           <div className="flex items-center justify-end gap-4 pt-2">
-            <Link href="/admin" className="text-sm font-semibold uppercase tracking-wider font-[family-name:'Ika_Compact'] text-ink-muted hover:text-ink-strong">
+            <Link href="/admin" className="text-sm font-semibold uppercase tracking-wider text-ink-muted hover:text-ink-strong">
               Cancel
             </Link>
             <Button type="submit" disabled={pending || title.trim().length === 0}>

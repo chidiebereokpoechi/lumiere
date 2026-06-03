@@ -523,7 +523,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           New folder
         </button>
-        <button type="button" onClick={() => inputRef.current?.click()} className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider font-['Ika_Compact'] text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
+        <button type="button" onClick={() => inputRef.current?.click()} className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-accent border border-accent px-3 py-1.5 text-sm font-bold uppercase tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
           Upload
         </button>
@@ -545,7 +545,7 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
         {dragging && (
           <div className="absolute inset-0 z-30 pointer-events-none flex flex-col items-center justify-center gap-2 bg-accent-soft/70 backdrop-blur-sm border-2 border-dashed border-accent text-accent-ink">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-            <p className="text-base font-bold uppercase tracking-wider font-['Ika_Compact']">Drop into this folder</p>
+            <p className="text-base font-bold uppercase tracking-wider">Drop into this folder</p>
           </div>
         )}
 
