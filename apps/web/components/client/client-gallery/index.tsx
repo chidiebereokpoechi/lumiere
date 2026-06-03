@@ -23,6 +23,7 @@ import { Lightbox } from "./lightbox";
 import { SelectionBar } from "./selection-bar";
 import { EmailModal } from "./email-modal";
 import { ListPickerModal } from "./list-picker-modal";
+import { DownloadModal } from "./download-modal";
 
 interface Props {
   gallery: MinimalGallery;
@@ -336,14 +337,19 @@ export function ClientGallery({
     triggerDownload(`ids=${[...selected].join(",")}`);
   }, [selected, triggerDownload]);
 
-  // Download the whole current view (folder / favorites / list) without first
-  // selecting every file in it.
-  const downloadView = useCallback(() => {
-    if (files.length === 0) return;
-    if (view.kind === "folder") triggerDownload(`folderId=${view.id}`);
-    else if (view.kind === "favorites") triggerDownload("scope=favorites");
-    else triggerDownload(`ids=${files.map((f) => f.id).join(",")}`);
-  }, [view, files, triggerDownload]);
+  // Download picker (multi-set + favorites → one ZIP).
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadPicked = useCallback(
+    (folderIds: string[], favs: boolean) => {
+      const parts: string[] = [];
+      if (folderIds.length) parts.push(`folderIds=${folderIds.join(",")}`);
+      if (favs) parts.push("favorites=1");
+      if (parts.length === 0) return;
+      triggerDownload(parts.join("&"));
+      setDownloadOpen(false);
+    },
+    [triggerDownload],
+  );
 
   // Photos + videos among the current selection — drives "Save to Photos"
   // (the iOS share sheet writes both to the camera roll).
@@ -440,13 +446,13 @@ export function ClientGallery({
               </p>
             )}
           </div>
-          {canDownload && files.length > 0 && (
+          {canDownload && allFiles.length > 0 && (
             <div className="flex items-center gap-4 shrink-0">
               <button
                 type="button"
-                onClick={downloadView}
+                onClick={() => setDownloadOpen(true)}
                 aria-label="Download"
-                title="Download these"
+                title="Download"
                 className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
               >
                 <Download size={24} />
@@ -589,6 +595,17 @@ export function ClientGallery({
             const l = await createList(name);
             if (l) setMembership(l.id, pickerFiles, true);
           }}
+        />
+      )}
+
+      {downloadOpen && (
+        <DownloadModal
+          folders={folders}
+          folderCounts={folderCounts}
+          canFavorite={canFavorite}
+          favoritesCount={favorites.size}
+          onClose={() => setDownloadOpen(false)}
+          onDownload={downloadPicked}
         />
       )}
     </main>
