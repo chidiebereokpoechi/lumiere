@@ -1,21 +1,25 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { MinimalGallery } from "@/lib/api/client-gallery";
 import { formatDate } from "@/lib/format";
 
-// Full-screen intro cover. Rendered as a fixed overlay that slides up out of the
-// way when dismissed (going into the gallery is easy — the button or any
-// downward gesture). Coming back is gated by useCoverReveal in the parent.
+// Full-screen intro cover, rendered as a fixed overlay. Its vertical position
+// tracks the gesture live via `progress` (0 = out of the way, 1 = full cover)
+// and animates the final settle when the gesture ends (dragging=false). All
+// gesture handling lives in useCoverGate; this is presentational.
 export function GalleryCover({
   gallery,
-  shown,
+  progress,
+  dragging,
   onDismiss,
 }: {
   gallery: MinimalGallery;
-  shown: boolean;
+  progress: number;
+  dragging: boolean;
   onDismiss: () => void;
 }) {
+  const ty = -(1 - progress) * 100; // 0% shown, -100% hidden
   const eventLine = useMemo(
     () =>
       [
@@ -33,27 +37,16 @@ export function GalleryCover({
     [gallery.eventType, gallery.eventDate],
   );
 
-  // Any downward intent (wheel down, or a small upward swipe) enters the gallery.
-  const touchStartY = useRef<number | null>(null);
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0]?.clientY ?? null;
-  };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    const s = touchStartY.current;
-    touchStartY.current = null;
-    const y = e.changedTouches[0]?.clientY;
-    if (s != null && y != null && s - y > 40) onDismiss();
-  };
-
   return (
     <header
-      aria-hidden={!shown}
-      onWheel={(e) => {
-        if (e.deltaY > 0) onDismiss();
+      aria-hidden={progress === 0}
+      style={{
+        transform: `translateY(${ty}%)`,
+        transition: dragging
+          ? "none"
+          : "transform 500ms cubic-bezier(0.22,1,0.36,1)",
       }}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      className={`fixed inset-0 z-50 w-full overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${shown ? "translate-y-0" : "-translate-y-full pointer-events-none"}`}
+      className={`fixed inset-0 z-50 w-full overflow-hidden ${progress === 0 ? "pointer-events-none" : ""}`}
     >
       {gallery.coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

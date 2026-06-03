@@ -13,7 +13,7 @@ import type { ClientComment } from "@/lib/api/comments";
 import type { ClientList } from "@/lib/api/lists";
 import { useRangeSelect } from "@/hooks/use-range-select";
 import { useDragSelect } from "@/hooks/use-drag-select";
-import { useCoverReveal } from "@/hooks/use-cover-reveal";
+import { useCoverGate } from "@/hooks/use-cover-gate";
 import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog } from "@/components/ui/dialog";
 import { Download } from "@/components/ui/icons";
@@ -85,18 +85,19 @@ export function ClientGallery({
     ? "opacity-100"
     : "opacity-0 group-hover:opacity-100";
 
-  // The cover is a full-screen overlay above the gallery. Deep-linking to a
-  // collection skips it. Entering is easy (button / downward gesture); coming
-  // back is gated by useCoverReveal so it takes a deliberate hard pull.
-  const [coverShown, setCoverShown] = useState(!initialCollection);
+  // The cover is a full-screen overlay above the gallery that tracks the gesture
+  // live and settles cleanly. Deep-linking to a collection skips it. Entering is
+  // easy; coming back takes a deliberate hard pull (see useCoverGate).
+  const {
+    shown: coverShown,
+    progress: coverProgress,
+    dragging: coverDragging,
+    dismiss,
+  } = useCoverGate(!initialCollection);
   const enterGallery = useCallback(() => {
-    setCoverShown(false);
+    dismiss();
     window.scrollTo({ top: 0 });
-  }, []);
-  useCoverReveal({
-    enabled: !coverShown,
-    onReveal: () => setCoverShown(true),
-  });
+  }, [dismiss]);
   // Pin the page at the gallery top while the cover overlay is up.
   useEffect(() => {
     document.body.style.overflow = coverShown ? "hidden" : "";
@@ -452,7 +453,8 @@ export function ClientGallery({
     <main className="min-h-dvh bg-bg pb-24">
       <GalleryCover
         gallery={gallery}
-        shown={coverShown}
+        progress={coverProgress}
+        dragging={coverDragging}
         onDismiss={enterGallery}
       />
 
