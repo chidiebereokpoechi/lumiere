@@ -13,18 +13,22 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/admin", label: "Galleries", icon: <Grid size={17} /> },
+  { href: "/admin", label: "Galleries", icon: <Grid size={24} /> },
   {
     href: "/admin/analytics",
     label: "Analytics",
-    icon: <Chart size={17} />,
+    icon: <Chart size={24} />,
     disabled: true,
   },
-  { href: "/admin/watermarks", label: "Watermarks", icon: <Watermark size={17} /> },
+  {
+    href: "/admin/watermarks",
+    label: "Watermarks",
+    icon: <Watermark size={24} />,
+  },
   {
     href: "/admin/settings",
     label: "Settings",
-    icon: <Gear size={17} />,
+    icon: <Gear size={24} />,
     disabled: true,
   },
 ];
@@ -50,8 +54,8 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden md:flex md:flex-col shrink-0 sticky top-0 h-dvh overflow-y-auto bg-surface-2 border-r border-border py-4 transition-[width] duration-200 ease-out ${
-        collapsed ? "md:w-16 px-2" : "md:w-56 px-3"
+      className={`hidden md:flex md:flex-col shrink-0 sticky top-0 h-dvh overflow-y-auto bg-bg border-r border-border py-4 transition-[width] duration-200 ease-out ${
+        collapsed ? "md:w-18 px-4" : "md:w-57 px-4"
       }`}
     >
       <div
@@ -69,11 +73,14 @@ export function Sidebar() {
           title={collapsed ? "Expand" : "Collapse"}
           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink-strong transition-colors"
         >
-          <Collapse size={16} className={`transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`} />
+          <Collapse
+            size={16}
+            className={`transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
+          />
         </button>
       </div>
 
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-4">
         {NAV.map((item) => {
           const active =
             pathname === item.href ||
@@ -128,7 +135,6 @@ function NavLink({
       href={item.href}
       title={collapsed ? label : undefined}
       className={`${base} ${tone}`}
-      style={active ? { boxShadow: "var(--ring-accent)" } : undefined}
     >
       {item.icon}
       {!collapsed && label}

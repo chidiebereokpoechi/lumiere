@@ -12,6 +12,10 @@ import type { ClientComment } from "@/lib/api/comments";
 import type { ClientList } from "@/lib/api/lists";
 import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog } from "@/components/ui/dialog";
+import {
+  Heart, Bookmark, Check, Download, Play, Pause, SkipBack, SkipForward,
+  Music, FileDoc, ImageIcon, Close, ChevronLeft, ChevronRight, Comment, Plus,
+} from "@/components/ui/icons";
 
 interface Props {
   gallery: MinimalGallery;
@@ -643,14 +647,7 @@ export function ClientGallery({
             />
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="h-12 w-12 inline-flex items-center justify-center rounded-full bg-black/55 text-white">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+                <Play size={22} />
               </span>
             </span>
           </span>
@@ -659,36 +656,9 @@ export function ClientGallery({
             className={`flex w-full flex-col items-center justify-center gap-2 p-3 text-center ${fill ? "h-full" : "aspect-square"}`}
           >
             {f.type === "audio" ? (
-              <svg
-                width="30"
-                height="30"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-ink-muted"
-              >
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
+              <Music size={30} className="text-ink-muted" />
             ) : (
-              <svg
-                width="30"
-                height="30"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-ink-muted"
-              >
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
+              <FileDoc size={30} className="text-ink-muted" />
             )}
             <span className="text-xs font-semibold text-ink-strong truncate max-w-full">
               {f.filename}
@@ -726,18 +696,7 @@ export function ClientGallery({
               : `border-white text-transparent ${actionVis}`
           }`}
         >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <Check size={16} />
         </button>
       )}
       {canFavorite && !selecting && (
@@ -746,24 +705,13 @@ export function ClientGallery({
           onClick={() => requireEmail(() => toggleFavorite(f.id))}
           aria-pressed={favorites.has(f.id)}
           aria-label={favorites.has(f.id) ? "Remove favorite" : "Add favorite"}
-          className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all ${
+          className={`absolute top-2.5 right-2.5 h-7 w-7 inline-flex items-center justify-center transition-all drop-shadow ${
             favorites.has(f.id)
-              ? "text-white opacity-100 drop-shadow"
-              : `text-white/90 drop-shadow ${actionVis}`
+              ? "text-accent opacity-100"
+              : `text-white/90 ${actionVis}`
           }`}
         >
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill={favorites.has(f.id) ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" />
-          </svg>
+          <Heart size={24} />
         </button>
       )}
       {isSelected && (
@@ -851,20 +799,7 @@ export function ClientGallery({
                 title="Download these"
                 className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
               >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
+                <Download size={22} />
               </button>
             </div>
           )}
@@ -995,18 +930,7 @@ export function ClientGallery({
                 onClick={() => openPicker([...selected])}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors"
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
+                <Bookmark size={15} />
                 List
               </button>
               {/* Save photos straight to the camera roll on touch devices */}
@@ -1017,20 +941,7 @@ export function ClientGallery({
                   disabled={savingPhotos}
                   className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-bold tracking-wider text-ink-strong hover:border-border-strong transition-colors disabled:opacity-60"
                 >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="m21 15-5-5L5 21" />
-                  </svg>
+                  <ImageIcon size={15} />
                   {savingPhotos
                     ? "Preparing…"
                     : `Save ${selectedImages.length} to Photos`}
@@ -1042,20 +953,7 @@ export function ClientGallery({
                   onClick={downloadSelected}
                   className="inline-flex items-center gap-2 rounded-md bg-accent border border-accent px-3.5 py-2.5 text-sm font-bold tracking-wider text-accent-ink hover:bg-accent-dark hover:border-accent-dark hover:text-white transition-colors"
                 >
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.25"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
+                  <Download size={15} />
                   Download {selected.size}
                 </button>
               )}
@@ -1078,19 +976,7 @@ export function ClientGallery({
               aria-label="Close"
               className="h-10 w-10 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
+              <ChevronLeft size={24} />
             </button>
             <div className="flex items-center gap-1">
               {canFavorite && (
@@ -1102,18 +988,7 @@ export function ClientGallery({
                   }
                   className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${favorites.has(open.id) ? "text-accent-dark" : "text-ink-muted"}`}
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill={favorites.has(open.id) ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 21s-7.5-4.6-10-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 10 6c-2.5 4.4-10 9-10 9Z" />
-                  </svg>
+                  <Heart size={20} />
                 </button>
               )}
               <button
@@ -1122,18 +997,7 @@ export function ClientGallery({
                 aria-label="Add to list"
                 className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
               >
-                <svg
-                  width="19"
-                  height="19"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                </svg>
+                <Bookmark size={19} />
               </button>
               {gallery.allowComments && (
                 <button
@@ -1142,18 +1006,7 @@ export function ClientGallery({
                   aria-label="Comments"
                   className={`h-10 w-10 inline-flex items-center justify-center hover:text-ink-strong ${showComments ? "text-ink-strong" : "text-ink-muted"}`}
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
+                  <Comment size={20} />
                 </button>
               )}
               {canDownload && coarse && open.type === "image" && (
@@ -1164,20 +1017,7 @@ export function ClientGallery({
                   aria-label="Save to Photos"
                   className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong disabled:opacity-60"
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="m21 15-5-5L5 21" />
-                  </svg>
+                  <ImageIcon size={20} />
                 </button>
               )}
               {canDownload && (
@@ -1186,20 +1026,7 @@ export function ClientGallery({
                   aria-label="Download"
                   className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
+                  <Download size={20} />
                 </a>
               )}
             </div>
@@ -1249,20 +1076,7 @@ export function ClientGallery({
                 />
               ) : (
                 <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="mx-auto text-ink-muted"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
+                  <FileDoc size={40} className="mx-auto text-ink-muted" />
                   <p className="mt-3 text-sm font-semibold text-ink-strong truncate">
                     {open.filename}
                   </p>
@@ -1283,18 +1097,7 @@ export function ClientGallery({
                   aria-label="Previous"
                   className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
                 >
-                  <svg
-                    width="26"
-                    height="26"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
+                  <ChevronLeft size={28} />
                 </button>
                 <button
                   type="button"
@@ -1305,18 +1108,7 @@ export function ClientGallery({
                   aria-label="Next"
                   className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
                 >
-                  <svg
-                    width="26"
-                    height="26"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <ChevronRight size={28} />
                 </button>
               </>
             )}
@@ -1419,21 +1211,7 @@ function AudioPlayer({
   return (
     <div className="w-[min(92vw,24rem)] rounded-2xl border border-border bg-surface p-5 shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
       <div className="aspect-square w-full rounded-xl overflow-hidden bg-linear-to-br from-accent/40 via-surface-sunken to-surface-strong flex items-center justify-center">
-        <svg
-          width="72"
-          height="72"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-ink-inverse/80"
-        >
-          <path d="M9 18V5l12-2v13" />
-          <circle cx="6" cy="18" r="3" />
-          <circle cx="18" cy="16" r="3" />
-        </svg>
+        <Music size={72} className="text-ink-inverse/80" />
       </div>
 
       <div className="mt-4 text-center">
