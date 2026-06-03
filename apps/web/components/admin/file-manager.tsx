@@ -310,7 +310,10 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
   const canDrag = tiles.length === 0;
 
   const tileNodes = useRef(new Map<string, HTMLElement>());
-  const prevRects = useRef(new Map<string, DOMRect>());
+  // Page-relative positions (viewport rect + scroll). Storing them scroll-aware
+  // means scrolling between renders doesn't register as movement — otherwise the
+  // FLIP would animate every tile by the scroll delta (a visible stagger).
+  const prevRects = useRef(new Map<string, { left: number; top: number }>());
   const registerTile = useCallback((id: string, node: HTMLElement | null) => {
     if (node) tileNodes.current.set(id, node); else tileNodes.current.delete(id);
   }, []);
@@ -331,8 +334,12 @@ export function FileManager({ galleryId, gallerySlug, initialFiles, initialFolde
 
   useLayoutEffect(() => {
     const nodes = tileNodes.current;
-    const newRects = new Map<string, DOMRect>();
-    nodes.forEach((node, id) => newRects.set(id, node.getBoundingClientRect()));
+    const sx = window.scrollX, sy = window.scrollY;
+    const newRects = new Map<string, { left: number; top: number }>();
+    nodes.forEach((node, id) => {
+      const r = node.getBoundingClientRect();
+      newRects.set(id, { left: r.left + sx, top: r.top + sy });
+    });
     nodes.forEach((node, id) => {
       if (draggingIdsRef.current.has(id)) return;
       const prev = prevRects.current.get(id);
