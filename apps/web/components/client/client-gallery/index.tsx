@@ -13,6 +13,7 @@ import type { ClientComment } from "@/lib/api/comments";
 import type { ClientList } from "@/lib/api/lists";
 import { useRangeSelect } from "@/hooks/use-range-select";
 import { useDragSelect } from "@/hooks/use-drag-select";
+import { useCoverReveal } from "@/hooks/use-cover-reveal";
 import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog } from "@/components/ui/dialog";
 import { Download } from "@/components/ui/icons";
@@ -84,24 +85,25 @@ export function ClientGallery({
     ? "opacity-100"
     : "opacity-0 group-hover:opacity-100";
 
-  // Cover acts as a full-screen intro; "View gallery" / switching folders scrolls
-  // to the grid's start. `gridRef` is the sticky chrome (so scrollIntoView no-ops
-  // once it's pinned); scroll the window to the section top minus the header.
-  const gridRef = useRef<HTMLDivElement>(null);
-  const sectionRef = useRef<HTMLElement>(null);
-  const scrollToGrid = useCallback((smooth = true) => {
-    const sec = sectionRef.current;
-    const headerH = gridRef.current?.offsetHeight ?? 0;
-    if (!sec) {
-      gridRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
-      return;
-    }
-    const top = Math.max(
-      0,
-      window.scrollY + sec.getBoundingClientRect().top - headerH,
-    );
-    window.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
+  // The cover is a full-screen overlay above the gallery. Deep-linking to a
+  // collection skips it. Entering is easy (button / downward gesture); coming
+  // back is gated by useCoverReveal so it takes a deliberate hard pull.
+  const [coverShown, setCoverShown] = useState(!initialCollection);
+  const enterGallery = useCallback(() => {
+    setCoverShown(false);
+    window.scrollTo({ top: 0 });
   }, []);
+  useCoverReveal({
+    enabled: !coverShown,
+    onReveal: () => setCoverShown(true),
+  });
+  // Pin the page at the gallery top while the cover overlay is up.
+  useEffect(() => {
+    document.body.style.overflow = coverShown ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [coverShown]);
 
   const defaultView: View = folders[0]
     ? { kind: "folder", id: folders[0].id }
@@ -171,9 +173,9 @@ export function ClientGallery({
       setOpenId(null);
       clear();
       window.history.pushState(null, "", `/g/${gallery.slug}/${viewSlug(v)}`);
-      scrollToGrid(false);
+      window.scrollTo({ top: 0 }); // each collection starts at the gallery top
     },
-    [gallery.slug, viewSlug, scrollToGrid, clear],
+    [gallery.slug, viewSlug, clear],
   );
 
   // Keep the view in sync with browser back/forward.
@@ -191,12 +193,6 @@ export function ClientGallery({
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [resolveCollection, folders]);
-
-  // Deep link straight to a collection lands at the grid, not the cover.
-  useEffect(() => {
-    if (initialCollection) scrollToGrid(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     void apiClient(`/api/gallery/${gallery.slug}/track-view`, {
@@ -454,10 +450,14 @@ export function ClientGallery({
 
   return (
     <main className="min-h-dvh bg-bg pb-24">
-      <GalleryCover gallery={gallery} onView={() => scrollToGrid()} />
+      <GalleryCover
+        gallery={gallery}
+        shown={coverShown}
+        onDismiss={enterGallery}
+      />
 
       {/* Sticky chrome: a slim title bar with actions, then the tab row. */}
-      <div ref={gridRef} className="sticky top-0 z-30 bg-bg">
+      <div className="sticky top-0 z-30 bg-bg">
         <div className="px-2 sm:px-8 h-12 sm:h-16 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate font-[700] text-lg tracking-wider text-ink-strong">
@@ -547,7 +547,7 @@ export function ClientGallery({
 
       {/* Edge-to-edge grid — minimal chrome, photo-forward. min-height fills the
           viewport so short galleries still scroll the cover fully away. */}
-      <section ref={sectionRef} className="px-2 sm:px-8 min-h-svh">
+      <section className="px-2 sm:px-8 min-h-svh">
         <GalleryGrid
           files={files}
           gridMode={gridMode}
