@@ -78,22 +78,22 @@ export function AlbumsLanding({
   return (
     <div className="flex flex-col px-2 sm:px-4 gap-6 sm:gap-10">
       <header className="pt-8 sm:pt-12 text-center">
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-ink-strong">
+        <h1 className="text-3xl sm:text-5xl font-[700]! tracking-tight text-ink-strong">
           {gallery.title}
         </h1>
         {(date || gallery.clientName) && (
-          <div className="mt-3 flex flex-col items-center gap-1 text-sm text-ink-muted tabular-nums">
+          <div className="mt-3 flex flex-col items-center gap-1 text-sm text-ink-subtle tabular-nums">
             {date && <p>{date}</p>}
             {gallery.clientName && (
               <p className="not-tabular-nums">{gallery.clientName}</p>
             )}
           </div>
         )}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+        <div className="mt-4 px-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
           {canDownload && (
             <ActionLink
               icon={<Zip size={16} />}
-              label="Download collection as ZIP"
+              label="Download ZIP"
               onClick={onDownloadAll}
             />
           )}
@@ -102,19 +102,19 @@ export function AlbumsLanding({
             label="Share link"
             onClick={shareLink}
           />
-          {mailtoHref && (
-            <ActionLink
-              icon={<Mail size={16} />}
-              label="Contact creator"
-              href={mailtoHref}
-            />
-          )}
           {gallery.creatorWebsite && (
             <ActionLink
               icon={<External size={16} />}
               label="Website"
               href={gallery.creatorWebsite}
               external
+            />
+          )}
+          {mailtoHref && (
+            <ActionLink
+              icon={<Mail size={16} />}
+              label="Email"
+              href={mailtoHref}
             />
           )}
           {instagramHref && (
@@ -202,7 +202,7 @@ function AlbumCard({ item }: { item: AlbumItem }) {
 
   return (
     <button type="button" onClick={onOpen} className="block w-full text-left">
-      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-surface-sunken">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-md bg-surface-sunken">
         {cover && (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
