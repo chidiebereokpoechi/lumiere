@@ -211,3 +211,21 @@ html:not(.theme-no-transition) * {
     transform: translateY(0);
   }
 }
+
+/* View Transition: morph the shared gallery title (landing ↔ collection) and
+   cross-fade the grid. Eased + a touch slower for a polished settle. */
+::view-transition-group(gallery-title) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

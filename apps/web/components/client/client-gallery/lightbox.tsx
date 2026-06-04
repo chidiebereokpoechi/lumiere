@@ -112,7 +112,7 @@ export function Lightbox({
     <div className="fixed inset-0 z-50 bg-bg flex flex-col" onClick={onClose}>
       {/* Top bar */}
       <div
-        className="shrink-0 flex items-center justify-between px-3 sm:px-5 h-14"
+        className="shrink-0 flex items-center justify-between px-2 sm:px-8 h-14"
         onClick={(e) => e.stopPropagation()}
       >
         <IconButton
@@ -174,7 +174,7 @@ export function Lightbox({
 
       {/* Media */}
       <div
-        className="relative flex-1 min-h-0 flex items-center justify-center px-4 sm:px-12 touch-pan-y"
+        className="relative flex-1 min-h-0 flex items-center justify-center px-2 sm:px-8 touch-pan-y"
         onClick={onClose}
         // Swipe is allowed unless the open media is actively playing (so a
         // playing video/audio keeps its own gestures); paused media swipes.
@@ -231,7 +231,7 @@ export function Lightbox({
                 onStep(-1);
               }}
               aria-label="Previous"
-              className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 h-11 w-11"
+              className="absolute left-2 sm:left-8 top-1/2 -translate-y-1/2 h-11 w-11"
             >
               <ChevronLeft size={24} />
             </IconButton>
@@ -241,7 +241,7 @@ export function Lightbox({
                 onStep(1);
               }}
               aria-label="Next"
-              className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 h-11 w-11"
+              className="absolute right-2 sm:right-8 top-1/2 -translate-y-1/2 h-11 w-11"
             >
               <ChevronRight size={24} />
             </IconButton>
@@ -254,7 +254,7 @@ export function Lightbox({
         className="shrink-0 text-center pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-sm text-ink-muted tabular-nums truncate px-4">
+        <p className="text-sm text-ink-muted tabular-nums truncate px-2 sm:px-8">
           {file.filename}
           {total > 1 ? `  ·  ${index + 1} / ${total}` : ""}
         </p>

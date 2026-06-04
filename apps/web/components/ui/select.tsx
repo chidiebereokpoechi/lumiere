@@ -82,7 +82,7 @@ export function Select<T extends string>({
       {open && (
         <div
           role="listbox"
-          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-surface shadow-lg p-1.5 flex flex-col gap-4"
+          className="absolute z-30 mt-1 max-h-[70vh] w-full overflow-auto rounded-md border border-border bg-surface shadow-lg p-1.5 flex flex-col gap-4"
         >
           {groups.map((g, gi) => (
             <div key={g.group ?? gi} className="flex flex-col">
