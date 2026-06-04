@@ -39,6 +39,30 @@ export function useDragSelect({
       // Clear any stale suppression: a touch drag often emits no trailing click
       // to reset it, which would otherwise eat this tap's click.
       suppressClickRef.current = false;
+      const isTouch = e.pointerType === "touch";
+      // Mouse/trackpad: small jitter threshold, immediate drag once exceeded.
+      // Touch: hold-to-drag (iOS Photos pattern). A swipe in any direction
+      // scrolls; only a deliberate hold-still engages drag-select, after which
+      // moving in any direction (including vertically) selects.
+      const mouseThreshold = 12;
+      const touchHoldMs = 280;
+      const touchHoldSlop = 10; // px the finger may drift during the hold
+      let aborted = false;
+      let holdTimer: ReturnType<typeof setTimeout> | null = null;
+      // Once committed, an active touchmove listener blocks page scroll for
+      // this gesture only — the browser would otherwise hijack the drag.
+      const blockScroll = (ev: TouchEvent) => ev.preventDefault();
+      let scrollBlocked = false;
+      const commit = () => {
+        const d = dragRef.current;
+        if (!d) return;
+        d.moved = true;
+        setDragSelecting(true);
+        if (isTouch && !scrollBlocked) {
+          document.addEventListener("touchmove", blockScroll, { passive: false });
+          scrollBlocked = true;
+        }
+      };
       dragRef.current = {
         x: e.clientX,
         y: e.clientY,
@@ -46,14 +70,34 @@ export function useDragSelect({
         anchor,
         baseline: new Set(selected),
       };
+      if (isTouch) {
+        holdTimer = setTimeout(() => {
+          holdTimer = null;
+          // Only commit if the finger is still down and roughly in place.
+          if (!aborted && dragRef.current && !dragRef.current.moved) commit();
+        }, touchHoldMs);
+      }
       const onMove = (ev: PointerEvent) => {
         const d = dragRef.current;
-        if (!d) return;
+        if (!d || aborted) return;
+        const dx = ev.clientX - d.x;
+        const dy = ev.clientY - d.y;
         if (!d.moved) {
-          // Higher threshold so finger jitter on a tap isn't read as a drag.
-          if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 12) return;
-          d.moved = true;
-          setDragSelecting(true);
+          if (isTouch) {
+            // Pre-commit: any meaningful movement before the hold timer is
+            // a scroll — bail out for this whole gesture.
+            if (Math.hypot(dx, dy) > touchHoldSlop) {
+              if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+              }
+              aborted = true;
+            }
+            return;
+          }
+          // Mouse/trackpad: simple distance threshold.
+          if (Math.hypot(dx, dy) < mouseThreshold) return;
+          commit();
         }
         const el = document.elementFromPoint(
           ev.clientX,
@@ -71,6 +115,14 @@ export function useDragSelect({
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
         document.removeEventListener("pointercancel", onUp);
+        if (holdTimer) {
+          clearTimeout(holdTimer);
+          holdTimer = null;
+        }
+        if (scrollBlocked) {
+          document.removeEventListener("touchmove", blockScroll);
+          scrollBlocked = false;
+        }
         if (dragRef.current?.moved) {
           suppressClickRef.current = true;
           anchorRef.current = id;
