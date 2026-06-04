@@ -1,10 +1,12 @@
 import { fetchMe } from "@/lib/api/galleries";
+import { fetchAdmins } from "@/lib/api/admins";
 import { SettingsForm } from "@/components/admin/settings-form";
+import { AdminsManager } from "@/components/admin/admins-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const me = await fetchMe();
+  const [me, admins] = await Promise.all([fetchMe(), fetchAdmins()]);
   return (
     <div>
       <header className="p-4 border-b border-border">
@@ -16,8 +18,9 @@ export default async function SettingsPage() {
         </p>
       </header>
 
-      <div className="p-4 pb-16">
+      <div className="p-4 pb-16 max-w-2xl space-y-4">
         <SettingsForm initial={me} />
+        <AdminsManager me={me} initial={admins} />
       </div>
     </div>
   );

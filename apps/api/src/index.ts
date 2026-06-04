@@ -16,6 +16,7 @@ import { analyticsRoutes } from './routes/api/analytics';
 import { watermarkPresetRoutes } from './routes/api/watermark-presets';
 import { commentRoutes } from './routes/api/comments';
 import { clientListRoutes, adminListRoutes } from './routes/api/lists';
+import { adminRoutes } from './routes/api/admins';
 import { eventsRoutes } from './routes/events';
 import { imageRoutes } from './routes/images';
 import { registerHandler, startWorker, startReaper } from './services/queue';
@@ -75,6 +76,7 @@ const app = new Elysia({
   .use(commentRoutes)
   .use(clientListRoutes)
   .use(adminListRoutes)
+  .use(adminRoutes)
   .use(eventsRoutes)
   .use(imageRoutes)
   .listen({ port: env.PORT, hostname: '0.0.0.0' });
