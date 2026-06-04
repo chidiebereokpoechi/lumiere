@@ -19,7 +19,7 @@ export function Section({
   );
 }
 
-// Inline auto-save indicator — replaces a Save button. Changes persist
+// Inline auto-save indicator - replaces a Save button. Changes persist
 // automatically as fields change.
 export function SaveStatus({ state }: { state: SaveState }) {
   const base =
@@ -28,7 +28,7 @@ export function SaveStatus({ state }: { state: SaveState }) {
     return (
       <span className={cn(base, "text-ink-muted")}>
         <span className="h-3 w-3 rounded-full border-2 border-ink-subtle border-t-transparent animate-spin" />
-        Saving…
+        Saving
       </span>
     );
   }

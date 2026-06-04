@@ -171,7 +171,7 @@ export function AnalyticsView({ galleryId, analytics }: Props) {
         </Card>
       </div>
 
-      {/* Client activity — who did what (clients identify by email to fav/list) */}
+      {/* Client activity - who did what (clients identify by email to fav/list) */}
       <Card title="Client activity">
         {clients.length === 0 ? (
           <Empty>No identified client activity yet.</Empty>

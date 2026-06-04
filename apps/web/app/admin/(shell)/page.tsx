@@ -142,7 +142,7 @@ function EmptyState() {
       <p className="text-xs font-bold tracking-wider text-ink-muted">
         Nothing here yet
       </p>
-      <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-ink-strong">
+      <h2 className="mt-4 text-2xl font-extrabold tracking-wider text-ink-strong">
         Create your first gallery
       </h2>
       <p className="mt-2 text-sm text-ink-muted leading-relaxed">

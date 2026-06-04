@@ -127,7 +127,7 @@ export function PresetEditor({
                     }}
                   />
                   {uploading
-                    ? "Uploading…"
+                    ? "Uploading"
                     : draft.s3Key
                       ? "Replace logo"
                       : "Upload logo"}
@@ -187,8 +187,8 @@ export function PresetEditor({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+      <div className="flex items-center justify-end gap-4">
+        <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
         <Button
@@ -196,7 +196,7 @@ export function PresetEditor({
           onClick={onSave}
           disabled={saving || uploading || !dirty}
         >
-          {saving ? "Saving…" : draft.id ? "Save changes" : "Create watermark"}
+          {saving ? "Saving" : draft.id ? "Save changes" : "Create watermark"}
         </Button>
       </div>
     </section>

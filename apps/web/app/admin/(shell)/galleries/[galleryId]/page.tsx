@@ -45,7 +45,7 @@ export default async function GalleryEditorPage({ params }: Props) {
         <div className="w-full max-w-2xl">
           <SettingsForm gallery={gallery} watermarks={watermarks} />
         </div>
-        {/* Cover editor — to the right of the main form on desktop. */}
+        {/* Cover editor - to the right of the main form on desktop. */}
         <aside className="w-full lg:w-80 lg:shrink-0 rounded-lg border border-border bg-surface p-4">
           <GalleryCoverField
             galleryId={galleryId}

@@ -7,7 +7,7 @@ import type { CurrentPhotographer } from "@/lib/api/galleries";
 import { toast } from "@/lib/toast";
 import { Field, TextInput, Button, FormError } from "@/components/admin/form";
 
-// Bound to the authenticated photographer's row. Empty strings clear the field.
+// Bound to the authenticated creator's row. Empty strings clear the field.
 export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
@@ -63,7 +63,7 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
         <Field
           id="email"
           label="Email"
-          hint="Used to sign in and as the contact address on client galleries"
+          hint="used to sign in and as the contact address on client galleries"
         >
           <TextInput
             id="email"
@@ -78,14 +78,14 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
             id="name"
             value={name}
             onChange={setName}
-            placeholder="Your name"
+            placeholder="your name"
           />
         </Field>
 
         <Field
           id="brandName"
           label="Brand name"
-          hint="Shown to clients instead of your name when set"
+          hint="shown to clients instead of your name when set"
         >
           <TextInput
             id="brandName"
@@ -98,7 +98,7 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
         <Field
           id="website"
           label="Website"
-          hint="Public URL — shown as a link on every gallery landing"
+          hint="public URL - shown as a link on every gallery landing"
         >
           <TextInput
             id="website"
@@ -111,7 +111,7 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
         <Field
           id="instagram"
           label="Instagram"
-          hint="Handle, with or without the @"
+          hint="handle, with or without the @"
         >
           <TextInput
             id="instagram"
@@ -126,7 +126,7 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
 
       <div className="flex items-center justify-end gap-4">
         <Button type="submit" disabled={pending || !dirty}>
-          {pending ? "Saving…" : "Save changes"}
+          {pending ? "Saving" : "Save changes"}
         </Button>
       </div>
     </form>

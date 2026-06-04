@@ -4,7 +4,7 @@ import { fetchMe } from "@/lib/api/galleries";
 import { Sidebar } from "@/components/admin/sidebar";
 import { Toaster } from "@/components/ui/toaster";
 
-// The shell layout is dynamic — every admin request hits /api/auth/me so we
+// The shell layout is dynamic - every admin request hits /api/auth/me so we
 // have a real, validated identity for the topnav user menu. If the call 401s
 // (cookie expired, missing, or invalid), bounce to login.
 export const dynamic = "force-dynamic";

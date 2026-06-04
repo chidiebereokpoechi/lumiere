@@ -12,7 +12,7 @@ export function UploadSummary({ tiles }: { tiles: UploadTile[] }) {
     <div className="rounded-lg border border-border bg-surface p-4 space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold text-ink-strong">
-          Uploading {total} item{total !== 1 ? "s" : ""} — one at a time
+          Uploading {total} item{total !== 1 ? "s" : ""} - one at a time
         </span>
         <span className="tabular-nums text-ink-muted">
           {done}/{total}

@@ -83,7 +83,7 @@ export default async function GalleryListsPage({ params }: Props) {
       />
 
       <div className="flex flex-col gap-4 p-4 pb-16">
-        {/* Favorites — exportable, optionally per client */}
+        {/* Favorites - exportable, optionally per client */}
         <section className="rounded-lg border border-border bg-surface p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-base font-bold text-ink-strong">Favorites</h2>
@@ -109,7 +109,10 @@ export default async function GalleryListsPage({ params }: Props) {
                       downloadName={`${gallery.slug}-favorites-${g.clientEmail ?? "anon"}`}
                     />
                   </div>
-                  <ListThumbs galleryId={galleryId} items={itemsOf(g.fileIds)} />
+                  <ListThumbs
+                    galleryId={galleryId}
+                    items={itemsOf(g.fileIds)}
+                  />
                 </div>
               ))}
             </div>
@@ -154,4 +157,3 @@ export default async function GalleryListsPage({ params }: Props) {
     </div>
   );
 }
-

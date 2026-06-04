@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Download } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { TypeIcon } from "./bits";
 
-// Minimal admin media preview — full-bleed surface, keyboard + arrow nav.
+// Minimal admin media preview - full-bleed surface, keyboard + arrow nav.
 export function AdminPreview({
   file,
   galleryId,

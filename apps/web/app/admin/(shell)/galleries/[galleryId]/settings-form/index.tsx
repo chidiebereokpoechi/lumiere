@@ -96,10 +96,10 @@ export function SettingsForm({ gallery, watermarks }: Props) {
             value={fields.navStyle}
             onChange={immediate(setters.setNavStyle)}
             options={[
-              { value: "tabs", label: "Tabs — one row of collection tabs" },
+              { value: "tabs", label: "Tabs - one row of collection tabs" },
               {
                 value: "collections",
-                label: "Collections — albums grid you drill into",
+                label: "Collections - albums grid you drill into",
               },
             ]}
           />
@@ -283,7 +283,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
                 value: "",
                 label:
                   watermarks.length === 0
-                    ? "No watermarks — create one first"
+                    ? "No watermarks - create one first"
                     : "None",
               },
               ...watermarks.map((w) => ({

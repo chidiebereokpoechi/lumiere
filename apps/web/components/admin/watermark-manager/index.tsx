@@ -2,14 +2,18 @@
 
 import type { WatermarkPreset } from "@/lib/api/watermarks";
 import { Button, FormError } from "@/components/admin/form";
+import { Topnav } from "@/components/admin/topnav";
+import { Plus } from "@/components/ui/icons";
 import { useWatermarkPresets } from "@/hooks/use-watermark-presets";
 import { PresetEditor } from "./preset-editor";
 import { PresetCard } from "./preset-card";
 
 export function WatermarkManager({
   initialPresets,
+  user,
 }: {
   initialPresets: WatermarkPreset[];
+  user: { name: string; email: string };
 }) {
   const {
     presets,
@@ -28,18 +32,29 @@ export function WatermarkManager({
   } = useWatermarkPresets(initialPresets);
 
   return (
-    <div className="space-y-4">
-      <FormError message={error} />
+    <div>
+      <Topnav
+        title="Watermarks"
+        subtitle="Reusable text or logo overlays for preview-quality downloads."
+        user={user}
+        action={
+          !draft && (
+            <Button
+              type="button"
+              onClick={newDraft}
+              className="tracking-wider"
+            >
+              <Plus size={16} />
+              New watermark
+            </Button>
+          )
+        }
+      />
 
-      {!draft && (
-        <div className="flex justify-end">
-          <Button type="button" onClick={newDraft}>
-            + New watermark
-          </Button>
-        </div>
-      )}
+      <div className="px-4 py-4 pb-16 space-y-4">
+        <FormError message={error} />
 
-      {draft && (
+        {draft && (
         <PresetEditor
           draft={draft}
           set={set}
@@ -70,6 +85,7 @@ export function WatermarkManager({
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

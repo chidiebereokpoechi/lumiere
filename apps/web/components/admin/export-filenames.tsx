@@ -24,7 +24,7 @@ const DELIMS: { value: Delim; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
-// Export the original filenames (paste into a Lightroom filter, a CSV, etc.) —
+// Export the original filenames (paste into a Lightroom filter, a CSV, etc.) -
 // opens a widget to pick the name style (case, extension) and delivery (download
 // a .txt or copy to the clipboard).
 export function ExportFilenames({
@@ -89,7 +89,7 @@ export function ExportFilenames({
       );
       setOpen(false);
     } catch {
-      toast.error("Clipboard blocked — download instead");
+      toast.error("Clipboard blocked - download instead");
     }
   }
 

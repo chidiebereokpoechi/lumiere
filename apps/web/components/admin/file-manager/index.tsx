@@ -305,11 +305,15 @@ export function FileManager({
     const failed = results.filter((r) => r.status === "rejected").length;
     const succeeded = ids.length - failed;
     if (failed === 0) {
-      toast.success(`Deleted ${succeeded} ${succeeded === 1 ? "item" : "items"}`);
+      toast.success(
+        `Deleted ${succeeded} ${succeeded === 1 ? "item" : "items"}`,
+      );
     } else if (succeeded === 0) {
-      toast.error(`Couldn’t delete ${ids.length} ${ids.length === 1 ? "item" : "items"}`);
+      toast.error(
+        `Couldn’t delete ${ids.length} ${ids.length === 1 ? "item" : "items"}`,
+      );
     } else {
-      toast.error(`Deleted ${succeeded} of ${ids.length} — ${failed} failed`);
+      toast.error(`Deleted ${succeeded} of ${ids.length} - ${failed} failed`);
     }
     void refreshFolders();
   }
@@ -398,8 +402,8 @@ export function FileManager({
 
       {/* Two-column: sets sidebar + media grid */}
       <div className="flex gap-4 items-start">
-        {/* Sets sidebar — sticky below the gallery header while the grid scrolls. */}
-        <aside className="w-80 shrink-0 self-start lg:sticky lg:top-40 lg:max-h-[calc(100dvh-11rem)] lg:overflow-y-auto border border-border p-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
+        {/* Sets sidebar - sticky below the gallery header while the grid scrolls. */}
+        <aside className="w-80 shrink-0 self-start lg:sticky lg:top-[184px] lg:max-h-[calc(100dvh-200px)] lg:overflow-y-auto border border-border p-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold tracking-wider text-ink-muted">
               Sets
@@ -492,7 +496,11 @@ export function FileManager({
               {order.length}
             </span>
             <div className="ml-auto flex items-center gap-4">
-              <Filter size={20} className="shrink-0 text-ink-muted" aria-hidden />
+              <Filter
+                size={20}
+                className="shrink-0 text-ink-muted"
+                aria-hidden
+              />
               <Select
                 value={sortMode}
                 onChange={(v) => applySort(v as typeof sortMode)}
@@ -526,7 +534,7 @@ export function FileManager({
             />
           </div>
 
-          {/* Folder content — drop boundary */}
+          {/* Folder content - drop boundary */}
           <div
             className="relative space-y-4 min-h-64"
             onDragEnter={(e) => {
@@ -595,7 +603,7 @@ export function FileManager({
                   );
                 })}
 
-                {/* Upload placeholders sit at the end (upload order) — the same slot
+                {/* Upload placeholders sit at the end (upload order) - the same slot
                 the processed file lands in, so nothing jumps. */}
                 {tiles.map((t) => (
                   <div
@@ -622,7 +630,7 @@ export function FileManager({
                       <>
                         <Spinner />
                         <span className="text-xs text-ink-muted">
-                          Processing…
+                          Processing
                         </span>
                       </>
                     )}
@@ -646,7 +654,7 @@ export function FileManager({
           <div className="flex items-center gap-4">
             <Select
               value=""
-              placeholder="Move to…"
+              placeholder="Move to"
               className="w-44"
               onChange={(v) => {
                 if (v === "__new__") void createFolderAndMove([...selected]);
@@ -654,7 +662,7 @@ export function FileManager({
               }}
               options={[
                 ...folders.map((f) => ({ value: f.id, label: f.name })),
-                { value: "__new__", label: "+ New set…" },
+                { value: "__new__", label: "+ New set" },
               ]}
             />
             <Button
@@ -676,7 +684,7 @@ export function FileManager({
         </div>
       )}
 
-      {/* Drag overlay — clumped stack when dragging multiple */}
+      {/* Drag overlay - clumped stack when dragging multiple */}
       {overlayFile && dragInfo.current && (
         <div
           ref={overlayRef}

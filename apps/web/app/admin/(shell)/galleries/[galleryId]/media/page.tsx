@@ -22,7 +22,7 @@ export default async function GalleryMediaPage({ params }: Props) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  // Fetch folders first — it lazily creates the default folder and re-files
+  // Fetch folders first - it lazily creates the default folder and re-files
   // any orphaned content, so files come back with folderIds set.
   const folders = await fetchFolders(galleryId);
   const [me, files] = await Promise.all([fetchMe(), fetchFiles(galleryId)]);

@@ -28,7 +28,7 @@ export function Field({ id, label, hint, required, children }: FieldProps) {
           {required && <span className="text-accent-dark ml-1">*</span>}
         </span>
         {hint && (
-          <span className="text-xs text-ink-muted font-normal normal-case tracking-normal">
+          <span className="text-xs text-ink-muted font-normal normal-case tracking-wider">
             {hint}
           </span>
         )}

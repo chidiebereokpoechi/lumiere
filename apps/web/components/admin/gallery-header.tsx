@@ -28,7 +28,7 @@ export function GalleryHeader({
   active,
 }: Props) {
   return (
-    // Sticky chrome — the topnav + tab row stay pinned while the page body
+    // Sticky chrome - the topnav + tab row stay pinned while the page body
     // scrolls beneath them (the window is the scroll container).
     <div className="sticky top-0 z-20 bg-bg border-b border-border">
       <Topnav

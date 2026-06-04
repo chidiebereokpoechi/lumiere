@@ -20,7 +20,7 @@ export const SIZES: { value: WatermarkSize; label: string }[] = [
   { value: "large", label: "Large" },
 ];
 
-// Editable shape for a watermark preset — flattens the discriminated config so
+// Editable shape for a watermark preset - flattens the discriminated config so
 // the form can bind every field; re-narrowed to a WatermarkConfig on save.
 export interface Draft {
   id?: string;

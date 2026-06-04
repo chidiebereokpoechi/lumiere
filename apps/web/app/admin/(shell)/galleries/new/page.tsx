@@ -85,7 +85,7 @@ export default function NewGalleryPage() {
         >
           ← Galleries
         </Link>
-        <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-ink-strong">
+        <h1 className="mt-3 text-3xl font-extrabold tracking-wider text-ink-strong">
           New gallery
         </h1>
         <p className="mt-2 text-sm text-ink-muted">
@@ -192,14 +192,17 @@ export default function NewGalleryPage() {
           <FormError message={error} />
 
           <div className="flex items-center justify-end gap-4">
-            <Link href="/admin" className={buttonClasses("ghost", "tracking-wider")}>
+            <Link
+              href="/admin"
+              className={buttonClasses("secondary", "tracking-wider")}
+            >
               Cancel
             </Link>
             <Button
               type="submit"
               disabled={pending || title.trim().length === 0}
             >
-              {pending ? "Creating…" : "Create gallery →"}
+              {pending ? "Creating" : "Create gallery →"}
             </Button>
           </div>
         </form>

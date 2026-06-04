@@ -173,7 +173,7 @@ function CoverModal({
       {thumb ? (
         <>
           <p className="mt-1 text-sm text-ink-muted">
-            Drag the dot to set the focal point — it controls how the cover is
+            Drag the dot to set the focal point - it controls how the cover is
             cropped on the gallery.
           </p>
           <FocalPicker
@@ -215,7 +215,7 @@ function CoverModal({
           disabled={uploading}
           className="tracking-wider"
         >
-          {uploading ? "Uploading…" : "Upload cover"}
+          {uploading ? "Uploading" : "Upload cover"}
         </Button>
       </div>
 

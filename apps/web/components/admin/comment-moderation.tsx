@@ -136,7 +136,7 @@ export function CommentModeration({
               key={c.id}
               className="flex gap-4 rounded-lg border border-border bg-surface p-4"
             >
-              {/* What was commented on — click to open a larger preview. */}
+              {/* What was commented on - click to open a larger preview. */}
               {c.fileId && (
                 <button
                   type="button"
@@ -173,7 +173,6 @@ export function CommentModeration({
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-md bg-surface-sunken px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-ink-muted">
-                    Private ·{" "}
                     {c.scope === "favorites"
                       ? "Favorites"
                       : (c.listName ?? "List")}
@@ -193,8 +192,17 @@ export function CommentModeration({
                   {c.body}
                 </p>
                 <div className="mt-2 flex items-center gap-3">
-                  <div className="ml-auto flex items-center gap-2">
-                    {/* Approval only applies to public set-level comments. */}
+                  <div className="ml-auto flex items-center gap-4">
+                    <Button
+                      variant="danger"
+                      disabled={busyId === c.id}
+                      onClick={() => remove(c)}
+                      className="px-3 py-1.5 tracking-wider"
+                    >
+                      Delete
+                    </Button>
+                    {/* Approval only applies to public set-level comments — the
+                        affirmative CTA sits on the right. */}
                     {c.scope === "set" &&
                       (c.isApproved ? (
                         <Button
@@ -214,14 +222,6 @@ export function CommentModeration({
                           Approve
                         </Button>
                       ))}
-                    <Button
-                      variant="danger"
-                      disabled={busyId === c.id}
-                      onClick={() => remove(c)}
-                      className="px-3 py-1.5 tracking-wider"
-                    >
-                      Delete
-                    </Button>
                   </div>
                 </div>
               </div>

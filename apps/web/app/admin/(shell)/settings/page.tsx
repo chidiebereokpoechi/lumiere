@@ -8,11 +8,11 @@ export default async function SettingsPage() {
   return (
     <div>
       <header className="p-4 border-b border-border">
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">
+        <h1 className="text-3xl font-extrabold tracking-wider text-ink-strong">
           Settings
         </h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Your public creator profile — shown on every client gallery landing.
+          Your public creator profile - shown on every client gallery landing.
         </p>
       </header>
 

@@ -78,7 +78,7 @@ export function FileTile({
           ) : (
             <div className="h-full w-full flex flex-col items-center justify-center gap-2">
               <Spinner />
-              <span className="text-xs text-ink-muted">Processing…</span>
+              <span className="text-xs text-ink-muted">Processing</span>
             </div>
           )
         ) : file.type === "video" ? (

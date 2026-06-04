@@ -59,7 +59,7 @@ export function ListThumbs({
           ) : (
             <span className="flex h-full w-full flex-col items-center justify-center gap-1 p-1 text-center">
               <span className="text-[10px] font-semibold text-ink-muted">
-                {it.type ?? "—"}
+                {it.type ?? "-"}
               </span>
             </span>
           );
@@ -119,7 +119,7 @@ export function ListThumbs({
                       ? c.isApproved
                         ? "Comment"
                         : "Comment · pending"
-                      : `Private note${c.collection ? ` · ${c.collection}` : ""}`}
+                      : `Note${c.collection ? ` · ${c.collection}` : ""}`}
                   </div>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-ink-muted">
                     {c.body}
