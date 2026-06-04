@@ -14,6 +14,8 @@ import type { ClientList } from "@/lib/api/lists";
 import { useRangeSelect } from "@/hooks/use-range-select";
 import { useDragSelect } from "@/hooks/use-drag-select";
 import { useCoverGate } from "@/hooks/use-cover-gate";
+import { Toaster } from "@/components/ui/toaster";
+import { toast } from "@/lib/toast";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { ChevronLeft, Download, Heart, Zip } from "@/components/ui/icons";
@@ -366,8 +368,10 @@ export function ClientGallery({
           name,
         })) as ClientList;
         setLists((prev) => [...prev, l]);
+        toast.success(`Created list “${l.name}”`);
         return l;
       } catch {
+        toast.error("Couldn’t create that list. Try again.");
         return null;
       }
     },
@@ -376,6 +380,7 @@ export function ClientGallery({
 
   const deleteList = useCallback(
     (id: string) => {
+      const removed = lists.find((l) => l.id === id);
       setLists((prev) => prev.filter((l) => l.id !== id));
       setView((v) =>
         v.kind === "list" && v.id === id
@@ -386,9 +391,15 @@ export function ClientGallery({
       );
       void apiClient(`/api/gallery/${gallery.slug}/lists/${id}`, {
         method: "DELETE",
-      }).catch(() => {});
+      })
+        .then(() => {
+          if (removed) toast.success(`Deleted list “${removed.name}”`);
+        })
+        .catch(() => {
+          toast.error("Couldn’t delete that list.");
+        });
     },
-    [gallery.slug, folders],
+    [gallery.slug, folders, lists],
   );
 
   const renameList = useCallback(
@@ -398,13 +409,24 @@ export function ClientGallery({
         `/api/gallery/${gallery.slug}/lists/${id}`,
         { name },
         "PATCH",
-      ).catch(() => {});
+      )
+        .then(() => toast.success(`Renamed list to “${name}”`))
+        .catch(() => toast.error("Couldn’t rename that list."));
     },
     [gallery.slug],
   );
 
   const setMembership = useCallback(
     (listId: string, fileIds: string[], member: boolean) => {
+      const list = lists.find((l) => l.id === listId);
+      const listName = list?.name ?? "list";
+      // Only count the changes that actually mutate state — re-adding an item
+      // already in the list shouldn't claim "1 added".
+      const existing = new Set(list?.fileIds ?? []);
+      const changed = member
+        ? fileIds.filter((id) => !existing.has(id))
+        : fileIds.filter((id) => existing.has(id));
+
       setLists((prev) =>
         prev.map((l) => {
           if (l.id !== listId) return l;
@@ -416,20 +438,35 @@ export function ClientGallery({
           return { ...l, fileIds: [...ids] };
         }),
       );
-      for (const fid of fileIds) {
-        if (member) {
-          void postJson(`/api/gallery/${gallery.slug}/lists/${listId}/items`, {
-            fileId: fid,
-          }).catch(() => {});
-        } else {
-          void apiClient(
-            `/api/gallery/${gallery.slug}/lists/${listId}/items/${fid}`,
-            { method: "DELETE" },
-          ).catch(() => {});
-        }
+      const ops = fileIds.map((fid) =>
+        member
+          ? postJson(`/api/gallery/${gallery.slug}/lists/${listId}/items`, {
+              fileId: fid,
+            })
+          : apiClient(
+              `/api/gallery/${gallery.slug}/lists/${listId}/items/${fid}`,
+              { method: "DELETE" },
+            ),
+      );
+      const noun = (n: number) => (n === 1 ? "item" : "items");
+      if (changed.length > 0) {
+        Promise.allSettled(ops).then((results) => {
+          const failed = results.filter((r) => r.status === "rejected").length;
+          if (failed === 0) {
+            toast.success(
+              `${changed.length} ${noun(changed.length)} ${member ? "added to" : "removed from"} “${listName}”`,
+            );
+          } else if (failed < ops.length) {
+            toast.error(
+              `${ops.length - failed} of ${ops.length} ${noun(ops.length)} ${member ? "added to" : "removed from"} “${listName}”`,
+            );
+          } else {
+            toast.error(`Couldn’t update “${listName}”. Try again.`);
+          }
+        });
       }
     },
-    [gallery.slug],
+    [gallery.slug, lists],
   );
 
   const openPicker = useCallback(
@@ -442,6 +479,7 @@ export function ClientGallery({
   // ---- Downloads ----
   const triggerDownload = useCallback(
     (qs: string) => {
+      toast.info("Preparing download…");
       downloadViaAnchor(`/api/gallery/${gallery.slug}/download?${qs}`);
     },
     [gallery.slug],
@@ -484,6 +522,7 @@ export function ClientGallery({
     async (imgs: ClientFile[]) => {
       if (imgs.length === 0 || savingPhotos) return;
       setSavingPhotos(true);
+      const toastId = toast.loading("Preparing to save to Photos…");
       try {
         const fileObjs = await Promise.all(
           imgs.map(async (f) => {
@@ -501,13 +540,34 @@ export function ClientGallery({
           canShare?: (d: ShareData) => boolean;
         };
         if (nav.canShare?.({ files: fileObjs }) && nav.share) {
+          toast.update(toastId, {
+            kind: "info",
+            message: "Opening share sheet…",
+          });
           await nav.share({ files: fileObjs });
+          toast.update(toastId, {
+            kind: "success",
+            message: `Saved ${imgs.length} ${imgs.length === 1 ? "item" : "items"}`,
+            duration: 3000,
+          });
         } else {
+          toast.update(toastId, {
+            kind: "error",
+            message: "Couldn’t save to Photos — downloading as ZIP",
+            duration: 5000,
+          });
           triggerDownload(`ids=${imgs.map((f) => f.id).join(",")}`);
         }
       } catch (err) {
-        // AbortError = user dismissed the share sheet; ignore. Otherwise fall back.
-        if (!(err instanceof DOMException && err.name === "AbortError")) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          // User dismissed the share sheet — quietly close the toast.
+          toast.dismiss(toastId);
+        } else {
+          toast.update(toastId, {
+            kind: "error",
+            message: "Couldn’t save to Photos — downloading as ZIP",
+            duration: 5000,
+          });
           triggerDownload(`ids=${imgs.map((f) => f.id).join(",")}`);
         }
       } finally {
@@ -907,6 +967,7 @@ export function ClientGallery({
           onClose={() => setListMenuId(null)}
         />
       )}
+      <Toaster />
     </main>
   );
 }

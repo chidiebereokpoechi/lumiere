@@ -17,6 +17,7 @@ import {
   FormError,
 } from "@/components/admin/form";
 import { confirmDialog } from "@/components/ui/dialog";
+import { toast } from "@/lib/toast";
 import { Pen, Trash, ImageIcon } from "@/components/ui/icons";
 
 const POSITIONS: { value: WatermarkPosition; label: string }[] = [
@@ -170,6 +171,7 @@ export function WatermarkManager({
         return [...without, saved].sort((a, b) => a.name.localeCompare(b.name));
       });
       setDraft(null);
+      toast.success(draft.id ? `Updated “${saved.name}”` : `Created “${saved.name}”`);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -194,7 +196,9 @@ export function WatermarkManager({
       await apiClientMutation(`/api/watermark-presets/${p.id}`, {
         method: "DELETE",
       });
+      toast.success(`Deleted “${p.name}”`);
     } catch {
+      toast.error(`Couldn’t delete “${p.name}”`);
       void apiClient<WatermarkPreset[]>("/api/watermark-presets")
         .then(setPresets)
         .catch(() => {});

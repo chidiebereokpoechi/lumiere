@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ApiError } from "@/lib/api-client";
 import { fetchMe } from "@/lib/api/galleries";
 import { Sidebar } from "@/components/admin/sidebar";
+import { Toaster } from "@/components/ui/toaster";
 
 // The shell layout is dynamic — every admin request hits /api/auth/me so we
 // have a real, validated identity for the topnav user menu. If the call 401s
@@ -26,6 +27,7 @@ export default async function AdminShellLayout({
     <div className="min-h-dvh flex bg-bg">
       <Sidebar />
       <div className="flex-1 min-w-0">{children}</div>
+      <Toaster />
     </div>
   );
 }

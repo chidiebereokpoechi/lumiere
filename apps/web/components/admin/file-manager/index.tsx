@@ -9,6 +9,7 @@ import {
   mutateJson,
 } from "@/lib/api-client";
 import { downloadViaAnchor } from "@/lib/download";
+import { toast } from "@/lib/toast";
 import type { GalleryFile } from "@/lib/api/files";
 import type { Folder } from "@/lib/api/folders";
 import { useRangeSelect } from "@/hooks/use-range-select";
@@ -119,6 +120,7 @@ export function FileManager({
       );
       await refreshFolders();
       if (created?.id) setActiveFolder(created.id);
+      toast.success(`Created set “${name}”`);
     } catch (err) {
       setError(apiErrorMessage(err, "Could not create folder"));
     }
@@ -140,6 +142,7 @@ export function FileManager({
         "PATCH",
       );
       await refreshFolders();
+      toast.success(`Renamed to “${name}”`);
     } catch (err) {
       setError(apiErrorMessage(err, "Could not rename folder"));
     }
@@ -179,6 +182,7 @@ export function FileManager({
         setActiveFolder(folders.find((f) => f.id !== folder.id)?.id ?? "");
       await refreshFolders();
       await refreshFiles();
+      toast.success(`Deleted set “${folder.name}”`);
     } catch (err) {
       setError(apiErrorMessage(err, "Could not delete folder"));
     }
@@ -291,15 +295,22 @@ export function FileManager({
     setCover((c) =>
       c.fileId && ids.includes(c.fileId) ? { ...c, fileId: null } : c,
     );
-    await Promise.all(
+    const results = await Promise.allSettled(
       ids.map((id) =>
         apiClientMutation(`/api/galleries/${galleryId}/files/${id}`, {
           method: "DELETE",
-        }).catch(() => {
-          /* best-effort */
         }),
       ),
     );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const succeeded = ids.length - failed;
+    if (failed === 0) {
+      toast.success(`Deleted ${succeeded} ${succeeded === 1 ? "item" : "items"}`);
+    } else if (succeeded === 0) {
+      toast.error(`Couldn’t delete ${ids.length} ${ids.length === 1 ? "item" : "items"}`);
+    } else {
+      toast.error(`Deleted ${succeeded} of ${ids.length} — ${failed} failed`);
+    }
     void refreshFolders();
   }
 
@@ -318,6 +329,7 @@ export function FileManager({
       });
       setFiles((prev) => prev.filter((f) => f.id !== file.id));
       setCover((c) => (c.fileId === file.id ? { ...c, fileId: null } : c));
+      toast.success("File deleted");
     } catch (err) {
       setError(apiErrorMessage(err, "Delete failed"));
     } finally {

@@ -9,6 +9,7 @@ import {
 import type { AdminComment } from "@/lib/api/comments";
 import { confirmDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 
 function when(epoch: number): string {
   return new Date(epoch * 1000).toLocaleString("en", {
@@ -57,6 +58,7 @@ export function CommentModeration({
       setComments((prev) =>
         prev.map((x) => (x.id === c.id ? { ...x, isApproved } : x)),
       );
+      toast.success(isApproved ? "Comment approved" : "Comment unapproved");
     } catch (err) {
       setError(apiErrorMessage(err, "Update failed"));
     } finally {
@@ -81,6 +83,7 @@ export function CommentModeration({
         method: "DELETE",
       });
       setComments((prev) => prev.filter((x) => x.id !== c.id));
+      toast.success("Comment deleted");
     } catch (err) {
       setError(apiErrorMessage(err, "Delete failed"));
     } finally {

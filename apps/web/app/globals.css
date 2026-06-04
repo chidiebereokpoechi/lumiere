@@ -199,3 +199,15 @@ html:not(.theme-no-transition) * {
     font-size: 16px;
   }
 }
+
+/* Toast entry — subtle fade + slight rise. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
