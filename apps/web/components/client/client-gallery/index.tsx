@@ -20,7 +20,14 @@ import { toast } from "@/lib/toast";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
-import { ChevronLeft, Download, Heart, Zip } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+import {
+  Check,
+  ChevronLeft,
+  Download,
+  Heart,
+  Zip,
+} from "@/components/ui/icons";
 import { AlbumsLanding, type AlbumItem } from "./albums-landing";
 import { GalleryCover } from "./gallery-cover";
 import { GalleryTab } from "./gallery-tab";
@@ -742,17 +749,33 @@ export function ClientGallery({
 
       {/* Sticky chrome: a slim title bar with actions, then the tab row. */}
       <div className="sticky top-0 z-30 bg-bg">
-        {collectionsMode && !atLanding && (
-          <div className="px-2 pt-2 sm:px-8 sm:pt-8 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={goLanding}
-              aria-label="Back to collections"
-              className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <div className="flex-1 min-w-0 text-center">
+        {collectionsMode &&
+          !atLanding &&
+          (coarse ? (
+            // Mobile: back lives on the name row; title centered with a spacer
+            // to balance the back button.
+            <div className="px-2 pt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={goLanding}
+                aria-label="Back to collections"
+                className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <div className="flex-1 min-w-0 text-center">
+                <p
+                  style={{ viewTransitionName: "gallery-title" }}
+                  className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong"
+                >
+                  {gallery.title}
+                </p>
+              </div>
+              <span aria-hidden className="w-6 shrink-0" />
+            </div>
+          ) : (
+            // Desktop: centered title only; back sits in the main row below.
+            <div className="px-8 pt-8 text-center">
               <p
                 style={{ viewTransitionName: "gallery-title" }}
                 className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong"
@@ -760,20 +783,78 @@ export function ClientGallery({
                 {gallery.title}
               </p>
             </div>
-            {/* Balance the back button so the title stays centered. */}
-            <span aria-hidden className="w-6 shrink-0" />
-          </div>
-        )}
+          ))}
         <div className="p-2 sm:p-8 flex items-center justify-between gap-3">
           {collectionsMode && !atLanding ? (
-            // Collection: a full-width set selector. The Select / download
-            // actions live in the bottom bar below (mirrors selection mode).
-            <Select
-              value={viewKey(view)}
-              onChange={selectCollection}
-              options={collectionOptions}
-              className="w-full min-w-0"
-            />
+            coarse ? (
+              // Mobile: a full-width set selector. Select / save actions live in
+              // the bottom CollectionBar (mirrors selection mode).
+              <Select
+                value={viewKey(view)}
+                onChange={selectCollection}
+                options={collectionOptions}
+                className="w-full min-w-0"
+              />
+            ) : (
+              // Desktop: the older layout — back + selector on the left, the
+              // Select button + download on the right.
+              <>
+                <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={goLanding}
+                    aria-label="Back to collections"
+                    className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <Select
+                    value={viewKey(view)}
+                    onChange={selectCollection}
+                    options={collectionOptions}
+                    className="w-44 sm:w-56"
+                  />
+                </div>
+                {allFiles.length > 0 && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        if (!selectionMode) enterSelection();
+                        else if (allSelected) deselectAll();
+                        else selectAll();
+                      }}
+                      className="px-3.5 tracking-wider"
+                    >
+                      <Check size={16} />
+                      {!selectionMode
+                        ? "Select"
+                        : allSelected
+                          ? "Deselect all"
+                          : "Select all"}
+                    </Button>
+                    {canDownload && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          selectionMode
+                            ? downloadSelected()
+                            : triggerDownload(
+                                `ids=${files.map((f) => f.id).join(",")}`,
+                              )
+                        }
+                        disabled={selectionMode && selected.size === 0}
+                        aria-label="Download"
+                        title="Download"
+                        className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                      >
+                        <Download size={24} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )
           ) : (
             <>
               <div className="min-w-0">
@@ -895,8 +976,8 @@ export function ClientGallery({
         ) : (
           <div
             className={`px-2 sm:px-8 ${
-              collectionsMode && !selectionMode && files.length > 0
-                ? "pb-28 sm:pb-24"
+              coarse && collectionsMode && !selectionMode && files.length > 0
+                ? "pb-28"
                 : ""
             }`}
           >
@@ -926,7 +1007,11 @@ export function ClientGallery({
         )}
       </section>
 
-      {collectionsMode && !atLanding && !selectionMode && files.length > 0 && (
+      {coarse &&
+        collectionsMode &&
+        !atLanding &&
+        !selectionMode &&
+        files.length > 0 && (
         <CollectionBar
           count={files.length}
           canDownload={canDownload}
