@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { subscribe, dismiss, type Toast } from "@/lib/toast";
+import { SpinnerIcon } from "@/components/ui/icons";
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -29,16 +30,14 @@ function ToastItem({ toast }: { toast: Toast }) {
       role="status"
       onClick={() => dismiss(toast.id)}
       className={[
-        "pointer-events-auto group relative w-full max-w-sm cursor-pointer",
-        "overflow-hidden rounded-md border-2 border-border bg-surface",
-        "pl-4 pr-4 py-3 text-sm leading-snug text-ink-strong",
-        // Subtle entrance — fades + slides up slightly.
+        "pointer-events-auto group w-full max-w-sm cursor-pointer",
+        // Flat dark panel — same surface used for active sidebar/tab pills.
+        "bg-surface-strong text-ink-inverse",
+        "px-4 py-3 text-sm leading-snug",
         "animate-[toast-in_180ms_ease-out]",
       ].join(" ")}
     >
-      {/* Left accent strip: kind-coded, structural. */}
-      <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${accent(toast.kind)}`} />
-      <div className="flex items-center gap-3 pl-2">
+      <div className="flex items-center gap-3">
         <Indicator kind={toast.kind} />
         <span className="flex-1">{toast.message}</span>
       </div>
@@ -48,24 +47,22 @@ function ToastItem({ toast }: { toast: Toast }) {
 
 function Indicator({ kind }: { kind: Toast["kind"] }) {
   if (kind === "loading") {
-    return (
-      <span
-        aria-hidden
-        className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-ink-muted border-r-transparent"
-      />
-    );
+    return <SpinnerIcon size={16} className="shrink-0 animate-spin" />;
   }
-  return null;
+  return (
+    <span
+      aria-hidden
+      className={`shrink-0 inline-block h-2 w-2 ${dot(kind)}`}
+    />
+  );
 }
 
-function accent(kind: Toast["kind"]): string {
+function dot(kind: Toast["kind"]): string {
   switch (kind) {
     case "success":
       return "bg-positive";
     case "error":
       return "bg-negative";
-    case "loading":
-      return "bg-ink-muted";
     default:
       return "bg-accent";
   }
