@@ -32,13 +32,16 @@ export function CommentModeration({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Only public (set-level) comments go through approval; private notes don't.
   const pendingCount = useMemo(
-    () => comments.filter((c) => !c.isApproved).length,
+    () => comments.filter((c) => c.scope === "set" && !c.isApproved).length,
     [comments],
   );
   const visible = useMemo(() => {
-    if (filter === "pending") return comments.filter((c) => !c.isApproved);
-    if (filter === "approved") return comments.filter((c) => c.isApproved);
+    if (filter === "pending")
+      return comments.filter((c) => c.scope === "set" && !c.isApproved);
+    if (filter === "approved")
+      return comments.filter((c) => c.scope === "set" && c.isApproved);
     return comments;
   }, [comments, filter]);
 
@@ -128,15 +131,8 @@ export function CommentModeration({
               className="rounded-lg border border-border bg-surface p-4"
             >
               <div className="flex items-baseline justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="text-sm font-semibold text-ink-strong">
-                    {c.clientName || "Guest"}
-                  </span>
-                  {c.clientEmail && (
-                    <span className="ml-2 text-xs text-ink-muted">
-                      {c.clientEmail}
-                    </span>
-                  )}
+                <div className="min-w-0 truncate text-sm font-semibold text-ink-strong">
+                  {c.clientEmail || c.clientName || "Guest"}
                 </div>
                 <span className="text-xs text-ink-muted tabular-nums shrink-0">
                   {when(c.createdAt)}
@@ -146,34 +142,43 @@ export function CommentModeration({
                 {c.body}
               </p>
               <div className="mt-3 flex items-center gap-3">
-                <span
-                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold tracking-wider ${
-                    c.isApproved
-                      ? "bg-surface-sunken text-positive"
-                      : "bg-accent-soft text-white"
-                  }`}
-                >
-                  {c.isApproved ? "Approved" : "Pending"}
-                </span>
+                {c.scope === "set" ? (
+                  <span
+                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-extrabold tracking-wider ${
+                      c.isApproved
+                        ? "bg-surface-sunken text-positive"
+                        : "bg-accent-soft text-white"
+                    }`}
+                  >
+                    {c.isApproved ? "Approved" : "Pending"}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-md bg-surface-sunken px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-ink-muted">
+                    Private ·{" "}
+                    {c.scope === "favorites" ? "Favorites" : c.listName ?? "List"}
+                  </span>
+                )}
                 <div className="ml-auto flex items-center gap-2">
-                  {c.isApproved ? (
-                    <button
-                      type="button"
-                      disabled={busyId === c.id}
-                      onClick={() => setApproved(c, false)}
-                      className="text-sm font-semibold text-ink-muted hover:text-ink-strong disabled:opacity-50"
-                    >
-                      Unapprove
-                    </button>
-                  ) : (
-                    <Button
-                      disabled={busyId === c.id}
-                      onClick={() => setApproved(c, true)}
-                      className="px-3 py-1.5 tracking-wider"
-                    >
-                      Approve
-                    </Button>
-                  )}
+                  {/* Approval only applies to public set-level comments. */}
+                  {c.scope === "set" &&
+                    (c.isApproved ? (
+                      <button
+                        type="button"
+                        disabled={busyId === c.id}
+                        onClick={() => setApproved(c, false)}
+                        className="text-sm font-semibold text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                      >
+                        Unapprove
+                      </button>
+                    ) : (
+                      <Button
+                        disabled={busyId === c.id}
+                        onClick={() => setApproved(c, true)}
+                        className="px-3 py-1.5 tracking-wider"
+                      >
+                        Approve
+                      </Button>
+                    ))}
                   <button
                     type="button"
                     disabled={busyId === c.id}

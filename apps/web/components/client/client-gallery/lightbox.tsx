@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ClientFile } from "@/lib/api/client-gallery";
+import type { CommentScope } from "@/lib/api/comments";
 import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/format";
 import {
@@ -30,6 +31,10 @@ export function Lightbox({
   total,
   slug,
   allowComments,
+  commentScope,
+  commentListId,
+  email,
+  onRequireEmail,
   canDownload,
   canFavorite,
   coarse,
@@ -46,6 +51,10 @@ export function Lightbox({
   total: number;
   slug: string;
   allowComments: boolean;
+  commentScope: CommentScope;
+  commentListId?: string;
+  email: string | null;
+  onRequireEmail: () => void;
   canDownload: boolean;
   canFavorite: boolean;
   coarse: boolean;
@@ -257,7 +266,14 @@ export function Lightbox({
           className="absolute inset-x-0 bottom-0 z-10 max-h-[70svh] overflow-y-auto bg-surface border-t border-border rounded-t-xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:inset-x-auto sm:right-0 sm:top-14 sm:bottom-0 sm:w-96 sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-none"
           onClick={(e) => e.stopPropagation()}
         >
-          <ItemComments slug={slug} fileId={file.id} />
+          <ItemComments
+            slug={slug}
+            fileId={file.id}
+            scope={commentScope}
+            listId={commentListId}
+            email={email}
+            onRequireEmail={onRequireEmail}
+          />
         </div>
       )}
     </div>

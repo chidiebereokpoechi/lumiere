@@ -9,12 +9,11 @@ import type {
   ClientFolder,
   MinimalGallery,
 } from "@/lib/api/client-gallery";
-import type { ClientComment } from "@/lib/api/comments";
+import type { CommentScope } from "@/lib/api/comments";
 import type { ClientList } from "@/lib/api/lists";
 import { useRangeSelect } from "@/hooks/use-range-select";
 import { useDragSelect } from "@/hooks/use-drag-select";
 import { useCoverGate } from "@/hooks/use-cover-gate";
-import { CommentsSection } from "@/components/client/comments-section";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { ChevronLeft, Download, Heart, Zip } from "@/components/ui/icons";
@@ -35,7 +34,6 @@ interface Props {
   folders: ClientFolder[];
   files: ClientFile[];
   initialFavorites: string[];
-  comments: ClientComment[];
   initialLists: ClientList[];
   initialEmail: string | null;
   initialCollection: string | null;
@@ -54,7 +52,6 @@ export function ClientGallery({
   folders,
   files: allFiles,
   initialFavorites,
-  comments,
   initialLists,
   initialEmail,
   initialCollection,
@@ -764,13 +761,6 @@ export function ClientGallery({
         )}
       </section>
 
-      {gallery.allowComments && (
-        <CommentsSection
-          slug={gallery.slug}
-          initialComments={comments.filter((c) => !c.fileId)}
-        />
-      )}
-
       {selectionMode && (
         <SelectionBar
           count={selected.size}
@@ -816,6 +806,10 @@ export function ClientGallery({
           total={files.length}
           slug={gallery.slug}
           allowComments={gallery.allowComments}
+          commentScope={view.kind === "folder" ? "set" : view.kind}
+          commentListId={view.kind === "list" ? view.id : undefined}
+          email={email}
+          onRequireEmail={() => requireEmail(() => {})}
           canDownload={canDownload}
           canFavorite={canFavorite}
           coarse={coarse}

@@ -196,6 +196,11 @@ export const comments = sqliteTable('comments', {
   clientEmail: text('client_email'),
   body: text('body').notNull(),
   isApproved: integer('is_approved').default(0),
+  // Scope drives visibility: 'set' = public comment on the file (needs approval,
+  // shown to all). 'list'/'favorites' = a private editable note scoped to that
+  // collection, visible only to its author (by email) + the admin.
+  scope: text('scope').notNull().default('set'),
+  listId: text('list_id'),
   createdAt: integer('created_at').notNull(),
 });
 

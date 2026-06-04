@@ -1,19 +1,19 @@
 import { apiServer } from '@/lib/api-client';
 
-// Public (approved-only) comment shape.
-export interface ClientComment {
+// Per-item comment as returned by GET /api/gallery/:slug/comments. For 'set'
+// scope these are approved public comments (author = email); for private
+// (list/favorites) scope it's only the caller's own note (`mine`).
+export interface ItemComment {
   id: string;
-  fileId: string | null;
-  clientName: string | null;
   body: string;
+  author: string | null;
   createdAt: number;
+  mine: boolean;
 }
 
-export function fetchClientComments(slug: string) {
-  return apiServer<{ comments: ClientComment[] }>(`/api/gallery/${slug}/comments`);
-}
+export type CommentScope = 'set' | 'list' | 'favorites';
 
-// Admin shape — includes pending comments + email + approval state.
+// Admin shape — every comment, with scope + approval state.
 export interface AdminComment {
   id: string;
   fileId: string | null;
@@ -21,6 +21,8 @@ export interface AdminComment {
   clientEmail: string | null;
   body: string;
   isApproved: boolean;
+  scope: CommentScope;
+  listName: string | null;
   createdAt: number;
 }
 
