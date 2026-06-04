@@ -784,6 +784,7 @@ export function ClientGallery({
               </p>
             </div>
           ))}
+        {!(collectionsMode && atLanding) && (
         <div className="p-2 sm:p-4 flex items-center justify-between gap-3">
           {collectionsMode && !atLanding ? (
             coarse ? (
@@ -922,6 +923,7 @@ export function ClientGallery({
             </>
           )}
         </div>
+        )}
         {!collectionsMode &&
           allFiles.length > 0 &&
           !(coarse && selectionMode) && (
@@ -970,8 +972,11 @@ export function ClientGallery({
       <section className="min-h-svh">
         {collectionsMode && atLanding ? (
           <AlbumsLanding
+            gallery={gallery}
             collections={collectionAlbums}
             yourLists={listAlbums}
+            canDownload={canDownload}
+            onDownloadAll={() => setDownloadOpen(true)}
           />
         ) : (
           <div

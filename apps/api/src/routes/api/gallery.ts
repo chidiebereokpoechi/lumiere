@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { eq, asc, and, sql } from 'drizzle-orm';
 import { db } from '../../db';
-import { galleries, files, galleryViews, galleryFolders } from '../../db/schema';
+import { galleries, files, galleryViews, galleryFolders, photographers } from '../../db/schema';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { authContext } from '../../middleware/auth';
 import { clientIp } from '../../middleware/client-ip';
@@ -55,9 +55,17 @@ interface MinimalGallery {
   gracePeriodDays: number;
   eventDate: number | null;
   eventType: string | null;
+  clientName: string | null;
+  creatorName: string | null;
+  creatorEmail: string | null;
+  creatorWebsite: string | null;
+  creatorInstagram: string | null;
 }
 
-function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
+function toMinimal(
+  g: typeof galleries.$inferSelect,
+  photographer?: typeof photographers.$inferSelect | null,
+): MinimalGallery {
   return {
     id: g.id,
     slug: g.slug,
@@ -84,6 +92,14 @@ function toMinimal(g: typeof galleries.$inferSelect): MinimalGallery {
     gracePeriodDays: g.gracePeriodDays ?? 0,
     eventDate: g.eventDate,
     eventType: g.eventType,
+    clientName: g.clientName,
+    // Public "contact creator" — brand name first if set, else photographer name.
+    creatorName: photographer
+      ? photographer.brandName || photographer.name
+      : null,
+    creatorEmail: photographer ? photographer.email : null,
+    creatorWebsite: photographer?.website ?? null,
+    creatorInstagram: photographer?.instagram ?? null,
   };
 }
 
@@ -101,20 +117,23 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     }
 
     const isOwner = !!currentPhotographer && gallery.photographerId === currentPhotographer.id;
+    const photographer = await db.query.photographers.findFirst({
+      where: eq(photographers.id, gallery.photographerId),
+    });
     const blocked = blockedState(gallery, isOwner);
     if (blocked) {
-      return { state: blocked as AccessState, gallery: toMinimal(gallery) };
+      return { state: blocked as AccessState, gallery: toMinimal(gallery, photographer) };
     }
 
     if (gallery.passwordHash && !isOwner) {
       const unlocked = gallerySession?.galleryId === gallery.id;
       return {
         state: (unlocked ? 'ok' : 'locked') as AccessState,
-        gallery: toMinimal(gallery),
+        gallery: toMinimal(gallery, photographer),
       };
     }
 
-    return { state: 'ok' as AccessState, gallery: toMinimal(gallery) };
+    return { state: 'ok' as AccessState, gallery: toMinimal(gallery, photographer) };
   })
 
   // POST /api/gallery/:slug/unlock — verify password, issue gallery_session cookie
@@ -160,7 +179,10 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     });
 
     log.info('gallery.unlock', { galleryId: gallery.id, ip });
-    return { ok: true, gallery: toMinimal(gallery) };
+    const photographer = await db.query.photographers.findFirst({
+      where: eq(photographers.id, gallery.photographerId),
+    });
+    return { ok: true, gallery: toMinimal(gallery, photographer) };
   }, {
     body: t.Object({ password: t.String({ minLength: 1 }) }),
   })
@@ -234,8 +256,11 @@ export const clientGalleryRoutes = new Elysia({ prefix: '/api/gallery' })
     });
     const rows = allRows.filter((p) => !(p.folderId && hiddenIds.has(p.folderId)));
 
+    const photographer = await db.query.photographers.findFirst({
+      where: eq(photographers.id, gallery.photographerId),
+    });
     return {
-      gallery: toMinimal(gallery),
+      gallery: toMinimal(gallery, photographer),
       folders: visibleFolders.map((f) => ({ id: f.id, name: f.name, coverFileId: f.coverFileId })),
       files: rows.map((p) => ({
         id: p.id,

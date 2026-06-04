@@ -29,7 +29,6 @@ const NAV: NavItem[] = [
     href: "/admin/settings",
     label: "Settings",
     icon: <Gear size={24} />,
-    disabled: true,
   },
 ];
 

@@ -63,6 +63,8 @@ export interface CurrentPhotographer {
   email: string;
   name: string;
   brandName: string | null;
+  website: string | null;
+  instagram: string | null;
 }
 
 export function fetchGalleries() {

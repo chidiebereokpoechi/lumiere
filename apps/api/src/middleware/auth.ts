@@ -9,6 +9,8 @@ export interface CurrentPhotographer {
   email: string;
   name: string;
   brandName: string | null;
+  website: string | null;
+  instagram: string | null;
 }
 
 export const ACCESS_COOKIE = 'lumiere_jwt';
@@ -30,6 +32,8 @@ export const authContext = new Elysia({ name: 'auth-context' }).derive({ as: 'gl
       email: row.email,
       name: row.name,
       brandName: row.brandName,
+      website: row.website,
+      instagram: row.instagram,
     },
   };
 });

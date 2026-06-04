@@ -25,6 +25,11 @@ export interface MinimalGallery {
   gracePeriodDays: number;
   eventDate: number | null;
   eventType: string | null;
+  clientName: string | null;
+  creatorName: string | null;
+  creatorEmail: string | null;
+  creatorWebsite: string | null;
+  creatorInstagram: string | null;
 }
 
 export interface ClientFolder {

@@ -11,7 +11,7 @@ import {
   revokeRefreshToken,
 } from '../../services/auth';
 import { newCsrfToken, CSRF_COOKIE } from '../../services/csrf';
-import { ACCESS_COOKIE, REFRESH_COOKIE, authContext } from '../../middleware/auth';
+import { ACCESS_COOKIE, REFRESH_COOKIE, authContext, requireAuth } from '../../middleware/auth';
 import { checkCsrf } from '../../middleware/csrf';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
@@ -60,6 +60,57 @@ export const authRoutes = new Elysia({ prefix: '/api/auth' })
       return { error: 'unauthenticated' };
     }
     return currentPhotographer;
+  })
+
+  // PATCH /api/auth/profile — update the public-facing creator info shown on
+  // the client gallery landing (name, brand, website, instagram).
+  .patch('/profile', async (ctx) => {
+    const csrfError = checkCsrf(ctx);
+    if (csrfError) return csrfError;
+    const auth = requireAuth(ctx);
+    if (auth) return auth;
+    const me = ctx.currentPhotographer!;
+    const body = (ctx.body ?? {}) as Record<string, unknown>;
+    const patch: Partial<{
+      name: string;
+      brandName: string | null;
+      website: string | null;
+      instagram: string | null;
+    }> = {};
+    const trim = (v: unknown): string | null => {
+      if (typeof v !== 'string') return null;
+      const s = v.trim();
+      return s.length === 0 ? null : s;
+    };
+    if ('name' in body) {
+      const next = trim(body.name);
+      if (!next) {
+        ctx.set.status = 400;
+        return { error: 'name_required' };
+      }
+      patch.name = next;
+    }
+    if ('brandName' in body) patch.brandName = trim(body.brandName);
+    if ('website' in body) patch.website = trim(body.website);
+    if ('instagram' in body) {
+      const next = trim(body.instagram);
+      // Strip a leading @ so storage stays canonical; UI re-adds it if needed.
+      patch.instagram = next?.replace(/^@+/, '') ?? null;
+    }
+    if (Object.keys(patch).length === 0) {
+      ctx.set.status = 400;
+      return { error: 'no_changes' };
+    }
+    await db.update(photographers).set(patch).where(eq(photographers.id, me.id));
+    const row = await db.query.photographers.findFirst({ where: eq(photographers.id, me.id) });
+    return {
+      id: row!.id,
+      email: row!.email,
+      name: row!.name,
+      brandName: row!.brandName,
+      website: row!.website,
+      instagram: row!.instagram,
+    };
   })
 
   // POST /api/auth/login

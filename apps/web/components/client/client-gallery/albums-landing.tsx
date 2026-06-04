@@ -1,7 +1,17 @@
 "use client";
 
-import type { ClientFile } from "@/lib/api/client-gallery";
-import { Folder, Heart } from "@/components/ui/icons";
+import type { ClientFile, MinimalGallery } from "@/lib/api/client-gallery";
+import { formatDate } from "@/lib/format";
+import { toast } from "@/lib/toast";
+import {
+  External,
+  Folder,
+  Heart,
+  Instagram,
+  LinkIcon,
+  Mail,
+  Zip,
+} from "@/components/ui/icons";
 
 export interface AlbumItem {
   key: string;
@@ -15,14 +25,108 @@ export interface AlbumItem {
 // iOS-Photos-ish landing: album cards are squares with the set's first image as
 // a cover, the icon + name + count layered over it.
 export function AlbumsLanding({
+  gallery,
   collections,
   yourLists,
+  canDownload,
+  onDownloadAll,
 }: {
+  gallery: MinimalGallery;
   collections: AlbumItem[];
   yourLists: AlbumItem[];
+  canDownload: boolean;
+  onDownloadAll: () => void;
 }) {
+  const date = gallery.eventDate
+    ? formatDate(gallery.eventDate, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
+  async function shareLink() {
+    const url = window.location.href;
+    const data = { title: gallery.title, url };
+    const nav = navigator as Navigator & {
+      canShare?: (d: ShareData) => boolean;
+    };
+    try {
+      if (nav.canShare?.(data) && nav.share) {
+        await nav.share(data);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      } else {
+        toast.error("Sharing isn’t supported on this browser");
+      }
+    } catch (err) {
+      // AbortError = user dismissed the share sheet; silent.
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        toast.error("Couldn’t share the link");
+      }
+    }
+  }
+
+  const mailtoHref = gallery.creatorEmail
+    ? `mailto:${gallery.creatorEmail}?subject=${encodeURIComponent(`Re: ${gallery.title}`)}`
+    : null;
+  const instagramHref = gallery.creatorInstagram
+    ? `https://instagram.com/${gallery.creatorInstagram.replace(/^@+/, "")}`
+    : null;
+
   return (
-    <div className="flex flex-col px-2 sm:px-4 gap-4 sm:gap-6">
+    <div className="flex flex-col px-2 sm:px-4 gap-6 sm:gap-10">
+      <header className="pt-8 sm:pt-12 text-center">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-ink-strong">
+          {gallery.title}
+        </h1>
+        {(date || gallery.clientName) && (
+          <div className="mt-3 flex flex-col items-center gap-1 text-sm text-ink-muted tabular-nums">
+            {date && <p>{date}</p>}
+            {gallery.clientName && (
+              <p className="not-tabular-nums">{gallery.clientName}</p>
+            )}
+          </div>
+        )}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+          {canDownload && (
+            <ActionLink
+              icon={<Zip size={16} />}
+              label="Download collection as ZIP"
+              onClick={onDownloadAll}
+            />
+          )}
+          <ActionLink
+            icon={<LinkIcon size={16} />}
+            label="Share link"
+            onClick={shareLink}
+          />
+          {mailtoHref && (
+            <ActionLink
+              icon={<Mail size={16} />}
+              label="Contact creator"
+              href={mailtoHref}
+            />
+          )}
+          {gallery.creatorWebsite && (
+            <ActionLink
+              icon={<External size={16} />}
+              label="Website"
+              href={gallery.creatorWebsite}
+              external
+            />
+          )}
+          {instagramHref && (
+            <ActionLink
+              icon={<Instagram size={16} />}
+              label="Instagram"
+              href={instagramHref}
+              external
+            />
+          )}
+        </div>
+      </header>
       {collections.length > 0 && (
         <AlbumSection title="Collections" items={collections} />
       )}
@@ -30,6 +134,49 @@ export function AlbumsLanding({
         <AlbumSection title="Your lists" items={yourLists} />
       )}
     </div>
+  );
+}
+
+// Renders as <a> when given an `href` (mailto / external URL — the browser
+// handles those natively; a button calling window.location.href = mailto:…
+// is often blocked or no-ops). Otherwise renders as a <button>.
+function ActionLink({
+  icon,
+  label,
+  onClick,
+  href,
+  external,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  external?: boolean;
+}) {
+  const cls =
+    "inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong transition-colors";
+  const content = (
+    <>
+      <span className="shrink-0">{icon}</span>
+      <span>{label}</span>
+    </>
+  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        target={external ? "_blank" : undefined}
+        rel={external ? "noopener noreferrer" : undefined}
+        className={cls}
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={cls}>
+      {content}
+    </button>
   );
 }
 

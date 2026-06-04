@@ -51,4 +51,7 @@ export {
   VscRemove as Grip,
   VscHeart as HeartOpen,
   VscHeartFilled as Heart,
+  VscMail as Mail,
+  VscLink as LinkIcon,
 } from "react-icons/vsc";
+export { FaInstagram as Instagram } from "react-icons/fa";

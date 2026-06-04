@@ -17,7 +17,7 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
  */
 export function useCoverGate(
   initialShown: boolean,
-  { revealFraction = 0.55, dismissFraction = 0.15, disabled = false } = {},
+  { revealFraction = 1.0, dismissFraction = 0.15, disabled = false } = {},
 ) {
   const [shown, setShown] = useState(initialShown);
   const [progress, setProgress] = useState(initialShown ? 1 : 0);
@@ -46,6 +46,11 @@ export function useCoverGate(
     const vh = () => window.innerHeight || 1;
     const atTop = () => window.scrollY <= 0;
     const startY = { v: null as number | null };
+    const startT = { v: 0 };
+    // Reveal must be a slow deliberate pull, not a fling. A swipe that crosses
+    // the threshold faster than this is treated as a scroll/overscroll and
+    // ignored — the user has to dwell on the gesture for it to count.
+    const REVEAL_MIN_MS = 500;
     const wheelAccum = { v: 0 };
     let idle: number | null = null;
 
@@ -80,6 +85,7 @@ export function useCoverGate(
         return;
       }
       startY.v = shownRef.current || atTop() ? (e.touches[0]?.clientY ?? null) : null;
+      startT.v = performance.now();
     };
     const onTouchMove = (e: TouchEvent) => {
       const s = startY.v;
@@ -98,7 +104,12 @@ export function useCoverGate(
           return;
         }
         if (dy <= 0) return;
-        if (dy / vh() >= revealFraction) {
+        // Distance + dwell-time gate: a fast fling that hits the distance
+        // threshold in < REVEAL_MIN_MS is treated as a scroll, not a reveal.
+        if (
+          dy / vh() >= revealFraction &&
+          performance.now() - startT.v >= REVEAL_MIN_MS
+        ) {
           e.preventDefault();
           setShown(true);
           setProg(1);
@@ -112,6 +123,12 @@ export function useCoverGate(
       settle();
     };
 
+    // Tracks how long the page has continuously been at scrollY=0. Reveal
+    // wheel-deltas are ignored for a short grace window so that overshoot
+    // momentum from a strong scroll-to-top doesn't bleed into the reveal.
+    let atTopSince: number | null = null;
+    const ATTOP_GRACE_MS = 250;
+
     const onWheel = (e: WheelEvent) => {
       if (disabledRef.current && !shownRef.current) return;
       if (shownRef.current) {
@@ -124,10 +141,21 @@ export function useCoverGate(
       } else {
         // Reveal is threshold-only — accumulate but don't show progress until
         // the user has clearly committed past `revealFraction` of the viewport.
-        if (!atTop() || e.deltaY >= 0) {
+        if (!atTop()) {
+          atTopSince = null;
           if (e.deltaY > 0) wheelAccum.v = 0;
           return;
         }
+        if (atTopSince === null) atTopSince = performance.now();
+        if (e.deltaY >= 0) {
+          // Downward wheel at the top is a no-op; reset the reveal accumulator
+          // so a later upward gesture starts fresh.
+          wheelAccum.v = 0;
+          return;
+        }
+        // Filter momentum overshoot — ignore upward deltas until the page has
+        // been at-top for a beat (i.e. the previous gesture has settled).
+        if (performance.now() - atTopSince < ATTOP_GRACE_MS) return;
         e.preventDefault();
         wheelAccum.v += -e.deltaY;
         if (wheelAccum.v / vh() >= revealFraction) {

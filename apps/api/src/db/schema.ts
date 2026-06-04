@@ -11,6 +11,9 @@ export const photographers = sqliteTable('photographers', {
   name: text('name').notNull(),
   brandName: text('brand_name'),
   logoS3Key: text('logo_s3_key'),
+  // Public creator links surfaced on the client gallery landing.
+  website: text('website'),
+  instagram: text('instagram'),
   settings: text('settings').default('{}'),
   createdAt: integer('created_at').notNull(),
 });
