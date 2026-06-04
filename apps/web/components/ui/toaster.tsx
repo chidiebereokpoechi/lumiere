@@ -31,7 +31,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       onClick={() => dismiss(toast.id)}
       className={[
         "pointer-events-auto group w-full max-w-sm cursor-pointer",
-        // Flat dark panel — same surface used for active sidebar/tab pills.
+        // Flat dark panel - same surface used for active sidebar/tab pills.
         "bg-surface-strong text-ink-inverse",
         "px-4 py-3 text-sm leading-snug",
         "animate-[toast-in_180ms_ease-out]",

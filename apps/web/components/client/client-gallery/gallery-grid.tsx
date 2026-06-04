@@ -86,7 +86,7 @@ export function GalleryGrid({
       {files.length === 0 ? (
         <p className="text-center text-sm text-ink-muted py-24">{emptyText}</p>
       ) : gridMode && justified ? (
-        // Justified rows — uniform row height, edges flush.
+        // Justified rows - uniform row height, edges flush.
         <div
           className={`relative w-full ${dragSelecting ? "touch-none select-none" : ""}`}
           style={{ height: justified.containerHeight }}
@@ -304,7 +304,7 @@ function GalleryTile({
         )}
       </button>
 
-      {/* Bottom gradient — backs the heart + comment badge; shown whenever one
+      {/* Bottom gradient - backs the heart + comment badge; shown whenever one
           is visible (favorited/commented always, or on hover for the heart). */}
       {(isFavorite || hasComment || (desktop && canFavorite)) && (
         <div
@@ -312,7 +312,7 @@ function GalleryTile({
         />
       )}
 
-      {/* Comment / note badge — click to expand it. */}
+      {/* Comment / note badge - click to expand it. */}
       {hasComment && (
         <button
           type="button"
@@ -352,7 +352,7 @@ function GalleryTile({
         </button>
       )}
       {/* Desktop: interactive heart (hover to add; in selection mode it acts on
-          the whole selection). Touch: read-only favorited badge only — favorite
+          the whole selection). Touch: read-only favorited badge only - favorite
           from the lightbox or long-press menu there. */}
       {desktop && canFavorite ? (
         <button

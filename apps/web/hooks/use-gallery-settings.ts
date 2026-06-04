@@ -22,7 +22,7 @@ function emptyToNull(v: string): string | null {
 // Controller for the gallery settings form: holds every field, auto-saves on
 // change (selects/toggles/dates flush immediately; text debounces ~700ms and
 // flushes on blur), and exposes the password + delete actions. The view binds
-// to the returned values and handlers — no business logic in the component.
+// to the returned values and handlers - no business logic in the component.
 export function useGallerySettings(gallery: GalleryDetail) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -42,13 +42,17 @@ export function useGallerySettings(gallery: GalleryDetail) {
     gallery.layout ?? "grid",
   );
   const [navStyle, setNavStyle] = useState<"tabs" | "collections">(
-    gallery.navStyle ?? "tabs",
+    gallery.navStyle ?? "collections",
   );
   const [clientName, setClientName] = useState(gallery.clientName ?? "");
   const [clientEmail, setClientEmail] = useState(gallery.clientEmail ?? "");
-  const [eventDate, setEventDate] = useState(epochToDateInput(gallery.eventDate));
+  const [eventDate, setEventDate] = useState(
+    epochToDateInput(gallery.eventDate),
+  );
   const [eventType, setEventType] = useState(gallery.eventType ?? "");
-  const [expiresAt, setExpiresAt] = useState(epochToDateInput(gallery.expiresAt));
+  const [expiresAt, setExpiresAt] = useState(
+    epochToDateInput(gallery.expiresAt),
+  );
   const [gracePeriodDays, setGracePeriodDays] = useState(
     String(gallery.gracePeriodDays ?? 0),
   );
@@ -174,7 +178,7 @@ export function useGallerySettings(gallery: GalleryDetail) {
 
   // Mark the next auto-save as immediate (selects/toggles/dates change → save now).
   const immediate =
-    <T,>(fn: (v: T) => void) =>
+    <T>(fn: (v: T) => void) =>
     (v: T) => {
       flushNext.current = true;
       fn(v);

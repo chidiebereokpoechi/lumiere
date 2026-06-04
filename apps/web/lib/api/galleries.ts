@@ -1,13 +1,13 @@
-import { apiServer } from '@/lib/api-client';
+import { apiServer } from "@/lib/api-client";
 
-// Server-side fetcher for the photographer's gallery list. Matches the shape
+// Server-side fetcher for the creator's gallery list. Matches the shape
 // returned by GET /api/galleries on the backend (galleries.ts admin route).
 export interface GallerySummary {
   id: string;
   slug: string;
   title: string;
   subtitle: string | null;
-  status: 'active' | 'archived' | 'draft' | null;
+  status: "active" | "archived" | "draft" | null;
   coverFileId: string | null;
   clientName: string | null;
   clientEmail: string | null;
@@ -31,8 +31,8 @@ export interface GalleryDetail {
   coverFocalX: number | null;
   coverFocalY: number | null;
   passwordHash: string | null;
-  status: 'active' | 'archived' | 'draft' | null;
-  downloadMode: 'none' | 'watermarked' | 'full' | 'selected' | null;
+  status: "active" | "archived" | "draft" | null;
+  downloadMode: "none" | "watermarked" | "full" | "selected" | null;
   expiresAt: number | null;
   gracePeriodDays: number | null;
   allowFavorites: number | null;
@@ -42,8 +42,8 @@ export interface GalleryDetail {
   clientEmail: string | null;
   eventDate: number | null;
   eventType: string | null;
-  layout: 'grid' | 'masonry' | 'slideshow' | null;
-  navStyle: 'tabs' | 'collections' | null;
+  layout: "grid" | "masonry" | "slideshow" | null;
+  navStyle: "tabs" | "collections" | null;
   colorTheme: string | null;
   customCss: string | null;
   watermarkPresetId: string | null;
@@ -68,9 +68,9 @@ export interface CurrentPhotographer {
 }
 
 export function fetchGalleries() {
-  return apiServer<GallerySummary[]>('/api/galleries');
+  return apiServer<GallerySummary[]>("/api/galleries");
 }
 
 export function fetchMe() {
-  return apiServer<CurrentPhotographer>('/api/auth/me');
+  return apiServer<CurrentPhotographer>("/api/auth/me");
 }

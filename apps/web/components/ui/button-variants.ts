@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-// Pure button styling — no "use client", so Server Components (and styled
+// Pure button styling - no "use client", so Server Components (and styled
 // `<Link>`/`<a>` that can't be a <button>) can call buttonClasses() directly.
 const VARIANTS = {
   primary:

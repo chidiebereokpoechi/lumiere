@@ -14,14 +14,18 @@ import type {
   LogoUploadResult,
 } from "@/lib/api/watermarks";
 import { confirmDialog } from "@/components/ui/dialog";
-import { blankDraft, draftFrom, type Draft } from "@/components/admin/watermark-manager/draft";
+import {
+  blankDraft,
+  draftFrom,
+  type Draft,
+} from "@/components/admin/watermark-manager/draft";
 
 // All watermark-preset state + CRUD: the list, the in-progress draft (create or
 // edit), logo upload, validation, and save/delete with optimistic list updates.
 export function useWatermarkPresets(initial: WatermarkPreset[]) {
   const [presets, setPresets] = useState(initial);
   const [draft, setDraft] = useState<Draft | null>(null);
-  // Snapshot of the draft as opened — Save is offered only when it diverges.
+  // Snapshot of the draft as opened - Save is offered only when it diverges.
   const [original, setOriginal] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

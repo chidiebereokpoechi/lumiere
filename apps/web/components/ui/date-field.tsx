@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 // Native-free date picker. Value is a 'YYYY-MM-DD' string ('' = unset); onChange
 // emits the same. Calendar popover with a chevron header, Monday-first weeks,
-// and a clear action — styled to the system tokens.
+// and a clear action - styled to the system tokens.
 
 const MONTHS = [
   "January",

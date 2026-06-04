@@ -1,4 +1,4 @@
-import { apiServer } from '@/lib/api-client';
+import { apiServer } from "@/lib/api-client";
 
 // A client-made list of files. `fileIds` preserves add order.
 export interface ClientList {
@@ -18,7 +18,7 @@ export function fetchLists(slug: string) {
   return apiServer<ListsResponse>(`/api/gallery/${slug}/lists`);
 }
 
-// Admin view — every list in the gallery with the client's email attached.
+// Admin view - every list in the gallery with the client's email attached.
 export interface AdminList {
   id: string;
   name: string;
@@ -38,5 +38,7 @@ export interface AdminFavoriteGroup {
 }
 
 export function fetchAdminFavorites(galleryId: string) {
-  return apiServer<AdminFavoriteGroup[]>(`/api/galleries/${galleryId}/favorites`);
+  return apiServer<AdminFavoriteGroup[]>(
+    `/api/galleries/${galleryId}/favorites`,
+  );
 }

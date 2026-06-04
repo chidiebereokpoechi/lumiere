@@ -7,10 +7,10 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
 /**
  * Drag-gate for the full-screen gallery cover. The cover tracks the gesture
  * live (`progress` 0 = gallery, 1 = cover) and cleanly settles to one end on
- * release — never resting halfway, never a decoupled "zip".
+ * release - never resting halfway, never a decoupled "zip".
  *
- * Asymmetric commit: dismissing (cover → gallery) is easy — a small downward
- * gesture; revealing (gallery → cover) is hard — must drag past `revealFraction`
+ * Asymmetric commit: dismissing (cover → gallery) is easy - a small downward
+ * gesture; revealing (gallery → cover) is hard - must drag past `revealFraction`
  * of the viewport, and only from the gallery top. Wheel deltas accumulate into
  * the same progress and settle after a short idle. Rubber-band / pull-to-refresh
  * is suppressed at the seam so the cover never peeks by accident.
@@ -35,7 +35,7 @@ export function useCoverGate(
     setProgress(p);
   }, []);
 
-  // Imperative dismiss (the "View gallery" button) — clean animated settle.
+  // Imperative dismiss (the "View gallery" button) - clean animated settle.
   const dismiss = useCallback(() => {
     setDragging(false);
     setShown(false);
@@ -49,7 +49,7 @@ export function useCoverGate(
     const startT = { v: 0 };
     // Reveal must be a slow deliberate pull, not a fling. A swipe that crosses
     // the threshold faster than this is treated as a scroll/overscroll and
-    // ignored — the user has to dwell on the gesture for it to count.
+    // ignored - the user has to dwell on the gesture for it to count.
     const REVEAL_MIN_MS = 500;
     const wheelAccum = { v: 0 };
     let idle: number | null = null;
@@ -65,7 +65,7 @@ export function useCoverGate(
       if (shownRef.current) {
         if (p < 1 - dismissFraction) {
           setShown(false);
-          // Update the ref eagerly — the React state update is async, but the
+          // Update the ref eagerly - the React state update is async, but the
           // next wheel/touchmove may fire before re-render, and we don't want
           // it routed through the "cover shown" branch (which preventDefaults
           // and would block normal page scroll).
@@ -90,7 +90,8 @@ export function useCoverGate(
         startY.v = null;
         return;
       }
-      startY.v = shownRef.current || atTop() ? (e.touches[0]?.clientY ?? null) : null;
+      startY.v =
+        shownRef.current || atTop() ? (e.touches[0]?.clientY ?? null) : null;
       startT.v = performance.now();
     };
     const onTouchMove = (e: TouchEvent) => {
@@ -112,7 +113,7 @@ export function useCoverGate(
           startY.v = null;
         }
       } else {
-        // Reveal is threshold-only — no live preview, no tracking. The cover
+        // Reveal is threshold-only - no live preview, no tracking. The cover
         // snaps in once the gesture has clearly committed past `revealFraction`.
         if (!atTop()) {
           startY.v = null;
@@ -154,7 +155,7 @@ export function useCoverGate(
         setProg(clamp(1 - wheelAccum.v / vh()));
         scheduleSettle();
       } else {
-        // Reveal is threshold-only — accumulate but don't show progress until
+        // Reveal is threshold-only - accumulate but don't show progress until
         // the user has clearly committed past `revealFraction` of the viewport.
         if (!atTop()) {
           atTopSince = null;
@@ -168,7 +169,7 @@ export function useCoverGate(
           wheelAccum.v = 0;
           return;
         }
-        // Filter momentum overshoot — ignore upward deltas until the page has
+        // Filter momentum overshoot - ignore upward deltas until the page has
         // been at-top for a beat (i.e. the previous gesture has settled).
         if (performance.now() - atTopSince < ATTOP_GRACE_MS) return;
         e.preventDefault();
@@ -180,7 +181,9 @@ export function useCoverGate(
         } else {
           // Decay so a slow trickle of upward scroll doesn't eventually trigger.
           if (idle) window.clearTimeout(idle);
-          idle = window.setTimeout(() => { wheelAccum.v = 0; }, 140);
+          idle = window.setTimeout(() => {
+            wheelAccum.v = 0;
+          }, 140);
         }
       }
     };

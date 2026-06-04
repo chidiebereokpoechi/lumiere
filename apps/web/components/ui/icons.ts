@@ -1,12 +1,12 @@
-// Central icon set — VS Code Codicons via react-icons, aliased to semantic names
+// Central icon set - VS Code Codicons via react-icons, aliased to semantic names
 // so the rest of the app imports from one place. Icons inherit `currentColor`;
 // size with the `size` prop or a className.
 //
-// Harmonized size scale — keep icon sizes on these three steps for cohesion:
-//   sm 16 — inline w/ text, meta, chips/badges, admin row actions, menu items,
+// Harmonized size scale - keep icon sizes on these three steps for cohesion:
+//   sm 16 - inline w/ text, meta, chips/badges, admin row actions, menu items,
 //           selects, date-field, small nav chevrons.
-//   md 20 — secondary standalone glyphs (spinner, in-tile play badge).
-//   lg 24 — primary interactive chrome + main nav (lightbox/preview bars,
+//   md 20 - secondary standalone glyphs (spinner, in-tile play badge).
+//   lg 24 - primary interactive chrome + main nav (lightbox/preview bars,
 //           prev/next, selection bar, client grid overlays, sidebar nav).
 // Decorative one-offs (drop-zone, audio artwork) may exceed the scale.
 export const ICON = { sm: 16, md: 20, lg: 24 } as const;

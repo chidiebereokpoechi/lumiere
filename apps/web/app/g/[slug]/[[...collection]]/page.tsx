@@ -65,7 +65,7 @@ export default async function ClientGalleryPage({ params }: Props) {
           <p className="text-xs font-bold tracking-wider text-ink-muted">
             {access.gallery.title}
           </p>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-strong">
+          <h1 className="mt-3 text-2xl font-extrabold tracking-wider text-ink-strong">
             {copy.heading}
           </h1>
           <p className="mt-2 text-sm text-ink-muted">{copy.body}</p>
@@ -78,7 +78,7 @@ export default async function ClientGalleryPage({ params }: Props) {
     return <PasswordGate slug={slug} title={access.gallery.title} />;
   }
 
-  // Unlocked / public — load the unified file list + favorites + lists.
+  // Unlocked / public - load the unified file list + favorites + lists.
   // (Comments are fetched per-item, lazily, inside the lightbox.)
   const [{ gallery, folders, files }, favs, lists] = await Promise.all([
     fetchClientFiles(slug),

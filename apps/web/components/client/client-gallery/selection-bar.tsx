@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 
-// Bottom sheet shown in selection mode — same language as the long-press and
+// Bottom sheet shown in selection mode - same language as the long-press and
 // add-to-list sheets: a header (count + Done) over labeled action rows that act
 // on the current selection. Disabled until something is selected.
 export function SelectionBar({
@@ -81,7 +81,7 @@ export function SelectionBar({
         {canDownload && showSavePhotos && (
           <Row
             icon={<ImageIcon size={20} />}
-            label={savingPhotos ? "Preparing…" : "Save to photos"}
+            label={savingPhotos ? "Preparing" : "Save to photos"}
             onClick={onSavePhotos}
             disabled={disabled || savingPhotos}
           />

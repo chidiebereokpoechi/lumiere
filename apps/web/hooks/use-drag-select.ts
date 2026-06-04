@@ -1,13 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 /**
  * Drag-to-select for the client gallery grid: press a tile's checkbox and drag
  * to select the contiguous range (in display order) from the start tile to the
  * tile under the pointer, added on top of the existing selection. Moving back
  * shrinks the range. A plain tap (no movement) falls through to the click
- * handler — `suppressClickRef` lets that handler ignore the click that ends a
+ * handler - `suppressClickRef` lets that handler ignore the click that ends a
  * real drag. Tiles are hit-tested via their `data-fid` attribute.
  */
 export function useDragSelect({
@@ -50,7 +56,7 @@ export function useDragSelect({
       let aborted = false;
       let holdTimer: ReturnType<typeof setTimeout> | null = null;
       // Once committed, an active touchmove listener blocks page scroll for
-      // this gesture only — the browser would otherwise hijack the drag.
+      // this gesture only - the browser would otherwise hijack the drag.
       const blockScroll = (ev: TouchEvent) => ev.preventDefault();
       let scrollBlocked = false;
       const commit = () => {
@@ -59,7 +65,9 @@ export function useDragSelect({
         d.moved = true;
         setDragSelecting(true);
         if (isTouch && !scrollBlocked) {
-          document.addEventListener("touchmove", blockScroll, { passive: false });
+          document.addEventListener("touchmove", blockScroll, {
+            passive: false,
+          });
           scrollBlocked = true;
         }
       };
@@ -85,7 +93,7 @@ export function useDragSelect({
         if (!d.moved) {
           if (isTouch) {
             // Pre-commit: any meaningful movement before the hold timer is
-            // a scroll — bail out for this whole gesture.
+            // a scroll - bail out for this whole gesture.
             if (Math.hypot(dx, dy) > touchHoldSlop) {
               if (holdTimer) {
                 clearTimeout(holdTimer);

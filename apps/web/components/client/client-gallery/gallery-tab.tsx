@@ -3,7 +3,7 @@
 import { cn } from "@/lib/cn";
 import { More } from "@/components/ui/icons";
 
-// Plain text tab — a folder, favorites, or a list. Active gets a filled
+// Plain text tab - a folder, favorites, or a list. Active gets a filled
 // treatment; list tabs get a ⋯ that opens the list action sheet.
 export function GalleryTab({
   active,

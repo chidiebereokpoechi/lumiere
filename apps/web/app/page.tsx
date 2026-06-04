@@ -25,11 +25,11 @@ export default async function HomePage() {
           <p className="text-sm font-medium tracking-wider text-ink-muted">
             Lumière
           </p>
-          <h1 className="mt-3 text-5xl md:text-6xl font-semibold tracking-tight text-ink">
+          <h1 className="mt-3 text-5xl md:text-6xl font-semibold tracking-wider text-ink">
             Self-hosted gallery delivery.
           </h1>
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-muted">
-            Frontend scaffold. Satoshi loaded, design tokens wired — built on
+            Frontend scaffold. Satoshi loaded, design tokens wired - built on
             top of a Bun + Elysia backend talking to RustFS over the LAN.
           </p>
         </div>
@@ -79,13 +79,13 @@ export default async function HomePage() {
           Type ramp
         </h2>
         <div className="space-y-3">
-          <p className="text-4xl font-semibold tracking-tight">Display, 600</p>
+          <p className="text-4xl font-semibold tracking-wider">Display, 600</p>
           <p className="text-2xl font-medium">Heading, 500</p>
           <p className="text-base text-ink">
-            Body — the quick brown fox jumps over the lazy dog 0123456789
+            Body - the quick brown fox jumps over the lazy dog 0123456789
           </p>
           <p className="text-sm text-ink-muted">
-            Muted — supporting text and metadata.
+            Muted - supporting text and metadata.
           </p>
           <p className="text-xs tracking-wider text-ink-muted">
             Eyebrow · all caps

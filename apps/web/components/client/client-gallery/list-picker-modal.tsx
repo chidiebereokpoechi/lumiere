@@ -6,7 +6,7 @@ import { Bookmark, Check, Plus } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/ui/text-input";
 
-// Bottom sheet to add file(s) to lists — Instagram-bookmarks / Spotify-playlist
+// Bottom sheet to add file(s) to lists - Instagram-bookmarks / Spotify-playlist
 // style: a "New list" row on top, then the lists with a tick when the target is
 // already in them. Toggling is immediate; tapping the backdrop / Escape closes.
 export function ListPickerModal({
@@ -87,7 +87,7 @@ export function ListPickerModal({
                 value={name}
                 onChange={setName}
                 autoFocus
-                placeholder="New list name…"
+                placeholder="New list name"
                 className="flex-1 px-3 py-2"
               />
               <Button
@@ -95,7 +95,7 @@ export function ListPickerModal({
                 disabled={!name.trim() || pending}
                 className="tracking-wider"
               >
-                {pending ? "…" : "Create"}
+                {pending ? "" : "Create"}
               </Button>
             </form>
           ) : (

@@ -110,7 +110,7 @@ export function Lightbox({
 
   return (
     <div className="fixed inset-0 z-50 bg-bg flex flex-col" onClick={onClose}>
-      {/* Top bar — just Close; the actions live on the right rail below. */}
+      {/* Top bar - just Close; the actions live on the right rail below. */}
       <div
         className="shrink-0 flex items-center px-2 sm:px-4 h-14"
         onClick={(e) => e.stopPropagation()}
@@ -175,55 +175,56 @@ export function Lightbox({
             </div>
           )}
         </div>
-        {/* Action bar — centered along the bottom. Hidden while the comments
-            drawer is open so the two don't fight for the same space. */}
-        {!showComments && (
-        <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-row items-center gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {canFavorite && (
-            <RailButton
-              onClick={onToggleFavorite}
-              aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-              className={cn(isFavorite && "text-heart border-heart")}
-            >
-              {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
-            </RailButton>
-          )}
-          {allowComments && (
-            <RailButton
-              onClick={() => setShowComments((v) => !v)}
-              aria-label="Comments"
-              active={showComments}
-            >
-              <Comment size={24} />
-            </RailButton>
-          )}
-          <RailButton onClick={onAddToList} aria-label="Add to list">
-            <Bookmark size={24} />
-          </RailButton>
-          {/* Hybrid save: Save to Photos (share sheet) on touch media, else a
-              plain download. */}
-          {canDownload &&
-            (coarse && (file.type === "image" || file.type === "video") ? (
+        {/* Action bar - centered along the bottom. On mobile the comments sheet
+            rises from the bottom over it, so hide it there; on desktop the
+            drawer is a right-side panel and doesn't collide, so keep it. */}
+        {!(showComments && coarse) && (
+          <div
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-row items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {canFavorite && (
               <RailButton
-                onClick={onShare}
-                disabled={savingPhotos}
-                aria-label="Save to Photos"
+                onClick={onToggleFavorite}
+                aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+                className={cn(isFavorite && "text-heart border-heart")}
               >
-                <ImageIcon size={24} />
+                {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
               </RailButton>
-            ) : (
-              <a
-                href={file.downloadUrl}
-                aria-label="Download"
-                className="inline-flex h-12 w-12 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
+            )}
+            {allowComments && (
+              <RailButton
+                onClick={() => setShowComments((v) => !v)}
+                aria-label="Comments"
+                active={showComments}
               >
-                <Download size={24} />
-              </a>
-            ))}
-        </div>
+                <Comment size={24} />
+              </RailButton>
+            )}
+            <RailButton onClick={onAddToList} aria-label="Add to list">
+              <Bookmark size={24} />
+            </RailButton>
+            {/* Hybrid save: Save to Photos (share sheet) on touch media, else a
+              plain download. */}
+            {canDownload &&
+              (coarse && (file.type === "image" || file.type === "video") ? (
+                <RailButton
+                  onClick={onShare}
+                  disabled={savingPhotos}
+                  aria-label="Save to Photos"
+                >
+                  <ImageIcon size={24} />
+                </RailButton>
+              ) : (
+                <a
+                  href={file.downloadUrl}
+                  aria-label="Download"
+                  className="inline-flex h-12 w-12 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
+                >
+                  <Download size={24} />
+                </a>
+              ))}
+          </div>
         )}
 
         {total > 1 && (
@@ -269,7 +270,7 @@ export function Lightbox({
           className="absolute inset-x-0 bottom-0 z-10 max-h-[70svh] overflow-y-auto bg-surface border-t border-border rounded-t-xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:inset-x-auto sm:right-0 sm:top-14 sm:bottom-0 sm:w-96 sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-none"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close — the action bar is hidden while this is open, so the drawer
+          {/* Close - the action bar is hidden while this is open, so the drawer
               owns dismissal. */}
           <IconButton
             onClick={() => setShowComments(false)}

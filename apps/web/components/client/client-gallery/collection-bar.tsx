@@ -4,8 +4,8 @@ import { Check, Download, ImageIcon } from "@/components/ui/icons";
 
 // Persistent bottom bar shown inside a collection (collections nav), in the same
 // language as the selection / long-press sheets. Surfaces the primary save path
-// — Save to Photos on touch when the collection is all media (the mobile-saving
-// happy path), otherwise a ZIP download — plus an entry into selection mode.
+// - Save to Photos on touch when the collection is all media (the mobile-saving
+// happy path), otherwise a ZIP download - plus an entry into selection mode.
 export function CollectionBar({
   count,
   canDownload,
@@ -30,7 +30,7 @@ export function CollectionBar({
           (showSavePhotos ? (
             <Row
               icon={<ImageIcon size={20} />}
-              label={savingPhotos ? "Preparing…" : "Save to photos"}
+              label={savingPhotos ? "Preparing" : "Save to photos"}
               onClick={onSavePhotos}
               disabled={savingPhotos || count === 0}
             />

@@ -45,7 +45,7 @@ export function PasswordGate({ slug, title }: { slug: string; title: string }) {
           className="mt-4 rounded-xl bg-surface border border-border p-4 space-y-4"
         >
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-ink-strong">
+            <h1 className="text-2xl font-extrabold tracking-wider text-ink-strong">
               Private gallery
             </h1>
             <p className="mt-2 text-sm text-ink-muted">

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Self-hosted Satoshi (variable, weight axis 300–900) — body + headings. */
+/* Self-hosted Satoshi (variable, weight axis 300–900) - body + headings. */
 @font-face {
   font-family: "Satoshi";
   src: url("/fonts/satoshi-variable.woff2") format("woff2");
@@ -17,9 +17,9 @@
 }
 
 /* ---------------------------------------------------------------- *
- *  Design tokens — Spenny language adapted to Lumière.
+ *  Design tokens - Spenny language adapted to Lumière.
  *
- *  - Slate-tone neutrals (cool, slightly blue) — chrome, surfaces,
+ *  - Slate-tone neutrals (cool, slightly blue) - chrome, surfaces,
  *    text.
  *  - 1px borders are a primary separation device. Soft rounding
  *    (8px default) keeps things crisp.
@@ -36,21 +36,21 @@
   --surface: #ffffff; /* primary card */
   --surface-2: #f5f5f7; /* alt panel, input bg */
   --surface-sunken: #e8e8ec;
-  --surface-strong: #0f172a; /* slate-900 — active/inverse */
+  --surface-strong: #0f172a; /* slate-900 - active/inverse */
 
   /* Flat: hairline borders define grouped cards (no shadows). */
   --border: #e6e6ea; /* hairline */
   --border-strong: #d4d4dc;
 
-  --ink: #000000; /* black — body */
-  --ink-strong: #000000; /* black — titles */
+  --ink: #000000; /* black - body */
+  --ink-strong: #000000; /* black - titles */
   --ink-muted: #64748b; /* slate-500 */
   --ink-subtle: #94a3b8; /* slate-400 */
   --ink-inverse: #ffffff; /* on dark surfaces */
 
   --accent: #124ebe; /* peach */
   --accent-hover: #3770d8;
-  --accent-dark: #0c3c97; /* deeper peach — analogous to primary-dark */
+  --accent-dark: #0c3c97; /* deeper peach - analogous to primary-dark */
   --accent-soft: #97b9f8;
   --accent-ink: #1f1411;
 
@@ -83,7 +83,7 @@
   --font-mono:
     ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
-  /* No bold anywhere — Ika's bold weights read chunky in this UI. Headings
+  /* No bold anywhere - Ika's bold weights read chunky in this UI. Headings
    * and emphasis all render at Regular 400. */
   --font-weight-semibold: 400;
   --font-weight-bold: 400;
@@ -127,6 +127,8 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
+  /* Global default: everything is tracking-wider unless a utility overrides. */
+  letter-spacing: 0.025em;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -196,7 +198,7 @@ html:not(.theme-no-transition) * {
   }
 }
 
-/* Toast entry — subtle fade + slight rise. */
+/* Toast entry - subtle fade + slight rise. */
 @keyframes toast-in {
   from {
     opacity: 0;

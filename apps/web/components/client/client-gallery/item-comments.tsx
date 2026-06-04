@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiClient, apiErrorMessage, ApiError, postJson } from "@/lib/api-client";
+import {
+  apiClient,
+  apiErrorMessage,
+  ApiError,
+  postJson,
+} from "@/lib/api-client";
 import { formatDate } from "@/lib/format";
 import type { CommentScope, ItemComment } from "@/lib/api/comments";
 import { toast } from "@/lib/toast";
@@ -43,7 +48,9 @@ export function ItemComments({
     let alive = true;
     setLoading(true);
     setSaved(false);
-    apiClient<{ comments: ItemComment[] }>(`/api/gallery/${slug}/comments?${qs}`)
+    apiClient<{ comments: ItemComment[] }>(
+      `/api/gallery/${slug}/comments?${qs}`,
+    )
       .then((r) => {
         if (!alive) return;
         const own = r.comments.find((c) => c.mine) ?? null;
@@ -89,7 +96,7 @@ export function ItemComments({
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 429
-          ? "Slow down — too many comments."
+          ? "Slow down - too many comments."
           : apiErrorMessage(err, "Could not save"),
       );
     } finally {
@@ -114,7 +121,7 @@ export function ItemComments({
     toast.success(isPrivate ? "Note removed" : "Comment removed");
   }
 
-  // An approved public comment is locked — no editing or removing.
+  // An approved public comment is locked - no editing or removing.
   const locked = !isPrivate && !!mine && !mine.pending;
   const saveLabel = pending
     ? "Saving…"
@@ -127,7 +134,7 @@ export function ItemComments({
   return (
     <div className="p-4">
       <h3 className="text-xs font-extrabold tracking-wider text-ink-muted mb-3">
-        {isPrivate ? "Private note" : "Comments"}
+        {isPrivate ? "Note" : "Comments"}
       </h3>
 
       {/* Other people's approved public comments (set scope only). */}
@@ -149,7 +156,10 @@ export function ItemComments({
                       {c.author ?? "Guest"}
                     </span>
                     <span className="text-[11px] text-ink-subtle tabular-nums shrink-0">
-                      {formatDate(c.createdAt, { month: "short", day: "numeric" })}
+                      {formatDate(c.createdAt, {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-ink-muted whitespace-pre-wrap">
@@ -164,12 +174,12 @@ export function ItemComments({
 
       {isPrivate && (
         <p className="text-xs text-ink-subtle mb-2">
-          Only you and the photographer can see this.
+          Only you and the creator can see this.
         </p>
       )}
 
       {/* Your single editable comment/note. Once a public comment is approved
-          it locks — no further edits or removal. */}
+          it locks - no further edits or removal. */}
       {!email ? (
         <Button
           type="button"
@@ -204,13 +214,31 @@ export function ItemComments({
             value={body}
             onChange={setBody}
             rows={3}
-            placeholder={isPrivate ? "Add a private note…" : "Leave a comment…"}
+            placeholder={isPrivate ? "Add a note" : "Leave a comment"}
             className="px-3 py-2"
           />
           {error && (
             <p className="text-sm font-semibold text-negative">{error}</p>
           )}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-end gap-4">
+            {!isPrivate && mine?.pending && (
+              <span className="mr-auto text-xs text-ink-subtle">
+                Pending approval
+              </span>
+            )}
+            {saved && isPrivate && (
+              <span className="mr-auto text-xs text-ink-subtle">Saved</span>
+            )}
+            {mine && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={removeMine}
+                className="px-3.5 py-2 tracking-wider hover:text-negative"
+              >
+                Remove
+              </Button>
+            )}
             <Button
               type="submit"
               disabled={
@@ -220,22 +248,6 @@ export function ItemComments({
             >
               {saveLabel}
             </Button>
-            {mine && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={removeMine}
-                className="px-3.5 py-2 tracking-wider text-ink-muted hover:text-negative"
-              >
-                Remove
-              </Button>
-            )}
-            {!isPrivate && mine?.pending && (
-              <span className="text-xs text-ink-subtle">Pending approval</span>
-            )}
-            {saved && isPrivate && (
-              <span className="text-xs text-ink-subtle">Saved</span>
-            )}
           </div>
         </form>
       )}

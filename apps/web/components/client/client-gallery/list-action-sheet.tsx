@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Pen, Trash } from "@/components/ui/icons";
 
-// Bottom action sheet for a client list — same language as the long-press /
+// Bottom action sheet for a client list - same language as the long-press /
 // add-to-list sheets. Backdrop + Escape close.
 export function ListActionSheet({
   name,

@@ -83,11 +83,11 @@ export function DownloadModal({
       >
         Download
       </h2>
-      <p className="mt-1 text-sm text-ink-muted">
-        Choose what to include — it downloads as one ZIP.
+      <p className="mt-1 text-xs text-ink-muted">
+        Choose what to include - it downloads as one ZIP.
       </p>
 
-      <ul className="mt-4 space-y-1 max-h-72 overflow-y-auto">
+      <ul className="mt-4 flex flex-col gap-2 max-h-72 overflow-y-auto">
         <Row
           checked={allSelected}
           onToggle={toggleAll}
@@ -113,7 +113,7 @@ export function DownloadModal({
         )}
         {nonEmptyLists.length > 0 && (
           <>
-            <li className="px-2.5 pt-3 pb-1 text-xs font-bold tracking-wider text-ink-muted">
+            <li className="mt-2 text-xs font-bold tracking-wider text-ink-muted">
               Lists
             </li>
             {nonEmptyLists.map((l) => (
@@ -132,7 +132,7 @@ export function DownloadModal({
       <div className="mt-5 flex items-center justify-end gap-4">
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           onClick={onClose}
           className="tracking-wider"
         >
@@ -170,7 +170,7 @@ function Row({
         type="button"
         onClick={onToggle}
         aria-pressed={checked}
-        className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-surface-2"
+        className="flex w-full items-center gap-4 text-left hover:bg-surface-2"
       >
         <span
           className={`h-5 w-5 inline-flex items-center justify-center rounded border-2 ${checked ? "bg-accent border-accent text-white" : "border-border"}`}
@@ -178,7 +178,7 @@ function Row({
           {checked && <Check size={16} />}
         </span>
         <span
-          className={`flex-1 text-sm text-ink-strong ${bold ? "font-bold" : ""}`}
+          className={`flex-1 text-xs text-ink-strong ${bold ? "font-bold" : ""}`}
         >
           {label}
         </span>

@@ -1,6 +1,6 @@
 "use client";
 
-// Tiny pub/sub toast store. No deps, no provider — call `toast(...)` from any
+// Tiny pub/sub toast store. No deps, no provider - call `toast(...)` from any
 // client component. The Toaster component subscribes and renders the stack.
 
 export type ToastKind = "info" | "success" | "error" | "loading";
@@ -37,7 +37,11 @@ function clearTimer(id: number) {
   }
 }
 
-function push(kind: ToastKind, message: string, duration: number | null): number {
+function push(
+  kind: ToastKind,
+  message: string,
+  duration: number | null,
+): number {
   const id = nextId++;
   toasts = [...toasts, { id, kind, message, duration }];
   if (duration != null) scheduleDismiss(id, duration);
@@ -66,7 +70,7 @@ export const toast = {
     push("success", message, duration),
   error: (message: string, duration: number | null = 5000) =>
     push("error", message, duration),
-  // Sticky by default — call `update` or `dismiss` when the work finishes.
+  // Sticky by default - call `update` or `dismiss` when the work finishes.
   loading: (message: string, duration: number | null = null) =>
     push("loading", message, duration),
   /** Replace an existing toast's kind/message; resets the auto-dismiss timer. */

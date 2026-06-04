@@ -79,7 +79,7 @@ export function AlbumsLanding({
   return (
     <div className="flex flex-col px-2 sm:px-4 gap-6 sm:gap-10">
       <header className="pt-8 sm:pt-12 text-center">
-        <h1 className="text-3xl sm:text-5xl font-[700]! tracking-tight text-ink-strong">
+        <h1 className="text-3xl sm:text-5xl font-[700]! tracking-wider text-ink-strong">
           {gallery.title}
         </h1>
         {(date || gallery.clientName) && (
@@ -135,8 +135,8 @@ export function AlbumsLanding({
   );
 }
 
-// Renders as <a> when given an `href` (mailto / external URL — the browser
-// handles those natively; a button calling window.location.href = mailto:…
+// Renders as <a> when given an `href` (mailto / external URL - the browser
+// handles those natively; a button calling window.location.href = mailto:
 // is often blocked or no-ops). Otherwise renders as a <button>.
 function ActionLink({
   icon,

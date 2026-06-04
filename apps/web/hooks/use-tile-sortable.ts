@@ -83,7 +83,7 @@ export function useTileSortable({
 
   const tileNodes = useRef(new Map<string, HTMLElement>());
   // Page-relative positions (viewport rect + scroll). Storing them scroll-aware
-  // means scrolling between renders doesn't register as movement — otherwise the
+  // means scrolling between renders doesn't register as movement - otherwise the
   // FLIP would animate every tile by the scroll delta (a visible stagger).
   const prevRects = useRef(new Map<string, { left: number; top: number }>());
   const registerTile = useCallback((id: string, node: HTMLElement | null) => {
@@ -92,7 +92,7 @@ export function useTileSortable({
   }, []);
 
   // Rebuild the order from persisted positions when the file set / folder
-  // changes — but never mid-drag (that would fight the live reorder).
+  // changes - but never mid-drag (that would fight the live reorder).
   useEffect(() => {
     if (dragIdRef.current) return;
     const rebuilt = files
@@ -136,7 +136,7 @@ export function useTileSortable({
   }, [order]);
 
   // Apply a sort to the active folder: reorder + persist positions (manual is a
-  // no-op — drag order stays). The client respects position, so this sticks.
+  // no-op - drag order stays). The client respects position, so this sticks.
   const applySort = useCallback(
     (mode: SortMode) => {
       setSortMode(mode);

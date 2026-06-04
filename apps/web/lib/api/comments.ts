@@ -1,4 +1,4 @@
-import { apiServer } from '@/lib/api-client';
+import { apiServer } from "@/lib/api-client";
 
 // Per-item comment as returned by GET /api/gallery/:slug/comments. For 'set'
 // scope these are approved public comments (author = email); for private
@@ -12,14 +12,14 @@ export interface ItemComment {
   pending?: boolean;
 }
 
-export type CommentScope = 'set' | 'list' | 'favorites';
+export type CommentScope = "set" | "list" | "favorites";
 
-// Admin shape — every comment, with scope + approval state.
+// Admin shape - every comment, with scope + approval state.
 export interface AdminComment {
   id: string;
   fileId: string | null;
   filename: string | null;
-  // The collection the comment lives under — a list name, "Favorites", or (for
+  // The collection the comment lives under - a list name, "Favorites", or (for
   // public set comments) the file's set/folder name.
   collection: string | null;
   clientName: string | null;

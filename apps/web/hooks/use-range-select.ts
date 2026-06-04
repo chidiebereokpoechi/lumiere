@@ -6,8 +6,8 @@ import { useCallback, useRef, useState } from "react";
  * Multi-select with shift-click range support, shared by the admin media grid
  * and the client gallery.
  *
- * `toggle(id, shift)` toggles a single id, or — when `shift` is held and a prior
- * plain-click anchor exists — additively selects the contiguous range (in
+ * `toggle(id, shift)` toggles a single id, or - when `shift` is held and a prior
+ * plain-click anchor exists - additively selects the contiguous range (in
  * display order) from the anchor to `id` without clearing the existing
  * selection. The anchor is kept across shift-clicks so the range re-bases from
  * the same start.

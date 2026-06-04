@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 
 // Borderless icon-only button (lightbox/preview chrome). Centering + muted tint
 // + disabled handling are baked in; pass size (h-10 w-10, etc.) and any color
-// override via className — tailwind-merge lets a later text-* win.
+// override via className - tailwind-merge lets a later text-* win.
 export function IconButton({
   type = "button",
   className,

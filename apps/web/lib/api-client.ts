@@ -1,10 +1,10 @@
 /**
- * Two API clients — one for React Server Components, one for client code.
+ * Two API clients - one for React Server Components, one for client code.
  *
  * Server-side (`apiServer`): runs inside the Next.js Node process during RSC
  * rendering. It targets the internal API URL (the Bun container in prod,
  * localhost:3200 in dev) and explicitly forwards the incoming request's cookies
- * so the backend can validate the photographer JWT / gallery session.
+ * so the backend can validate the creator JWT / gallery session.
  *
  * Client-side (`apiClient`): runs in the browser. Requests go to the same
  * origin as the page (the Next.js server in dev, nginx in prod) and the
@@ -12,7 +12,7 @@
  * because every authenticated endpoint relies on httpOnly cookies.
  */
 
-const INTERNAL_API = process.env.INTERNAL_API_URL ?? 'http://localhost:3200';
+const INTERNAL_API = process.env.INTERNAL_API_URL ?? "http://localhost:3200";
 
 export class ApiError extends Error {
   status: number;
@@ -34,15 +34,18 @@ async function readJson(res: Response): Promise<unknown> {
   }
 }
 
-export async function apiServer<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+export async function apiServer<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   // Dynamically import next/headers to avoid bundling it into client code if
   // this file is ever pulled into a 'use client' module.
-  const { cookies } = await import('next/headers');
+  const { cookies } = await import("next/headers");
   const cookieHeader = (await cookies()).toString();
   const res = await fetch(`${INTERNAL_API}${path}`, {
     ...init,
     headers: { ...init?.headers, cookie: cookieHeader },
-    cache: 'no-store',
+    cache: "no-store",
   });
   if (!res.ok) {
     throw new ApiError(res.status, await readJson(res));
@@ -50,10 +53,13 @@ export async function apiServer<T = unknown>(path: string, init?: RequestInit): 
   return readJson(res) as Promise<T>;
 }
 
-export async function apiClient<T = unknown>(path: string, init?: RequestInit): Promise<T> {
+export async function apiClient<T = unknown>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   const res = await fetch(path, {
     ...init,
-    credentials: 'include',
+    credentials: "include",
     headers: { ...init?.headers },
   });
   if (!res.ok) {
@@ -73,15 +79,17 @@ export async function apiClientMutation<T = unknown>(
 ): Promise<T> {
   // Best-effort CSRF read from the lumiere_csrf cookie (set by GET /api/auth/csrf
   // for admin sessions; the backend just needs the header to match the cookie).
-  const csrf = readCookie('lumiere_csrf');
+  const csrf = readCookie("lumiere_csrf");
   let token = csrf;
   if (!token) {
-    const { token: fresh } = await apiClient<{ token: string }>('/api/auth/csrf');
+    const { token: fresh } = await apiClient<{ token: string }>(
+      "/api/auth/csrf",
+    );
     token = fresh;
   }
   return apiClient<T>(path, {
     ...init,
-    headers: { ...init.headers, 'X-CSRF-Token': token! },
+    headers: { ...init.headers, "X-CSRF-Token": token! },
   });
 }
 
@@ -119,13 +127,15 @@ export async function getCsrfToken(): Promise<string> {
  * "Reorder failed (409)" for an ApiError, "Network error" otherwise.
  */
 export function apiErrorMessage(err: unknown, action: string): string {
-  return err instanceof ApiError ? `${action} (${err.status})` : "Network error";
+  return err instanceof ApiError
+    ? `${action} (${err.status})`
+    : "Network error";
 }
 
 /**
  * CSRF-protected JSON mutation: serializes the body, sets the content-type, and
  * attaches the CSRF header via `apiClientMutation`. The mutating sibling of
- * `postJson` — use for admin writes (create/rename/move/reorder/etc.).
+ * `postJson` - use for admin writes (create/rename/move/reorder/etc.).
  */
 export function mutateJson<T = unknown>(
   path: string,
@@ -140,9 +150,9 @@ export function mutateJson<T = unknown>(
 }
 
 function readCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
+  if (typeof document === "undefined") return undefined;
   const target = `${name}=`;
-  for (const cookie of document.cookie.split(';')) {
+  for (const cookie of document.cookie.split(";")) {
     const trimmed = cookie.trimStart();
     if (trimmed.startsWith(target)) {
       return decodeURIComponent(trimmed.slice(target.length));

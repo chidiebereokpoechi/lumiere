@@ -65,14 +65,14 @@ export function EmailModal({
         <div className="mt-5 flex items-center justify-end gap-4">
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             onClick={onClose}
             className="tracking-wider"
           >
             Cancel
           </Button>
           <Button type="submit" disabled={pending} className="tracking-wider">
-            {pending ? "Saving…" : "Continue"}
+            {pending ? "Saving" : "Continue"}
           </Button>
         </div>
       </form>

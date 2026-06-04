@@ -102,10 +102,10 @@ export function DialogHost() {
       onClick={onCancel}
     >
       <div
-        className="w-[min(92vw,26rem)] rounded-lg border border-border bg-surface p-4 shadow-xl"
+        className="w-[min(92vw,28rem)] rounded-lg border border-border bg-surface p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-extrabold tracking-tight text-ink-strong">
+        <h2 className="text-xs font-extrabold tracking-wider text-ink-muted">
           {req.title}
         </h2>
         {req.message && (
@@ -135,7 +135,7 @@ export function DialogHost() {
         <div className="mt-5 flex items-center justify-end gap-4">
           {req.kind !== "alert" && (
             <Button
-              variant="ghost"
+              variant="secondary"
               onClick={onCancel}
               className="tracking-wider"
             >

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { apiClient, postJson } from "@/lib/api-client";
 import { downloadViaAnchor } from "@/lib/download";
-import { toSlug } from "@/lib/format";
+import { formatDate, toSlug } from "@/lib/format";
 import type {
   ClientFile,
   ClientFolder,
@@ -52,7 +52,7 @@ interface Props {
   initialCollection: string | null;
 }
 
-// The current view — a folder, favorites, or a list — selected from one tab
+// The current view - a folder, favorites, or a list - selected from one tab
 // row. Mutually exclusive, mirrored in the URL (/g/:slug/:collection) so it's
 // deep-linkable and back/forward works.
 type View =
@@ -82,7 +82,7 @@ export function ClientGallery({
   // List picker targets one or many files (bulk).
   const [pickerFiles, setPickerFiles] = useState<string[] | null>(null);
 
-  // Touch devices have no hover — show tile actions permanently there. Also
+  // Touch devices have no hover - show tile actions permanently there. Also
   // gates the "Save to Photos" affordance to platforms whose share sheet can
   // write images to the camera roll (iOS Safari).
   const [coarse, setCoarse] = useState(false);
@@ -99,7 +99,7 @@ export function ClientGallery({
     : "opacity-0 group-hover:opacity-100";
 
   // Selection mode (declared early so the cover gate can stand down while it's
-  // active — otherwise the reveal pull fights drag-to-select at the gallery top).
+  // active - otherwise the reveal pull fights drag-to-select at the gallery top).
   const [selectionMode, setSelectionMode] = useState(false);
 
   // The cover is a full-screen overlay above the gallery that tracks the gesture
@@ -181,7 +181,7 @@ export function ClientGallery({
     return allFiles.filter((f) => f.folderId === view.id);
   }, [allFiles, view, favorites, lists]);
   const fileIds = useMemo(() => files.map((f) => f.id), [files]);
-  // Favorites that actually exist in this gallery's delivered files — the raw
+  // Favorites that actually exist in this gallery's delivered files - the raw
   // set can hold ids for since-deleted/hidden files, so don't trust its size.
   const favoriteCount = useMemo(
     () => allFiles.reduce((n, f) => (favorites.has(f.id) ? n + 1 : n), 0),
@@ -455,7 +455,7 @@ export function ClientGallery({
     (listId: string, fileIds: string[], member: boolean) => {
       const list = lists.find((l) => l.id === listId);
       const listName = list?.name ?? "list";
-      // Only count the changes that actually mutate state — re-adding an item
+      // Only count the changes that actually mutate state - re-adding an item
       // already in the list shouldn't claim "1 added".
       const existing = new Set(list?.fileIds ?? []);
       const changed = member
@@ -525,7 +525,7 @@ export function ClientGallery({
     triggerDownload(`ids=${[...selected].join(",")}`);
   }, [selected, triggerDownload]);
 
-  // Download a set of files directly — a single file streams as itself (no ZIP
+  // Download a set of files directly - a single file streams as itself (no ZIP
   // wrapper); multiples go through the gallery ZIP endpoint.
   const fallbackDownload = useCallback(
     (items: ClientFile[]) => {
@@ -551,7 +551,7 @@ export function ClientGallery({
     [triggerDownload],
   );
 
-  // Photos + videos among the current selection — drives "Save to Photos"
+  // Photos + videos among the current selection - drives "Save to Photos"
   // (the iOS share sheet writes both to the camera roll).
   const selectedImages = useMemo(
     () =>
@@ -561,7 +561,7 @@ export function ClientGallery({
     [files, selected],
   );
   // Whether the current collection is entirely save-to-Photos eligible (images
-  // + videos, no audio/docs) — drives the collection bar's save vs download.
+  // + videos, no audio/docs) - drives the collection bar's save vs download.
   const collectionAllMedia =
     files.length > 0 &&
     files.every((f) => f.type === "image" || f.type === "video");
@@ -607,14 +607,14 @@ export function ClientGallery({
             kind: "error",
             message:
               imgs.length === 1
-                ? "Couldn’t save to Photos — downloading instead"
-                : "Couldn’t save to Photos — downloading as ZIP",
+                ? "Couldn’t save to Photos - downloading instead"
+                : "Couldn’t save to Photos - downloading as ZIP",
             duration: 5000,
           });
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
-          // User dismissed the share sheet — quietly close the toast.
+          // User dismissed the share sheet - quietly close the toast.
           toast.dismiss(toastId);
         } else {
           fallbackDownload(imgs);
@@ -622,8 +622,8 @@ export function ClientGallery({
             kind: "error",
             message:
               imgs.length === 1
-                ? "Couldn’t save to Photos — downloading instead"
-                : "Couldn’t save to Photos — downloading as ZIP",
+                ? "Couldn’t save to Photos - downloading instead"
+                : "Couldn’t save to Photos - downloading as ZIP",
             duration: 5000,
           });
         }
@@ -776,22 +776,31 @@ export function ClientGallery({
           (coarse ? (
             // Mobile: back lives on the name row; title centered with a spacer
             // to balance the back button.
-            <div className="px-2 pt-2 flex items-center gap-2">
+            <div className="px-2 pt-2 flex items-center gap-4">
               <button
                 type="button"
                 onClick={goLanding}
                 aria-label="Back to collections"
-                className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
               >
                 <ChevronLeft size={24} />
               </button>
-              <div className="flex-1 min-w-0 text-center">
+              <div className="flex-1 min-w-0">
                 <p
                   style={{ viewTransitionName: "gallery-title" }}
                   className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong"
                 >
                   {gallery.title}
                 </p>
+                {(gallery.subtitle || gallery.eventDate) && (
+                  <p className="truncate text-sm text-ink-muted">
+                    {gallery.subtitle && <span>{gallery.subtitle}</span>}
+                    {gallery.subtitle && gallery.eventDate && <span> · </span>}
+                    {gallery.eventDate && (
+                      <span>{formatDate(gallery.eventDate)}</span>
+                    )}
+                  </p>
+                )}
               </div>
               <span aria-hidden className="w-6 shrink-0" />
             </div>
@@ -819,7 +828,7 @@ export function ClientGallery({
                   className="w-full min-w-0"
                 />
               ) : (
-                // Desktop: the older layout — back + selector on the left, the
+                // Desktop: the older layout - back + selector on the left, the
                 // Select button + download on the right.
                 <>
                   <div className="flex items-center gap-4 min-w-0">
@@ -827,7 +836,7 @@ export function ClientGallery({
                       type="button"
                       onClick={goLanding}
                       aria-label="Back to collections"
-                      className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
                     >
                       <ChevronLeft size={24} />
                     </button>
@@ -925,7 +934,7 @@ export function ClientGallery({
                           disabled={selected.size === 0}
                           aria-label="Download"
                           title="Download"
-                          className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong disabled:opacity-50"
                         >
                           <Download size={24} />
                         </button>
@@ -935,7 +944,7 @@ export function ClientGallery({
                           onClick={() => setDownloadOpen(true)}
                           aria-label="Download"
                           title="Download"
-                          className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
                         >
                           <Zip size={24} />
                         </button>
@@ -1003,9 +1012,13 @@ export function ClientGallery({
         ) : (
           <div
             className={`px-2 sm:px-4 ${
-              coarse && collectionsMode && !selectionMode && files.length > 0
-                ? "pb-28"
-                : ""
+              selectionMode
+                ? // Selection bar is fixed at the bottom (tall stacked rows on
+                  // mobile, a single row on desktop) — clear it.
+                  "pb-72 sm:pb-24"
+                : coarse && collectionsMode && files.length > 0
+                  ? "pb-28"
+                  : ""
             }`}
           >
             <GalleryGrid

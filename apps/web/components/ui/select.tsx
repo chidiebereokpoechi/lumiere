@@ -6,7 +6,7 @@ import { ChevronDown, Check } from "@/components/ui/icons";
 export interface SelectOption<T extends string> {
   value: T;
   label: string;
-  // Optional group label — a heading is rendered before the first option of
+  // Optional group label - a heading is rendered before the first option of
   // each group (options must be ordered by group). Omit for ungrouped lists.
   group?: string;
 }
@@ -72,7 +72,7 @@ export function Select<T extends string>({
         <span
           className={`min-w-0 flex-1 truncate ${current ? "" : "text-ink-muted"}`}
         >
-          {current?.label ?? placeholder ?? "Select…"}
+          {current?.label ?? placeholder ?? "Select"}
         </span>
         <ChevronDown
           className={`shrink-0 text-ink-muted transition-transform ${open ? "rotate-180" : ""}`}
@@ -87,7 +87,7 @@ export function Select<T extends string>({
           {groups.map((g, gi) => (
             <div key={g.group ?? gi} className="flex flex-col">
               {g.group && (
-                <p className="px-2.5 pb-1 text-[10px] font-bold tracking-[0.08em] text-ink-subtle">
+                <p className="px-2.5 pb-1 text-[10px] font-bold tracking-wider text-ink-subtle">
                   {g.group}
                 </p>
               )}
