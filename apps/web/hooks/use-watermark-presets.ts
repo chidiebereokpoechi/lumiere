@@ -21,6 +21,8 @@ import { blankDraft, draftFrom, type Draft } from "@/components/admin/watermark-
 export function useWatermarkPresets(initial: WatermarkPreset[]) {
   const [presets, setPresets] = useState(initial);
   const [draft, setDraft] = useState<Draft | null>(null);
+  // Snapshot of the draft as opened — Save is offered only when it diverges.
+  const [original, setOriginal] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -31,11 +33,17 @@ export function useWatermarkPresets(initial: WatermarkPreset[]) {
   const newDraft = () => {
     setError(null);
     setDraft({ ...blankDraft });
+    setOriginal({ ...blankDraft });
   };
   const editDraft = (p: WatermarkPreset) => {
     setError(null);
-    setDraft(draftFrom(p));
+    const d = draftFrom(p);
+    setDraft(d);
+    setOriginal(d);
   };
+
+  const dirty =
+    !!draft && !!original && JSON.stringify(draft) !== JSON.stringify(original);
   const cancel = () => setDraft(null);
 
   async function uploadLogo(file: File) {
@@ -137,6 +145,7 @@ export function useWatermarkPresets(initial: WatermarkPreset[]) {
     presets,
     draft,
     set,
+    dirty,
     error,
     saving,
     uploading,

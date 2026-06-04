@@ -213,7 +213,9 @@ export function ItemComments({
           <div className="flex items-center gap-3">
             <Button
               type="submit"
-              disabled={pending || !body.trim()}
+              disabled={
+                pending || !body.trim() || body.trim() === (mine?.body ?? "")
+              }
               className="px-3.5 py-2 tracking-wider"
             >
               {saveLabel}

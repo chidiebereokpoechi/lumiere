@@ -19,6 +19,7 @@ const SWATCHES = [
 export function PresetEditor({
   draft,
   set,
+  dirty,
   saving,
   uploading,
   onSave,
@@ -27,6 +28,7 @@ export function PresetEditor({
 }: {
   draft: Draft;
   set: <K extends keyof Draft>(k: K, v: Draft[K]) => void;
+  dirty: boolean;
   saving: boolean;
   uploading: boolean;
   onSave: () => void;
@@ -189,7 +191,11 @@ export function PresetEditor({
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="button" onClick={onSave} disabled={saving || uploading}>
+        <Button
+          type="button"
+          onClick={onSave}
+          disabled={saving || uploading || !dirty}
+        >
           {saving ? "Saving…" : draft.id ? "Save changes" : "Create watermark"}
         </Button>
       </div>

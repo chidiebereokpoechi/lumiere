@@ -79,6 +79,7 @@ Follow these when adding or changing web code. They keep components small and DR
 - Reusable: `use-range-select` (shift-click range, both galleries), `use-drag-select` (client grid drag-to-select).
 - Single-surface controllers (extracted for size/separation): `use-uploads` (upload pipeline + SSE), `use-tile-sortable` (pointer drag + FLIP + sort), `use-folder-reorder`, `use-watermark-presets` (CRUD), `use-gallery-settings` (settings controller).
 - **Forms = controller hook + pure-render component.** All field state, validation, auto-save, and mutations go in a `use-*` hook (see [use-gallery-settings.ts](apps/web/hooks/use-gallery-settings.ts)); the component just binds values/handlers. Do NOT split a cohesive form into per-section components — that creates worse prop-drilling than one render.
+- **Save/Update buttons are disabled until something actually changed.** Never offer a save/update action on a pristine form. Compute a `dirty` flag (compare each field to its initial value, or `JSON.stringify(draft) !== JSON.stringify(original)` for object drafts) and `disabled={pending || !dirty}`. For *create* forms, gate on the required fields being present instead (e.g. `!title.trim()`). Auto-saving forms ([use-gallery-settings.ts](apps/web/hooks/use-gallery-settings.ts)) and discrete explicit actions (e.g. password Apply) are exempt — they have no standing Save button.
 
 **Shared UI primitives in [components/ui/](apps/web/components/ui/) — use them; don't hand-roll the class strings.**
 

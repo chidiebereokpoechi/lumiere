@@ -15,6 +15,7 @@ export function WatermarkManager({
     presets,
     draft,
     set,
+    dirty,
     error,
     saving,
     uploading,
@@ -42,6 +43,7 @@ export function WatermarkManager({
         <PresetEditor
           draft={draft}
           set={set}
+          dirty={dirty}
           saving={saving}
           uploading={uploading}
           onSave={save}
