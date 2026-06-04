@@ -87,7 +87,7 @@ export function Select<T extends string>({
           {groups.map((g, gi) => (
             <div key={g.group ?? gi} className="flex flex-col">
               {g.group && (
-                <p className="px-2.5 pb-1 text-xs font-bold tracking-wider text-ink-muted">
+                <p className="px-2.5 pb-1 text-[10px] font-bold tracking-[0.08em] text-ink-subtle">
                   {g.group}
                 </p>
               )}
@@ -106,7 +106,7 @@ export function Select<T extends string>({
                     className={`flex w-full items-center justify-between gap-2 rounded px-2.5 py-1.5 text-left text-sm transition-colors ${
                       active
                         ? "bg-surface-2 text-ink-strong font-semibold"
-                        : "text-ink-muted hover:bg-surface-2 hover:text-ink-strong"
+                        : "text-ink-strong hover:bg-surface-2"
                     }`}
                   >
                     <span className="truncate">{o.label}</span>

@@ -42,6 +42,7 @@ litestream.yml                # off-host SQLite replication target
 ## Stack
 
 **Backend** ([apps/api/](apps/api/))
+
 - Bun 1.3 (runtime), TypeScript strict, Elysia for HTTP
 - SQLite via `bun:sqlite` + Drizzle for typed queries
 - Migrations are **hand-written SQL** under `src/db/migrations/` (drizzle-kit not used for generation — too brittle around the photos/galleries circular FK)
@@ -51,11 +52,12 @@ litestream.yml                # off-host SQLite replication target
 - Nodemailer + Handlebars for email (jsonTransport fallback when SMTP isn't set)
 
 **Frontend** ([apps/web/](apps/web/))
+
 - Next.js 16 (App Router, Turbopack dev), React 19
 - Tailwind CSS v4 with `@theme inline` tokens that alias CSS vars in [app/globals.css](apps/web/app/globals.css)
 - Self-hosted Satoshi (Fontshare, variable axis 300–900 in two ~42KB WOFF2s under [apps/web/public/fonts/](apps/web/public/fonts/))
 - Design language follows the user's other project `~/projects/spenny/spenny.io-web/`: **slate-tone surfaces** (slate-50 canvas, white cards, slate-200 borders, slate-700/900 ink), **2px borders as the primary separator**, **4px peach ring on `:focus-visible`** via box-shadow, **tabular-nums globally**, modest rounding (`md` = 8px workhorse). Active sidebar/tab uses `surface-strong` (slate-900) bg + ring-4 accent. Buttons hover `accent` → `accent-dark` (deeper peach). **Type scale is normal-sized** — body 16px (browser default), `text-sm` for input/button labels, `text-xs` only for eyebrows/meta. Do NOT shrink body to `text-xs` à la Spenny. **Satoshi font + peach accent are NOT from Spenny** — explicit lumiere choices. **No uppercase anywhere** — never use the `uppercase` class or `text-transform: uppercase`; eyebrows/labels use weight + `tracking-wider` in sentence/title case, not caps.
-- **Spacing default: `p-4` / `m-4`** for most added elements (containers, gaps, vertical rhythm — button/input internals keep their own padding). **On the client gallery (mobile-facing surfaces), step down to `p-2` / `m-2`** so touch layouts stay dense; the grid/lightbox keep their bespoke tight spacing. Pattern in practice: `className="p-2 sm:p-8 …"` (tight on mobile, roomy on desktop).
+- **Spacing default: `p-4` / `m-4`** for most added elements (containers, gaps, vertical rhythm — button/input internals keep their own padding). **On the client gallery (mobile-facing surfaces), step down to `p-2` / `m-2`** so touch layouts stay dense; the grid/lightbox keep their bespoke tight spacing. Pattern in practice: `className="p-2 sm:p-4 …"` (tight on mobile, roomy on desktop).
 - Theme: auto via `prefers-color-scheme` + manual override via `data-theme` attribute + localStorage. Pre-paint init script in [lib/theme.ts](apps/web/lib/theme.ts) prevents the flash. `ThemeToggle` cycles system → light → dark.
 - Dev: Next at `:3400`, Bun API at `:3200`. Next rewrites `/api/* /events/* /img/* /health` → `:3200` so the browser sees one origin (cookies/CSRF work without CORS).
 - Custom `next/image` loader in [lib/image-loader.ts](apps/web/lib/image-loader.ts) — passthrough; Elysia already serves presigned 302s, never let Next re-encode.
@@ -66,23 +68,27 @@ litestream.yml                # off-host SQLite replication target
 Follow these when adding or changing web code. They keep components small and DRY; new work should match this structure, not reintroduce the patterns it replaced.
 
 **Feature = a folder with an `index.tsx` orchestrator + leaf modules.** Big interactive surfaces are decomposed, never single mega-files. The orchestrator owns coordination/state wiring and render shell; everything else is a focused sibling.
+
 - Client gallery: [components/client/client-gallery/](apps/web/components/client/client-gallery/) — `index.tsx` + `gallery-cover`, `gallery-tab`, `gallery-grid` (+`GalleryTile`), `lightbox`, `audio-player`, `selection-bar`, `email-modal`, `list-picker-modal`, `item-comments`.
 - Admin media manager: [components/admin/file-manager/](apps/web/components/admin/file-manager/) — `index.tsx` + `file-tile` (+`TileMenu`), `folder-row`, `admin-preview`, `upload-summary`, `bits` (Spinner/Badge/TypeIcon).
 - Admin watermarks: [components/admin/watermark-manager/](apps/web/components/admin/watermark-manager/) — `index.tsx` + `preset-editor`, `preset-card`, `watermark-preview`, `draft.ts` (pure types/consts).
 - Import sites point at the folder (`@/components/.../file-manager`) → resolves to `index.tsx`. Don't change call sites when decomposing.
 
 **Heavy stateful logic lives in hooks under [hooks/](apps/web/hooks/), not in components.** A component that grew a tangle of refs/effects/handlers is the signal to extract.
+
 - Reusable: `use-range-select` (shift-click range, both galleries), `use-drag-select` (client grid drag-to-select).
 - Single-surface controllers (extracted for size/separation): `use-uploads` (upload pipeline + SSE), `use-tile-sortable` (pointer drag + FLIP + sort), `use-folder-reorder`, `use-watermark-presets` (CRUD), `use-gallery-settings` (settings controller).
 - **Forms = controller hook + pure-render component.** All field state, validation, auto-save, and mutations go in a `use-*` hook (see [use-gallery-settings.ts](apps/web/hooks/use-gallery-settings.ts)); the component just binds values/handlers. Do NOT split a cohesive form into per-section components — that creates worse prop-drilling than one render.
 
 **Shared UI primitives in [components/ui/](apps/web/components/ui/) — use them; don't hand-roll the class strings.**
+
 - `Button` (variants `primary`/`secondary`/`ghost`/`danger`), `TextInput`/`Textarea` (controlled, `onChange` yields the next string), `Modal` (backdrop + Esc + stopPropagation), `IconButton`, `Select`, `DateField`. All accept `className` merged last via `cn` (tailwind-merge), so callers override spacing/color without forking the component.
 - [components/admin/form.tsx](apps/web/components/admin/form.tsx) re-exports Button/TextInput/Textarea/Select from `ui/` and adds admin-only `Field`/`Toggle`/`FormError`. `@/components/admin/form` imports stay valid.
 
 **`cn()` from [lib/cn.ts](apps/web/lib/cn.ts) for any conditional className** (clsx + tailwind-merge). Never build multi-branch class strings with template literals + ternaries — that was a live bug source. A single static string needs no `cn`.
 
 **Shared utilities — reach for these instead of re-implementing:**
+
 - [lib/api-client.ts](apps/web/lib/api-client.ts): `apiServer` (RSC), `apiClient` (browser GET), `postJson` (client JSON POST), `mutateJson` (CSRF-protected JSON mutation — the admin-write default), `getCsrfToken`, `apiErrorMessage(err, action)` (uniform "Action (status)" / "Network error" — use everywhere instead of inline `err instanceof ApiError ? …` ternaries).
 - [lib/format.ts](apps/web/lib/format.ts): `formatBytes`, `toSlug`, `formatDate`, `dateInputToEpoch`/`epochToDateInput`.
 - [lib/download.ts](apps/web/lib/download.ts): `downloadViaAnchor(href)` for browser file downloads.
@@ -135,6 +141,7 @@ The repo-root `.env` is gitignored. Required envs are in [.env.example](.env.exa
 ## Status
 
 Built so far (v1.2 Phase 1 backend core):
+
 - Monorepo scaffold, Docker + Litestream, full DB schema + migration runner + bootstrap seed
 - Two-client S3 storage abstraction (Put/Delete/List on internal + presign on public; `presignDownload` adds Content-Disposition; `getObjectStream` for the ZIP builder)
 - Auth: login/logout/me/refresh/csrf, Argon2id, rotating refresh tokens, double-submit CSRF, trusted-proxy IP parsing, sliding-window rate limit
@@ -155,4 +162,5 @@ Built so far (v1.2 Phase 1 backend core):
 - `/health` reports `{ db, s3 }`
 
 Not built (next):
+
 - Real frontend pages on top of the foundation: admin login, dashboard home, gallery editor, photo manager, analytics, watermark preset UI, comments moderation; client gallery (cover/grid/lightbox, password gate, favorites drawer, download modal, attachments section). Currently only the foundation + smoke test page exists.

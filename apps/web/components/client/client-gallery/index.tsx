@@ -775,7 +775,7 @@ export function ClientGallery({
             </div>
           ) : (
             // Desktop: centered title only; back sits in the main row below.
-            <div className="px-8 pt-8 text-center">
+            <div className="px-4 pt-4 text-center">
               <p
                 style={{ viewTransitionName: "gallery-title" }}
                 className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong"
@@ -784,7 +784,7 @@ export function ClientGallery({
               </p>
             </div>
           ))}
-        <div className="p-2 sm:p-8 flex items-center justify-between gap-3">
+        <div className="p-2 sm:p-4 flex items-center justify-between gap-3">
           {collectionsMode && !atLanding ? (
             coarse ? (
               // Mobile: a full-width set selector. Select / save actions live in
@@ -925,7 +925,7 @@ export function ClientGallery({
         {!collectionsMode &&
           allFiles.length > 0 &&
           !(coarse && selectionMode) && (
-            <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+            <nav className="px-2 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
               {/* With favorites, surface them first + marked with a red heart. */}
               {canFavorite && favoriteCount > 0 && (
                 <GalleryTab
@@ -949,7 +949,7 @@ export function ClientGallery({
           )}
         {/* Client-made lists get their own row, distinct from the sets above. */}
         {!collectionsMode && lists.length > 0 && !(coarse && selectionMode) && (
-          <nav className="px-2 sm:px-8 pb-2 sm:pb-4 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+          <nav className="px-2 sm:px-4 pb-2 sm:pb-3 flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
             {lists.map((l) => (
               <GalleryTab
                 key={l.id}
@@ -975,7 +975,7 @@ export function ClientGallery({
           />
         ) : (
           <div
-            className={`px-2 sm:px-8 ${
+            className={`px-2 sm:px-4 ${
               coarse && collectionsMode && !selectionMode && files.length > 0
                 ? "pb-28"
                 : ""

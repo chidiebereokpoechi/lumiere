@@ -22,7 +22,7 @@ export function AlbumsLanding({
   yourLists: AlbumItem[];
 }) {
   return (
-    <div className="flex flex-col px-2 sm:px-8 gap-4 sm:gap-8">
+    <div className="flex flex-col px-2 sm:px-4 gap-4 sm:gap-6">
       {collections.length > 0 && (
         <AlbumSection title="Collections" items={collections} />
       )}
@@ -36,10 +36,10 @@ export function AlbumsLanding({
 function AlbumSection({ title, items }: { title: string; items: AlbumItem[] }) {
   return (
     <section>
-      <h2 className="mb-2 sm:mb-4 text-sm font-bold tracking-wider text-ink-muted">
+      <h2 className="mb-2 sm:mb-3 text-sm font-bold tracking-wider text-ink-muted">
         {title}
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {items.map((a) => (
           <AlbumCard key={a.key} item={a} />
         ))}

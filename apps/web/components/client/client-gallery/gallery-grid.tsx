@@ -120,13 +120,13 @@ export function GalleryGrid({
         </div>
       ) : (
         <div
-          className={`columns-2 md:columns-3 xl:columns-4 gap-1 ${dragSelecting ? "touch-none select-none" : ""}`}
+          className={`columns-2 md:columns-3 xl:columns-4 gap-2 ${dragSelecting ? "touch-none select-none" : ""}`}
         >
           {files.map((f) => (
             <div
               key={f.id}
               data-fid={f.id}
-              className="group relative mb-1 break-inside-avoid overflow-hidden bg-surface-sunken"
+              className="group relative mb-2 break-inside-avoid overflow-hidden bg-surface-sunken"
             >
               <GalleryTile
                 f={f}
