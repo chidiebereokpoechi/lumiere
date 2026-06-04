@@ -7,6 +7,7 @@ import {
   Heart,
   ImageIcon,
 } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 // Bottom sheet shown in selection mode — same language as the long-press and
 // add-to-list sheets: a header (count + Done) over labeled action rows that act
@@ -45,13 +46,13 @@ export function SelectionBar({
         <span className="text-sm font-extrabold tracking-wider text-ink-strong tabular-nums">
           {count > 0 ? `${count} selected` : "Select items"}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={onDone}
-          className="px-2 py-1 text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
+          className="px-3 py-1.5 tracking-wider"
         >
           Done
-        </button>
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:flex-wrap">

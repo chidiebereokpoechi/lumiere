@@ -3,6 +3,7 @@
 import type { ClientFile, MinimalGallery } from "@/lib/api/client-gallery";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/lib/toast";
+import { buttonClasses } from "@/components/ui/button-variants";
 import {
   External,
   Folder,
@@ -84,12 +85,9 @@ export function AlbumsLanding({
         {(date || gallery.clientName) && (
           <div className="mt-3 flex flex-col items-center gap-1 text-sm text-ink-subtle tabular-nums">
             {date && <p>{date}</p>}
-            {gallery.clientName && (
-              <p className="not-tabular-nums">{gallery.clientName}</p>
-            )}
           </div>
         )}
-        <div className="mt-4 px-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
+        <div className="mt-4 px-4 flex flex-wrap items-center justify-center gap-2 text-sm">
           {canDownload && (
             <ActionLink
               icon={<Zip size={16} />}
@@ -127,11 +125,11 @@ export function AlbumsLanding({
           )}
         </div>
       </header>
-      {collections.length > 0 && (
-        <AlbumSection title="Collections" items={collections} />
-      )}
       {yourLists.length > 0 && (
         <AlbumSection title="Your lists" items={yourLists} />
+      )}
+      {collections.length > 0 && (
+        <AlbumSection title="Collections" items={collections} />
       )}
     </div>
   );
@@ -153,8 +151,7 @@ function ActionLink({
   href?: string;
   external?: boolean;
 }) {
-  const cls =
-    "inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong transition-colors";
+  const cls = buttonClasses("secondary", "gap-2 tracking-wider");
   const content = (
     <>
       <span className="shrink-0">{icon}</span>

@@ -147,16 +147,12 @@ h4,
 h5,
 h6 {
   font-family: var(--font-sans);
-  font-weight: 400;
-  /* text-transform: uppercase; */
-  letter-spacing: 0.04em;
+  /* font-weight: 400; */
 }
 
 /* Buttons share the uppercase, tracked treatment as headings. */
 button {
   font-family: var(--font-sans);
-  /* text-transform: uppercase; */
-  letter-spacing: 0.04em;
 }
 
 html:not(.theme-no-transition) * {

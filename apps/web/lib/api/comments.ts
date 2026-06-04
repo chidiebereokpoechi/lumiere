@@ -18,6 +18,10 @@ export type CommentScope = 'set' | 'list' | 'favorites';
 export interface AdminComment {
   id: string;
   fileId: string | null;
+  filename: string | null;
+  // The collection the comment lives under — a list name, "Favorites", or (for
+  // public set comments) the file's set/folder name.
+  collection: string | null;
   clientName: string | null;
   clientEmail: string | null;
   body: string;

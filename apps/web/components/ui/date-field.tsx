@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Calendar, ChevronLeft, ChevronRight } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 // Native-free date picker. Value is a 'YYYY-MM-DD' string ('' = unset); onChange
 // emits the same. Calendar popover with a chevron header, Monday-first weeks,
@@ -172,28 +173,28 @@ export function DateField({
             })}
           </div>
           <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onClick={() => {
                 const t = new Date();
                 onChange(iso(t.getFullYear(), t.getMonth(), t.getDate()));
                 setOpen(false);
               }}
-              className="text-xs font-bold tracking-wider text-ink-muted hover:text-ink-strong"
+              className="px-3 py-1.5 text-xs tracking-wider"
             >
               Today
-            </button>
+            </Button>
             {parsed && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
                 onClick={() => {
                   onChange("");
                   setOpen(false);
                 }}
-                className="text-xs font-bold tracking-wider text-ink-muted hover:text-negative"
+                className="px-3 py-1.5 text-xs tracking-wider hover:text-negative"
               >
                 Clear
-              </button>
+              </Button>
             )}
           </div>
         </div>

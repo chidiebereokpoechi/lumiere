@@ -132,17 +132,17 @@ export function DialogHost() {
           </>
         )}
 
-        <div className="mt-5 flex items-center justify-end gap-3">
+        <div className="mt-5 flex items-center justify-end gap-4">
           {req.kind !== "alert" && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               onClick={onCancel}
-              className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
+              className="tracking-wider"
             >
               {req.kind === "confirm"
                 ? (req.cancelLabel ?? "Cancel")
                 : "Cancel"}
-            </button>
+            </Button>
           )}
           <Button
             variant={danger ? "danger" : "primary"}

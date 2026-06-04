@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { fetchGallery, fetchMe } from "@/lib/api/galleries";
 import { fetchAdminLists, fetchAdminFavorites } from "@/lib/api/lists";
+import { fetchAdminComments } from "@/lib/api/comments";
 import { fetchFiles, type GalleryFile } from "@/lib/api/files";
 import { ApiError } from "@/lib/api-client";
 import { GalleryHeader } from "@/components/admin/gallery-header";
 import { ExportFilenames } from "@/components/admin/export-filenames";
+import { ListThumbs, type ThumbItem } from "@/components/admin/list-thumbs";
 import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -27,18 +29,45 @@ export default async function GalleryListsPage({ params }: Props) {
     if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
-  const [me, lists, favGroups, files] = await Promise.all([
+  const [me, lists, favGroups, files, comments] = await Promise.all([
     fetchMe(),
     fetchAdminLists(galleryId).catch(() => []),
     fetchAdminFavorites(galleryId).catch(() => []),
     fetchFiles(galleryId).catch(() => [] as GalleryFile[]),
+    fetchAdminComments(galleryId).catch(() => []),
   ]);
   const fileMap = new Map(files.map((f) => [f.id, f]));
+  // Comments grouped by the file they're on, for tile badges + the preview.
+  const commentsByFile = new Map<string, ThumbItem["comments"]>();
+  for (const c of comments) {
+    if (!c.fileId) continue;
+    const arr = commentsByFile.get(c.fileId) ?? [];
+    arr.push({
+      author: c.clientEmail || c.clientName,
+      body: c.body,
+      scope: c.scope,
+      collection: c.collection,
+      createdAt: c.createdAt,
+      isApproved: c.isApproved,
+    });
+    commentsByFile.set(c.fileId, arr);
+  }
   // Original filenames (for Lightroom etc.), in list order, skipping removed items.
   const namesOf = (ids: string[]) =>
     ids
       .map((id) => fileMap.get(id)?.filenameOriginal)
       .filter((n): n is string => !!n);
+  // Plain serializable items for the (client) thumbnail strip.
+  const itemsOf = (ids: string[]): ThumbItem[] =>
+    ids.map((id) => {
+      const f = fileMap.get(id);
+      return {
+        id,
+        type: f?.type ?? null,
+        name: f?.displayName ?? f?.filenameOriginal ?? "Removed item",
+        comments: commentsByFile.get(id) ?? [],
+      };
+    });
   const allFavIds = [...new Set(favGroups.flatMap((g) => g.fileIds))];
 
   return (
@@ -80,11 +109,7 @@ export default async function GalleryListsPage({ params }: Props) {
                       downloadName={`${gallery.slug}-favorites-${g.clientEmail ?? "anon"}`}
                     />
                   </div>
-                  <Thumbs
-                    galleryId={galleryId}
-                    fileIds={g.fileIds}
-                    fileMap={fileMap}
-                  />
+                  <ListThumbs galleryId={galleryId} items={itemsOf(g.fileIds)} />
                 </div>
               ))}
             </div>
@@ -120,11 +145,7 @@ export default async function GalleryListsPage({ params }: Props) {
                   {l.clientEmail ?? "unknown"} · {l.fileIds.length} item
                   {l.fileIds.length !== 1 ? "s" : ""}
                 </p>
-                <Thumbs
-                  galleryId={galleryId}
-                  fileIds={l.fileIds}
-                  fileMap={fileMap}
-                />
+                <ListThumbs galleryId={galleryId} items={itemsOf(l.fileIds)} />
               </section>
             ))}
           </div>
@@ -134,44 +155,3 @@ export default async function GalleryListsPage({ params }: Props) {
   );
 }
 
-function Thumbs({
-  galleryId,
-  fileIds,
-  fileMap,
-}: {
-  galleryId: string;
-  fileIds: string[];
-  fileMap: Map<string, GalleryFile>;
-}) {
-  if (fileIds.length === 0) return null;
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {fileIds.map((fid) => {
-        const f = fileMap.get(fid);
-        const name = f?.displayName ?? f?.filenameOriginal ?? "Removed item";
-        return (
-          <div
-            key={fid}
-            title={name}
-            className="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-border bg-surface-sunken"
-          >
-            {f?.type === "image" ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`/img/${galleryId}/${fid}/thumb`}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="flex h-full w-full flex-col items-center justify-center gap-1 p-1 text-center">
-                <span className="text-[10px] font-semibold text-ink-muted">
-                  {f?.type ?? "—"}
-                </span>
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}

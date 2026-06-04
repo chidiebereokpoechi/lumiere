@@ -6,6 +6,7 @@ import {
   Bookmark,
   Check,
   Close,
+  Comment,
   Download,
   Heart,
   HeartOpen,
@@ -18,12 +19,14 @@ export function ItemActionSheet({
   file,
   canDownload,
   canFavorite,
+  allowComments,
   coarse,
   isFavorite,
   onSelect,
   onFavorite,
   onAddToList,
   onRemoveFromList,
+  onComment,
   onDownload,
   onShare,
   onClose,
@@ -31,12 +34,14 @@ export function ItemActionSheet({
   file: ClientFile;
   canDownload: boolean;
   canFavorite: boolean;
+  allowComments: boolean;
   coarse: boolean;
   isFavorite: boolean;
   onSelect: () => void;
   onFavorite: () => void;
   onAddToList: () => void;
   onRemoveFromList?: () => void;
+  onComment: () => void;
   onDownload: () => void;
   onShare: () => void;
   onClose: () => void;
@@ -87,6 +92,13 @@ export function ItemActionSheet({
             icon={<Close size={20} />}
             label="Remove from list"
             onClick={act(onRemoveFromList)}
+          />
+        )}
+        {allowComments && (
+          <SheetItem
+            icon={<Comment size={20} />}
+            label="Comment"
+            onClick={act(onComment)}
           />
         )}
         {canShare && (

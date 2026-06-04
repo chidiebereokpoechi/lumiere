@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia';
 import { eq, and, or, desc } from 'drizzle-orm';
 import { CommentInput, CommentModerationInput } from '@lumiere/types';
 import { db } from '../../db';
-import { galleries, files, comments, lists } from '../../db/schema';
+import { galleries, files, comments, lists, galleryFolders } from '../../db/schema';
 import { authContext, requireAuth } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
@@ -224,17 +224,39 @@ export const commentRoutes = new Elysia()
     });
     const listRows = await db.query.lists.findMany({ where: eq(lists.galleryId, gallery.id) });
     const listName = new Map(listRows.map((l) => [l.id, l.name]));
-    return rows.map((c) => ({
-      id: c.id,
-      fileId: c.fileId,
-      clientName: c.clientName,
-      clientEmail: c.clientEmail,
-      body: c.body,
-      isApproved: c.isApproved === 1,
-      scope: c.scope,
-      listName: c.listId ? (listName.get(c.listId) ?? null) : null,
-      createdAt: c.createdAt,
-    }));
+    // Resolve the commented-on file (filename + its containing set/folder) so
+    // the moderation UI can show what was commented on.
+    const fileRows = await db.query.files.findMany({ where: eq(files.galleryId, gallery.id) });
+    const fileInfo = new Map(fileRows.map((f) => [f.id, f]));
+    const folderRows = await db.query.galleryFolders.findMany({ where: eq(galleryFolders.galleryId, gallery.id) });
+    const folderName = new Map(folderRows.map((f) => [f.id, f.name]));
+
+    return rows.map((c) => {
+      const file = c.fileId ? fileInfo.get(c.fileId) : undefined;
+      // The collection the comment lives under: a list, the favorites view, or
+      // (for public set comments) the file's own set/folder.
+      const collection =
+        c.scope === 'favorites'
+          ? 'Favorites'
+          : c.scope === 'list'
+            ? (c.listId ? listName.get(c.listId) ?? null : null)
+            : file?.folderId
+              ? folderName.get(file.folderId) ?? null
+              : null;
+      return {
+        id: c.id,
+        fileId: c.fileId,
+        filename: file?.filenameOriginal ?? null,
+        collection,
+        clientName: c.clientName,
+        clientEmail: c.clientEmail,
+        body: c.body,
+        isApproved: c.isApproved === 1,
+        scope: c.scope,
+        listName: c.listId ? (listName.get(c.listId) ?? null) : null,
+        createdAt: c.createdAt,
+      };
+    });
   })
 
   // PATCH /api/galleries/:galleryId/comments/:commentId — admin approves/unapproves

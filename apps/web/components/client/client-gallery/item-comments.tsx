@@ -210,7 +210,7 @@ export function ItemComments({
           {error && (
             <p className="text-sm font-semibold text-negative">{error}</p>
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Button
               type="submit"
               disabled={
@@ -221,13 +221,14 @@ export function ItemComments({
               {saveLabel}
             </Button>
             {mine && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={removeMine}
-                className="text-sm font-semibold tracking-wider text-ink-muted hover:text-negative"
+                className="px-3.5 py-2 tracking-wider text-ink-muted hover:text-negative"
               >
                 Remove
-              </button>
+              </Button>
             )}
             {!isPrivate && mine?.pending && (
               <span className="text-xs text-ink-subtle">Pending approval</span>

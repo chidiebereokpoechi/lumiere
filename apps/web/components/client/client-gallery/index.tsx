@@ -304,10 +304,10 @@ export function ClientGallery({
       label: f.name,
       group: "Collections",
     }));
-    if (canFavorite && favoriteCount > 0)
-      opts.push({ value: "fav", label: "Favorites", group: "Your lists" });
     for (const l of lists)
-      opts.push({ value: `l:${l.id}`, label: l.name, group: "Your lists" });
+      opts.unshift({ value: `l:${l.id}`, label: l.name, group: "Your lists" });
+    if (canFavorite && favoriteCount > 0)
+      opts.unshift({ value: "fav", label: "Favorites", group: "Your lists" });
     return opts;
   }, [folders, lists, canFavorite, favoriteCount]);
   const selectCollection = (key: string) => {
@@ -525,6 +525,17 @@ export function ClientGallery({
     triggerDownload(`ids=${[...selected].join(",")}`);
   }, [selected, triggerDownload]);
 
+  // Download a set of files directly — a single file streams as itself (no ZIP
+  // wrapper); multiples go through the gallery ZIP endpoint.
+  const fallbackDownload = useCallback(
+    (items: ClientFile[]) => {
+      if (items.length === 1) downloadViaAnchor(items[0]!.downloadUrl);
+      else if (items.length > 1)
+        triggerDownload(`ids=${items.map((f) => f.id).join(",")}`);
+    },
+    [triggerDownload],
+  );
+
   // Download picker (multi-set + favorites → one ZIP).
   const [downloadOpen, setDownloadOpen] = useState(false);
   const downloadPicked = useCallback(
@@ -591,30 +602,36 @@ export function ClientGallery({
             duration: 3000,
           });
         } else {
+          fallbackDownload(imgs);
           toast.update(toastId, {
             kind: "error",
-            message: "Couldn’t save to Photos — downloading as ZIP",
+            message:
+              imgs.length === 1
+                ? "Couldn’t save to Photos — downloading instead"
+                : "Couldn’t save to Photos — downloading as ZIP",
             duration: 5000,
           });
-          triggerDownload(`ids=${imgs.map((f) => f.id).join(",")}`);
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           // User dismissed the share sheet — quietly close the toast.
           toast.dismiss(toastId);
         } else {
+          fallbackDownload(imgs);
           toast.update(toastId, {
             kind: "error",
-            message: "Couldn’t save to Photos — downloading as ZIP",
+            message:
+              imgs.length === 1
+                ? "Couldn’t save to Photos — downloading instead"
+                : "Couldn’t save to Photos — downloading as ZIP",
             duration: 5000,
           });
-          triggerDownload(`ids=${imgs.map((f) => f.id).join(",")}`);
         }
       } finally {
         setSavingPhotos(false);
       }
     },
-    [savingPhotos, triggerDownload],
+    [savingPhotos, fallbackDownload],
   );
 
   // ---- Lightbox navigation ----
@@ -790,144 +807,144 @@ export function ClientGallery({
             </div>
           ))}
         {!(collectionsMode && atLanding) && (
-        <div className="p-2 sm:p-4 flex items-center justify-between gap-3">
-          {collectionsMode && !atLanding ? (
-            coarse ? (
-              // Mobile: a full-width set selector. Select / save actions live in
-              // the bottom CollectionBar (mirrors selection mode).
-              <Select
-                value={viewKey(view)}
-                onChange={selectCollection}
-                options={collectionOptions}
-                className="w-full min-w-0"
-              />
+          <div className="p-2 sm:p-4 flex items-center justify-between gap-3">
+            {collectionsMode && !atLanding ? (
+              coarse ? (
+                // Mobile: a full-width set selector. Select / save actions live in
+                // the bottom CollectionBar (mirrors selection mode).
+                <Select
+                  value={viewKey(view)}
+                  onChange={selectCollection}
+                  options={collectionOptions}
+                  className="w-full min-w-0"
+                />
+              ) : (
+                // Desktop: the older layout — back + selector on the left, the
+                // Select button + download on the right.
+                <>
+                  <div className="flex items-center gap-4 min-w-0">
+                    <button
+                      type="button"
+                      onClick={goLanding}
+                      aria-label="Back to collections"
+                      className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <Select
+                      value={viewKey(view)}
+                      onChange={selectCollection}
+                      options={collectionOptions}
+                      className="w-44 sm:w-56"
+                    />
+                  </div>
+                  {allFiles.length > 0 && (
+                    <div className="flex items-center gap-4 shrink-0">
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          if (!selectionMode) enterSelection();
+                          else if (allSelected) deselectAll();
+                          else selectAll();
+                        }}
+                        className="px-3.5 tracking-wider"
+                      >
+                        <Check size={16} />
+                        {!selectionMode
+                          ? "Select"
+                          : allSelected
+                            ? "Deselect all"
+                            : "Select all"}
+                      </Button>
+                      {canDownload && (
+                        <Button
+                          variant="secondary"
+                          onClick={() =>
+                            selectionMode
+                              ? downloadSelected()
+                              : triggerDownload(
+                                  `ids=${files.map((f) => f.id).join(",")}`,
+                                )
+                          }
+                          disabled={selectionMode && selected.size === 0}
+                          className="px-3.5 tracking-wider"
+                        >
+                          <Download size={16} />
+                          Download
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )
             ) : (
-              // Desktop: the older layout — back + selector on the left, the
-              // Select button + download on the right.
               <>
-                <div className="flex items-center gap-2 min-w-0">
-                  <button
-                    type="button"
-                    onClick={goLanding}
-                    aria-label="Back to collections"
-                    className="inline-flex items-center justify-center shrink-0 text-ink-muted hover:text-ink-strong"
+                <div className="min-w-0">
+                  <p
+                    style={
+                      collectionsMode
+                        ? { viewTransitionName: "gallery-title" }
+                        : undefined
+                    }
+                    className="inline-block max-w-full truncate align-bottom font-[700] text-lg tracking-wider text-ink-strong"
                   >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <Select
-                    value={viewKey(view)}
-                    onChange={selectCollection}
-                    options={collectionOptions}
-                    className="w-44 sm:w-56"
-                  />
+                    {gallery.title}
+                  </p>
+                  {gallery.subtitle && (
+                    <p className="truncate text-sm text-ink-muted">
+                      {gallery.subtitle}
+                    </p>
+                  )}
                 </div>
+                {/* Tabs/landing actions: compact Select link + the ZIP picker. */}
                 {allFiles.length > 0 && (
                   <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        if (!selectionMode) enterSelection();
-                        else if (allSelected) deselectAll();
-                        else selectAll();
-                      }}
-                      className="px-3.5 tracking-wider"
-                    >
-                      <Check size={16} />
-                      {!selectionMode
-                        ? "Select"
-                        : allSelected
-                          ? "Deselect all"
-                          : "Select all"}
-                    </Button>
-                    {canDownload && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          selectionMode
-                            ? downloadSelected()
-                            : triggerDownload(
-                                `ids=${files.map((f) => f.id).join(",")}`,
-                              )
-                        }
-                        disabled={selectionMode && selected.size === 0}
-                        aria-label="Download"
-                        title="Download"
-                        className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                    {(canFavorite || canDownload) && !collectionsMode && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          if (!selectionMode) enterSelection();
+                          else if (allSelected) deselectAll();
+                          else selectAll();
+                        }}
+                        className="px-3.5 tracking-wider whitespace-nowrap"
                       >
-                        <Download size={24} />
-                      </button>
+                        <Check size={16} />
+                        {!selectionMode
+                          ? "Select"
+                          : allSelected
+                            ? "Deselect all"
+                            : "Select all"}
+                      </Button>
                     )}
+                    {canDownload &&
+                      (selectionMode ? (
+                        <button
+                          type="button"
+                          onClick={() => downloadSelected()}
+                          disabled={selected.size === 0}
+                          aria-label="Download"
+                          title="Download"
+                          className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                        >
+                          <Download size={24} />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setDownloadOpen(true)}
+                          aria-label="Download"
+                          title="Download"
+                          className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
+                        >
+                          <Zip size={24} />
+                        </button>
+                      ))}
                   </div>
                 )}
               </>
-            )
-          ) : (
-            <>
-              <div className="min-w-0">
-                <p
-                  style={
-                    collectionsMode
-                      ? { viewTransitionName: "gallery-title" }
-                      : undefined
-                  }
-                  className="inline-block max-w-full truncate align-bottom font-[700] text-lg tracking-wider text-ink-strong"
-                >
-                  {gallery.title}
-                </p>
-                {gallery.subtitle && (
-                  <p className="truncate text-sm text-ink-muted">
-                    {gallery.subtitle}
-                  </p>
-                )}
-              </div>
-              {/* Tabs/landing actions: compact Select link + the ZIP picker. */}
-              {allFiles.length > 0 && (
-                <div className="flex items-center gap-2 shrink-0">
-                  {(canFavorite || canDownload) && !collectionsMode && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!selectionMode) enterSelection();
-                        else if (allSelected) deselectAll();
-                        else selectAll();
-                      }}
-                      className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong whitespace-nowrap"
-                    >
-                      {!selectionMode
-                        ? "Select"
-                        : allSelected
-                          ? "Deselect all"
-                          : "Select all"}
-                    </button>
-                  )}
-                  {canDownload &&
-                    (selectionMode ? (
-                      <button
-                        type="button"
-                        onClick={() => downloadSelected()}
-                        disabled={selected.size === 0}
-                        aria-label="Download"
-                        title="Download"
-                        className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
-                      >
-                        <Download size={24} />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setDownloadOpen(true)}
-                        aria-label="Download"
-                        title="Download"
-                        className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
-                      >
-                        <Zip size={24} />
-                      </button>
-                    ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+          </div>
         )}
         {!collectionsMode &&
           allFiles.length > 0 &&
@@ -1022,18 +1039,18 @@ export function ClientGallery({
         !atLanding &&
         !selectionMode &&
         files.length > 0 && (
-        <CollectionBar
-          count={files.length}
-          canDownload={canDownload}
-          showSavePhotos={coarse && collectionAllMedia}
-          savingPhotos={savingPhotos}
-          onSelect={() => enterSelection()}
-          onSavePhotos={() => sharePhotos(files)}
-          onDownload={() =>
-            triggerDownload(`ids=${files.map((f) => f.id).join(",")}`)
-          }
-        />
-      )}
+          <CollectionBar
+            count={files.length}
+            canDownload={canDownload}
+            showSavePhotos={coarse && collectionAllMedia}
+            savingPhotos={savingPhotos}
+            onSelect={() => enterSelection()}
+            onSavePhotos={() => sharePhotos(files)}
+            onDownload={() =>
+              triggerDownload(`ids=${files.map((f) => f.id).join(",")}`)
+            }
+          />
+        )}
 
       {selectionMode && (
         <SelectionBar
@@ -1139,6 +1156,7 @@ export function ClientGallery({
           file={sheetFile}
           canDownload={canDownload}
           canFavorite={canFavorite}
+          allowComments={gallery.allowComments}
           coarse={coarse}
           isFavorite={favorites.has(sheetFile.id)}
           onSelect={() => enterSelection(sheetFile.id)}
@@ -1147,6 +1165,7 @@ export function ClientGallery({
           onRemoveFromList={
             currentListId ? () => removeFromList([sheetFile.id]) : undefined
           }
+          onComment={() => setCommentsFileId(sheetFile.id)}
           onDownload={() => triggerDownload(`ids=${sheetFile.id}`)}
           onShare={() => sharePhotos([sheetFile])}
           onClose={() => setSheetId(null)}

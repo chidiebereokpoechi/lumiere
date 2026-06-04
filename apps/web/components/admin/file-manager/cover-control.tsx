@@ -51,13 +51,13 @@ export function CoverControl({
         <span className="text-xs font-bold tracking-wider text-ink-muted">
           Cover
         </span>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => setOpen(true)}
-          className="text-xs font-bold tracking-wider text-accent-dark hover:underline"
+          className="px-3 py-1.5 text-xs tracking-wider"
         >
           {thumb ? "Edit" : "Set"}
-        </button>
+        </Button>
       </div>
       <button
         type="button"
@@ -165,7 +165,7 @@ function CoverModal({
     >
       <h2
         id="cover-title"
-        className="text-lg font-extrabold tracking-tight text-ink-strong"
+        className="text-xs font-extrabold tracking-wider text-ink-muted"
       >
         Gallery cover
       </h2>

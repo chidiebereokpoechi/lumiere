@@ -28,7 +28,9 @@ export function GalleryHeader({
   active,
 }: Props) {
   return (
-    <>
+    // Sticky chrome — the topnav + tab row stay pinned while the page body
+    // scrolls beneath them (the window is the scroll container).
+    <div className="sticky top-0 z-20 bg-bg border-b border-border">
       <Topnav
         title={title}
         subtitle={`/g/${slug} · ${passwordProtected ? "password-protected" : "no password"}`}
@@ -49,7 +51,7 @@ export function GalleryHeader({
         }
       />
 
-      <nav className="flex items-center gap-4 px-4 pt-4">
+      <nav className="flex items-center gap-4 px-4 pt-4 pb-4 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
         <Tab
           href={`/admin/galleries/${galleryId}`}
           active={active === "settings"}
@@ -81,7 +83,7 @@ export function GalleryHeader({
           Analytics
         </Tab>
       </nav>
-    </>
+    </div>
   );
 }
 

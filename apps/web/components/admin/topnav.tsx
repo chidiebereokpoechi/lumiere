@@ -28,7 +28,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between p-4 bg-bg border-b border-border">
+    <header className="sticky top-0 z-30 flex items-start justify-between p-4 bg-bg border-b border-border">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">
           {title}
@@ -38,7 +38,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-4">
         {action}
         <div className="relative">
           <button

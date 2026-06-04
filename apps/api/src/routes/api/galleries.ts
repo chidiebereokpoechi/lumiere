@@ -59,6 +59,7 @@ export const galleryRoutes = new Elysia({ prefix: '/api/galleries' })
 
     const { password: _password, slug: _slug, ...rest } = input;
     await db.insert(galleries).values({
+      navStyle: 'collections', // default nav style for new galleries
       ...rest,
       id,
       photographerId: me.id,

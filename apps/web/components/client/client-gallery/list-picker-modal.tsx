@@ -62,12 +62,12 @@ export function ListPickerModal({
         aria-modal="true"
         aria-labelledby="list-picker-title"
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:w-[min(92vw,24rem)] max-h-[80svh] flex flex-col bg-surface border-t sm:border border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)]"
+        className="w-full sm:w-[min(92vw,28rem)] max-h-[80svh] flex flex-col bg-surface border-t sm:border border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)]"
       >
         <div className="px-4 pt-3 pb-2">
           <p
             id="list-picker-title"
-            className="text-sm font-extrabold tracking-wider text-ink-strong"
+            className="text-xs font-extrabold tracking-wider text-ink-muted"
           >
             Add to list
           </p>

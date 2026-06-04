@@ -80,7 +80,7 @@ function toMinimal(
     coverFocalX: g.coverFocalX,
     coverFocalY: g.coverFocalY,
     layout: g.layout ?? 'grid',
-    navStyle: g.navStyle ?? 'tabs',
+    navStyle: g.navStyle ?? 'collections',
     colorTheme: g.colorTheme ?? 'light',
     customCss: g.customCss,
     hasPassword: !!g.passwordHash,

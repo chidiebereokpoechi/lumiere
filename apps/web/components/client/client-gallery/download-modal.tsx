@@ -72,10 +72,14 @@ export function DownloadModal({
   };
 
   return (
-    <Modal onClose={onClose} labelledBy="download-title">
+    <Modal
+      onClose={onClose}
+      labelledBy="download-title"
+      className="w-[min(92vw,28rem)]"
+    >
       <h2
         id="download-title"
-        className="text-lg font-extrabold tracking-tight text-ink-strong"
+        className="text-xs font-extrabold tracking-wider text-ink-muted"
       >
         Download
       </h2>
@@ -125,14 +129,15 @@ export function DownloadModal({
         )}
       </ul>
 
-      <div className="mt-5 flex items-center justify-end gap-3">
-        <button
+      <div className="mt-5 flex items-center justify-end gap-4">
+        <Button
           type="button"
+          variant="ghost"
           onClick={onClose}
-          className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
+          className="tracking-wider"
         >
           Cancel
-        </button>
+        </Button>
         <Button
           onClick={() => onDownload([...selected], favorites, listFileIds())}
           disabled={nothing}

@@ -110,9 +110,9 @@ export function Lightbox({
 
   return (
     <div className="fixed inset-0 z-50 bg-bg flex flex-col" onClick={onClose}>
-      {/* Top bar */}
+      {/* Top bar — just Close; the actions live on the right rail below. */}
       <div
-        className="shrink-0 flex items-center justify-between px-2 sm:px-4 h-14"
+        className="shrink-0 flex items-center px-2 sm:px-4 h-14"
         onClick={(e) => e.stopPropagation()}
       >
         <IconButton
@@ -122,54 +122,6 @@ export function Lightbox({
         >
           <Close size={24} />
         </IconButton>
-        <div className="flex items-center gap-1">
-          {canFavorite && (
-            <IconButton
-              onClick={onToggleFavorite}
-              aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-              className={cn("h-10 w-10", isFavorite && "text-heart")}
-            >
-              {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
-            </IconButton>
-          )}
-          <IconButton
-            onClick={onAddToList}
-            aria-label="Add to list"
-            className="h-10 w-10"
-          >
-            <Bookmark size={24} />
-          </IconButton>
-          {allowComments && (
-            <IconButton
-              onClick={() => setShowComments((v) => !v)}
-              aria-label="Comments"
-              className={cn("h-10 w-10", showComments && "text-ink-strong")}
-            >
-              <Comment size={24} />
-            </IconButton>
-          )}
-          {canDownload &&
-            coarse &&
-            (file.type === "image" || file.type === "video") && (
-              <IconButton
-                onClick={onShare}
-                disabled={savingPhotos}
-                aria-label="Save to Photos"
-                className="h-10 w-10"
-              >
-                <ImageIcon size={24} />
-              </IconButton>
-            )}
-          {canDownload && (
-            <a
-              href={file.downloadUrl}
-              aria-label="Download"
-              className="h-10 w-10 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
-            >
-              <Download size={24} />
-            </a>
-          )}
-        </div>
       </div>
 
       {/* Media */}
@@ -223,6 +175,57 @@ export function Lightbox({
             </div>
           )}
         </div>
+        {/* Action bar — centered along the bottom. Hidden while the comments
+            drawer is open so the two don't fight for the same space. */}
+        {!showComments && (
+        <div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-row items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {canFavorite && (
+            <RailButton
+              onClick={onToggleFavorite}
+              aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+              className={cn(isFavorite && "text-heart border-heart")}
+            >
+              {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
+            </RailButton>
+          )}
+          {allowComments && (
+            <RailButton
+              onClick={() => setShowComments((v) => !v)}
+              aria-label="Comments"
+              active={showComments}
+            >
+              <Comment size={24} />
+            </RailButton>
+          )}
+          <RailButton onClick={onAddToList} aria-label="Add to list">
+            <Bookmark size={24} />
+          </RailButton>
+          {/* Hybrid save: Save to Photos (share sheet) on touch media, else a
+              plain download. */}
+          {canDownload &&
+            (coarse && (file.type === "image" || file.type === "video") ? (
+              <RailButton
+                onClick={onShare}
+                disabled={savingPhotos}
+                aria-label="Save to Photos"
+              >
+                <ImageIcon size={24} />
+              </RailButton>
+            ) : (
+              <a
+                href={file.downloadUrl}
+                aria-label="Download"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
+              >
+                <Download size={24} />
+              </a>
+            ))}
+        </div>
+        )}
+
         {total > 1 && (
           <>
             <IconButton
@@ -266,6 +269,15 @@ export function Lightbox({
           className="absolute inset-x-0 bottom-0 z-10 max-h-[70svh] overflow-y-auto bg-surface border-t border-border rounded-t-xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:inset-x-auto sm:right-0 sm:top-14 sm:bottom-0 sm:w-96 sm:max-h-none sm:rounded-none sm:border-t-0 sm:border-l sm:shadow-none"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Close — the action bar is hidden while this is open, so the drawer
+              owns dismissal. */}
+          <IconButton
+            onClick={() => setShowComments(false)}
+            aria-label="Close comments"
+            className="absolute top-3 right-2 z-10 h-9 w-9"
+          >
+            <Close size={20} />
+          </IconButton>
           <ItemComments
             slug={slug}
             fileId={file.id}
@@ -277,5 +289,38 @@ export function Lightbox({
         </div>
       )}
     </div>
+  );
+}
+
+// Big round action button for the lightbox's right rail (social-media style).
+function RailButton({
+  onClick,
+  active,
+  disabled,
+  className,
+  children,
+  ...rest
+}: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  "aria-label": string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-12 w-12 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong disabled:opacity-50",
+        active && "border-accent text-accent-dark hover:border-accent",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
   );
 }

@@ -53,7 +53,7 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
   return (
     <Link
       href={`/admin/galleries/${gallery.id}`}
-      className="group flex flex-col rounded-xl bg-surface border border-border p-2 hover:border-border-strong hover:-translate-y-0.5 transition-[transform,border-color] duration-150"
+      className="group flex flex-col rounded-xl bg-surface border border-border p-2 hover:bg-surface-2 hover:border-border-strong transition-colors duration-150"
     >
       <div className="aspect-16/10 w-full overflow-hidden rounded-md bg-surface-sunken relative">
         {gallery.coverFileId ? (
@@ -61,7 +61,7 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
           <img
             src={`/img/${gallery.id}/${gallery.coverFileId}/thumb`}
             alt=""
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="h-full w-full object-cover"
           />
         ) : (
           <PlaceholderCover />

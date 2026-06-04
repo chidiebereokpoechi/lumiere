@@ -13,6 +13,7 @@ import {
   FormError,
 } from "@/components/admin/form";
 import { DateField } from "@/components/ui/date-field";
+import { buttonClasses } from "@/components/ui/button-variants";
 
 interface CreatedGallery {
   id: string;
@@ -191,10 +192,7 @@ export default function NewGalleryPage() {
           <FormError message={error} />
 
           <div className="flex items-center justify-end gap-4">
-            <Link
-              href="/admin"
-              className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
-            >
+            <Link href="/admin" className={buttonClasses("ghost", "tracking-wider")}>
               Cancel
             </Link>
             <Button

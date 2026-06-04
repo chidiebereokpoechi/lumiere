@@ -45,7 +45,7 @@ export const galleries = sqliteTable('galleries', {
   layout: text('layout').default('grid'),
   // Client landing: 'tabs' (one row of collection tabs) or 'collections' (an
   // iOS-Photos-style albums grid you drill into).
-  navStyle: text('nav_style').default('tabs'),
+  navStyle: text('nav_style').default('collections'),
   colorTheme: text('color_theme').default('light'),
   customCss: text('custom_css'),
   watermarkPresetId: text('watermark_preset_id'),

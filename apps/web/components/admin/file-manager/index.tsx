@@ -18,14 +18,14 @@ import { useFolderReorder } from "@/hooks/use-folder-reorder";
 import { useTileSortable } from "@/hooks/use-tile-sortable";
 import { Select } from "@/components/ui/select";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
-import { Plus, Upload, Trash } from "@/components/ui/icons";
+import { Plus, Upload, Trash, Filter } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { FileTile } from "./file-tile";
 import { FolderRow } from "./folder-row";
 import { AdminPreview } from "./admin-preview";
 import { UploadSummary } from "./upload-summary";
 import { Spinner, TypeIcon } from "./bits";
-import { CoverControl, type CoverState } from "./cover-control";
+import { type CoverState } from "./cover-control";
 
 interface Props {
   galleryId: string;
@@ -398,14 +398,8 @@ export function FileManager({
 
       {/* Two-column: sets sidebar + media grid */}
       <div className="flex gap-4 items-start">
-        {/* Sets sidebar */}
-        <aside className="w-80 h-full shrink-0 border border-border p-4">
-          <CoverControl
-            galleryId={galleryId}
-            images={files.filter((f) => f.type === "image")}
-            cover={cover}
-            onChange={setCover}
-          />
+        {/* Sets sidebar — sticky below the gallery header while the grid scrolls. */}
+        <aside className="w-80 shrink-0 self-start lg:sticky lg:top-40 lg:max-h-[calc(100dvh-11rem)] lg:overflow-y-auto border border-border p-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold tracking-wider text-ink-muted">
               Sets
@@ -498,9 +492,7 @@ export function FileManager({
               {order.length}
             </span>
             <div className="ml-auto flex items-center gap-4">
-              <span className="hidden sm:inline text-xs font-bold tracking-wider text-ink-muted">
-                Sort
-              </span>
+              <Filter size={20} className="shrink-0 text-ink-muted" aria-hidden />
               <Select
                 value={sortMode}
                 onChange={(v) => applySort(v as typeof sortMode)}
@@ -651,7 +643,7 @@ export function FileManager({
           <span className="text-sm font-semibold text-ink-strong tabular-nums">
             {selected.size} selected
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Select
               value=""
               placeholder="Move to…"
@@ -665,21 +657,21 @@ export function FileManager({
                 { value: "__new__", label: "+ New set…" },
               ]}
             />
-            <button
-              type="button"
+            <Button
+              variant="danger"
               onClick={deleteSelected}
-              className="inline-flex items-center gap-1.5 rounded-md border border-negative/40 px-3 py-2 text-sm font-semibold text-negative hover:bg-negative/10 transition-colors"
+              className="tracking-wider"
             >
               <Trash size={16} />
               Delete
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
               onClick={() => setSelected(new Set())}
-              className="text-sm font-semibold tracking-wider text-ink-muted hover:text-ink-strong"
+              className="tracking-wider"
             >
               Clear
-            </button>
+            </Button>
           </div>
         </div>
       )}
