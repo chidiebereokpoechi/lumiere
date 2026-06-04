@@ -17,6 +17,13 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Save is offered only when something actually changed (see CLAUDE.md).
+  const dirty =
+    name !== initial.name ||
+    brandName !== (initial.brandName ?? "") ||
+    website !== (initial.website ?? "") ||
+    instagram !== (initial.instagram ?? "");
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (pending) return;
@@ -47,45 +54,78 @@ export function SettingsForm({ initial }: { initial: CurrentPhotographer }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6" noValidate>
-      <Field id="email" label="Email" hint="Used to sign in and as the contact address on client galleries">
-        <TextInput id="email" value={initial.email} onChange={() => {}} disabled />
-      </Field>
-      <Field id="name" label="Name" required>
-        <TextInput
-          id="name"
-          value={name}
-          onChange={setName}
-          placeholder="Your name"
-        />
-      </Field>
-      <Field id="brandName" label="Brand name" hint="Shown to clients instead of your name when set">
-        <TextInput
+    <form onSubmit={submit} className="max-w-2xl space-y-4" noValidate>
+      <section className="rounded-xl bg-surface border border-border p-4 space-y-4">
+        <h2 className="text-xs font-extrabold tracking-wider text-ink-muted">
+          Profile
+        </h2>
+
+        <Field
+          id="email"
+          label="Email"
+          hint="Used to sign in and as the contact address on client galleries"
+        >
+          <TextInput
+            id="email"
+            value={initial.email}
+            onChange={() => {}}
+            disabled
+          />
+        </Field>
+
+        <Field id="name" label="Name" required>
+          <TextInput
+            id="name"
+            value={name}
+            onChange={setName}
+            placeholder="Your name"
+          />
+        </Field>
+
+        <Field
           id="brandName"
-          value={brandName}
-          onChange={setBrandName}
-          placeholder="Studio name"
-        />
-      </Field>
-      <Field id="website" label="Website" hint="Public URL — shown as a link on every gallery landing">
-        <TextInput
+          label="Brand name"
+          hint="Shown to clients instead of your name when set"
+        >
+          <TextInput
+            id="brandName"
+            value={brandName}
+            onChange={setBrandName}
+            placeholder="Studio name"
+          />
+        </Field>
+
+        <Field
           id="website"
-          value={website}
-          onChange={setWebsite}
-          placeholder="https://yourstudio.com"
-        />
-      </Field>
-      <Field id="instagram" label="Instagram" hint="Handle, with or without the @">
-        <TextInput
+          label="Website"
+          hint="Public URL — shown as a link on every gallery landing"
+        >
+          <TextInput
+            id="website"
+            value={website}
+            onChange={setWebsite}
+            placeholder="https://yourstudio.com"
+          />
+        </Field>
+
+        <Field
           id="instagram"
-          value={instagram}
-          onChange={setInstagram}
-          placeholder="yourhandle"
-        />
-      </Field>
+          label="Instagram"
+          hint="Handle, with or without the @"
+        >
+          <TextInput
+            id="instagram"
+            value={instagram}
+            onChange={setInstagram}
+            placeholder="yourhandle"
+          />
+        </Field>
+      </section>
+
       <FormError message={error} />
-      <div>
-        <Button type="submit" disabled={pending}>
+
+      <div className="flex items-center justify-end gap-4">
+        <Button type="submit" disabled={pending || !dirty}>
           {pending ? "Saving…" : "Save changes"}
         </Button>
       </div>

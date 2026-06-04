@@ -6,16 +6,19 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const me = await fetchMe();
   return (
-    <main className="p-8 max-w-xl">
-      <header className="mb-8">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink-strong">
+    <div>
+      <header className="p-4 border-b border-border">
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink-strong">
           Settings
         </h1>
         <p className="mt-2 text-sm text-ink-muted">
           Your public creator profile — shown on every client gallery landing.
         </p>
       </header>
-      <SettingsForm initial={me} />
-    </main>
+
+      <div className="p-4 pb-16">
+        <SettingsForm initial={me} />
+      </div>
+    </div>
   );
 }
