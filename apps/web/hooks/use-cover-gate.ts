@@ -65,11 +65,17 @@ export function useCoverGate(
       if (shownRef.current) {
         if (p < 1 - dismissFraction) {
           setShown(false);
+          // Update the ref eagerly — the React state update is async, but the
+          // next wheel/touchmove may fire before re-render, and we don't want
+          // it routed through the "cover shown" branch (which preventDefaults
+          // and would block normal page scroll).
+          shownRef.current = false;
           setProg(0);
         } else setProg(1);
       } else {
         if (p > revealFraction) {
           setShown(true);
+          shownRef.current = true;
           setProg(1);
         } else setProg(0);
       }
@@ -95,7 +101,16 @@ export function useCoverGate(
         if (dy >= 0) return; // can't pull the cover further down
         e.preventDefault();
         setDragging(true);
-        setProg(clamp(1 + dy / vh()));
+        const next = clamp(1 + dy / vh());
+        setProg(next);
+        // If the same swipe carries the cover all the way out, commit
+        // immediately and end the gesture so the user doesn't have to lift
+        // their finger before the gallery accepts scroll input.
+        if (next === 0) {
+          setShown(false);
+          shownRef.current = false;
+          startY.v = null;
+        }
       } else {
         // Reveal is threshold-only — no live preview, no tracking. The cover
         // snaps in once the gesture has clearly committed past `revealFraction`.
