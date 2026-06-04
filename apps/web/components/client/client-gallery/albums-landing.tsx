@@ -89,7 +89,7 @@ export function AlbumsLanding({
             )}
           </div>
         )}
-        <div className="mt-4 px-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+        <div className="mt-4 px-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
           {canDownload && (
             <ActionLink
               icon={<Zip size={16} />}
@@ -99,7 +99,7 @@ export function AlbumsLanding({
           )}
           <ActionLink
             icon={<LinkIcon size={16} />}
-            label="Share link"
+            label="Share"
             onClick={shareLink}
           />
           {gallery.creatorWebsite && (
