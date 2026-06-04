@@ -244,7 +244,12 @@ export function ClientGallery({
       setSelectionMode(false);
       clear();
     });
-    window.history.pushState(null, "", `/g/${gallery.slug}`);
+    // Mirror the host-aware prefix used in switchView so the bare-slug
+    // domain (gallery.chidsism.com/:slug) doesn't gain a /g/ on back-out.
+    const cleanRoot =
+      window.location.pathname.split("/").filter(Boolean)[0] !== "g";
+    const prefix = cleanRoot ? "" : "/g";
+    window.history.pushState(null, "", `${prefix}/${gallery.slug}`);
     window.scrollTo({ top: 0 });
   }, [gallery.slug, clear, withTransition]);
 
