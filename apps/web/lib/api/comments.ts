@@ -9,6 +9,7 @@ export interface ItemComment {
   author: string | null;
   createdAt: number;
   mine: boolean;
+  pending?: boolean;
 }
 
 export type CommentScope = 'set' | 'list' | 'favorites';

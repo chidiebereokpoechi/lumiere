@@ -6,6 +6,7 @@ import type { ClientFile } from "@/lib/api/client-gallery";
 import { formatBytes } from "@/lib/format";
 import {
   Check,
+  Comment,
   FileDoc,
   Heart,
   HeartOpen,
@@ -26,6 +27,7 @@ export interface GalleryGridHandlers {
   onToggleFavorite: (id: string) => void;
   onBulkFavorite: () => void;
   onLongPress: (id: string) => void;
+  onOpenComments: (id: string) => void;
 }
 
 interface GridProps extends GalleryGridHandlers {
@@ -33,6 +35,7 @@ interface GridProps extends GalleryGridHandlers {
   gridMode: boolean;
   selected: Set<string>;
   favorites: Set<string>;
+  commentedIds: Set<string>;
   dragSelecting: boolean;
   emptyText: string;
 }
@@ -42,6 +45,7 @@ export function GalleryGrid({
   gridMode,
   selected,
   favorites,
+  commentedIds,
   dragSelecting,
   emptyText,
   ...handlers
@@ -106,6 +110,7 @@ export function GalleryGrid({
                   f={f}
                   isSelected={selected.has(f.id)}
                   isFavorite={favorites.has(f.id)}
+                  hasComment={commentedIds.has(f.id)}
                   fill
                   {...handlers}
                 />
@@ -127,6 +132,7 @@ export function GalleryGrid({
                 f={f}
                 isSelected={selected.has(f.id)}
                 isFavorite={favorites.has(f.id)}
+                hasComment={commentedIds.has(f.id)}
                 fill={false}
                 {...handlers}
               />
@@ -145,6 +151,7 @@ function GalleryTile({
   f,
   isSelected,
   isFavorite,
+  hasComment,
   fill,
   canDownload,
   canFavorite,
@@ -158,10 +165,12 @@ function GalleryTile({
   onToggleFavorite,
   onBulkFavorite,
   onLongPress,
+  onOpenComments,
 }: GalleryGridHandlers & {
   f: ClientFile;
   isSelected: boolean;
   isFavorite: boolean;
+  hasComment: boolean;
   fill: boolean;
 }) {
   // Long-press (touch or mouse hold) opens the quick-action menu. A press that
@@ -295,12 +304,28 @@ function GalleryTile({
         )}
       </button>
 
-      {/* Bottom gradient — backs the heart; shown whenever a heart shows
-          (favorited always, or on hover where the heart is interactive). */}
-      {(isFavorite || (desktop && canFavorite)) && (
+      {/* Bottom gradient — backs the heart + comment badge; shown whenever one
+          is visible (favorited/commented always, or on hover for the heart). */}
+      {(isFavorite || hasComment || (desktop && canFavorite)) && (
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/35 to-transparent transition-opacity ${isFavorite ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/35 to-transparent transition-opacity ${isFavorite || hasComment ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
         />
+      )}
+
+      {/* Comment / note badge — click to expand it. */}
+      {hasComment && (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenComments(f.id);
+          }}
+          aria-label="View comment"
+          className="absolute bottom-2.5 left-2.5 inline-flex items-center justify-center text-white drop-shadow hover:text-white/80"
+        >
+          <Comment size={20} />
+        </button>
       )}
 
       {selectionMode && (

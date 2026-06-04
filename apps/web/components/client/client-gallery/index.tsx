@@ -18,6 +18,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/lib/toast";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { Modal } from "@/components/ui/modal";
 import { ChevronLeft, Download, Heart, Zip } from "@/components/ui/icons";
 import { AlbumsLanding, type AlbumItem } from "./albums-landing";
 import { GalleryCover } from "./gallery-cover";
@@ -30,6 +31,7 @@ import { ListPickerModal } from "./list-picker-modal";
 import { DownloadModal } from "./download-modal";
 import { ItemActionSheet } from "./item-action-sheet";
 import { ListActionSheet } from "./list-action-sheet";
+import { ItemComments } from "./item-comments";
 
 interface Props {
   gallery: MinimalGallery;
@@ -661,6 +663,30 @@ export function ClientGallery({
     [currentListId, setMembership],
   );
 
+  // Comment scope follows the current view (set vs the private list/favorites
+  // context). Drives the lightbox/grid comment widgets + which files show a badge.
+  const commentScope: CommentScope = view.kind === "folder" ? "set" : view.kind;
+  const commentListId = view.kind === "list" ? view.id : undefined;
+  const [commentedIds, setCommentedIds] = useState<Set<string>>(new Set());
+  const [commentsFileId, setCommentsFileId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!gallery.allowComments) {
+      setCommentedIds(new Set());
+      return;
+    }
+    let alive = true;
+    const qs = `scope=${commentScope}${commentListId ? `&listId=${commentListId}` : ""}`;
+    apiClient<{ fileIds: string[] }>(`/api/gallery/${gallery.slug}/comment-flags?${qs}`)
+      .then((r) => {
+        if (alive) setCommentedIds(new Set(r.fileIds));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // Refetch when the lightbox/expand modal closes (a comment may have changed).
+  }, [gallery.slug, gallery.allowComments, commentScope, commentListId, email, openId, commentsFileId]);
+
   const gridMode = gallery.layout === "grid";
   const emptyText =
     view.kind === "list"
@@ -802,6 +828,7 @@ export function ClientGallery({
               gridMode={gridMode}
               selected={selected}
               favorites={favorites}
+              commentedIds={gallery.allowComments ? commentedIds : new Set()}
               dragSelecting={dragSelecting}
               emptyText={emptyText}
               canDownload={canDownload}
@@ -816,6 +843,7 @@ export function ClientGallery({
               onToggleFavorite={(id) => requireEmail(() => toggleFavorite(id))}
               onBulkFavorite={bulkFavorite}
               onLongPress={setSheetId}
+              onOpenComments={setCommentsFileId}
             />
           </div>
         )}
@@ -866,8 +894,8 @@ export function ClientGallery({
           total={files.length}
           slug={gallery.slug}
           allowComments={gallery.allowComments}
-          commentScope={view.kind === "folder" ? "set" : view.kind}
-          commentListId={view.kind === "list" ? view.id : undefined}
+          commentScope={commentScope}
+          commentListId={commentListId}
           email={email}
           onRequireEmail={() => requireEmail(() => {})}
           canDownload={canDownload}
@@ -966,6 +994,22 @@ export function ClientGallery({
           }}
           onClose={() => setListMenuId(null)}
         />
+      )}
+
+      {commentsFileId && (
+        <Modal
+          onClose={() => setCommentsFileId(null)}
+          className="p-0 w-[min(92vw,26rem)]"
+        >
+          <ItemComments
+            slug={gallery.slug}
+            fileId={commentsFileId}
+            scope={commentScope}
+            listId={commentListId}
+            email={email}
+            onRequireEmail={() => requireEmail(() => {})}
+          />
+        </Modal>
       )}
       <Toaster />
     </main>

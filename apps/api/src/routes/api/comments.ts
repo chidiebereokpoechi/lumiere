@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, or, desc } from 'drizzle-orm';
 import { CommentInput, CommentModerationInput } from '@lumiere/types';
 import { db } from '../../db';
 import { galleries, files, comments, lists } from '../../db/schema';
@@ -57,36 +57,30 @@ export const commentRoutes = new Elysia()
       set.status = 429; return { error: 'too_many_comments' };
     }
 
-    // Private note: upsert (one per author/file/scope[/list]).
-    if (input.scope !== 'set') {
-      const existing = await db.query.comments.findFirst({
-        where: and(
-          eq(comments.galleryId, gallery.id),
-          eq(comments.fileId, file.id),
-          eq(comments.scope, input.scope),
-          eq(comments.clientEmail, email),
-          ...(listId ? [eq(comments.listId, listId)] : []),
-        ),
-      });
-      if (existing) {
-        await db.update(comments).set({ body: input.body }).where(eq(comments.id, existing.id));
-        return { id: existing.id, status: 'saved', body: input.body, scope: input.scope };
-      }
-      const id = newId();
-      await db.insert(comments).values({
-        id, galleryId: gallery.id, fileId: file.id, scope: input.scope, listId,
-        clientEmail: email, clientName: null, body: input.body, isApproved: 0, createdAt: now(),
-      });
-      return { id, status: 'saved', body: input.body, scope: input.scope };
+    // One comment/note per author per file per scope[/list] — upsert. Editing a
+    // public (set) comment sends it back to pending; private notes need no approval.
+    const status = input.scope === 'set' ? 'pending' : 'saved';
+    const existing = await db.query.comments.findFirst({
+      where: and(
+        eq(comments.galleryId, gallery.id),
+        eq(comments.fileId, file.id),
+        eq(comments.scope, input.scope),
+        eq(comments.clientEmail, email),
+        ...(listId ? [eq(comments.listId, listId)] : []),
+      ),
+    });
+    if (existing) {
+      await db.update(comments)
+        .set({ body: input.body, ...(input.scope === 'set' ? { isApproved: 0 } : {}) })
+        .where(eq(comments.id, existing.id));
+      return { id: existing.id, status, body: input.body, scope: input.scope };
     }
-
-    // Public set-level comment: pending approval.
     const id = newId();
     await db.insert(comments).values({
-      id, galleryId: gallery.id, fileId: file.id, scope: 'set', listId: null,
+      id, galleryId: gallery.id, fileId: file.id, scope: input.scope, listId,
       clientEmail: email, clientName: null, body: input.body, isApproved: 0, createdAt: now(),
     });
-    return { id, status: 'pending', body: input.body, scope: 'set' };
+    return { id, status, body: input.body, scope: input.scope };
   })
 
   // GET /api/gallery/:slug/comments?fileId=&scope=&listId= — scope-aware:
@@ -104,17 +98,28 @@ export const commentRoutes = new Elysia()
     if (!query.fileId) return { comments: [] };
 
     if (scope === 'set') {
+      // Public approved comments, plus the caller's own (incl. pending).
+      const mineEmail = gallerySession?.galleryId === gallery.id ? gallerySession.clientEmail : null;
       const rows = await db.query.comments.findMany({
         where: and(
           eq(comments.galleryId, gallery.id),
           eq(comments.fileId, query.fileId),
           eq(comments.scope, 'set'),
-          eq(comments.isApproved, 1),
+          mineEmail
+            ? or(eq(comments.isApproved, 1), eq(comments.clientEmail, mineEmail))
+            : eq(comments.isApproved, 1),
         ),
         orderBy: [desc(comments.createdAt)],
       });
       return {
-        comments: rows.map((c) => ({ id: c.id, body: c.body, author: c.clientEmail, createdAt: c.createdAt, mine: false })),
+        comments: rows.map((c) => ({
+          id: c.id,
+          body: c.body,
+          author: c.clientEmail,
+          createdAt: c.createdAt,
+          mine: !!mineEmail && c.clientEmail === mineEmail,
+          pending: c.isApproved !== 1,
+        })),
       };
     }
 
@@ -142,6 +147,47 @@ export const commentRoutes = new Elysia()
     }),
   })
 
+  // GET /api/gallery/:slug/comment-flags?scope=&listId= — file ids that have a
+  // comment/note visible to this caller in the given scope, for grid badges.
+  .get('/api/gallery/:slug/comment-flags', async ({ params, query, gallerySession, set }) => {
+    const gallery = await db.query.galleries.findFirst({ where: eq(galleries.slug, params.slug) });
+    if (!gallery) { set.status = 404; return { fileIds: [] }; }
+    if (isExpired(gallery)) { set.status = 410; return { fileIds: [] }; }
+    if (gallery.passwordHash && gallerySession?.galleryId !== gallery.id) {
+      set.status = 401; return { fileIds: [] };
+    }
+
+    const scope = query.scope ?? 'set';
+    let where;
+    if (scope === 'set') {
+      // Approved (any author) OR the caller's own (incl. pending).
+      const mineEmail = gallerySession?.galleryId === gallery.id ? gallerySession.clientEmail : null;
+      where = and(
+        eq(comments.galleryId, gallery.id),
+        eq(comments.scope, 'set'),
+        mineEmail
+          ? or(eq(comments.isApproved, 1), eq(comments.clientEmail, mineEmail))
+          : eq(comments.isApproved, 1),
+      );
+    } else {
+      const email = gallerySession?.galleryId === gallery.id ? gallerySession.clientEmail : null;
+      if (!email) return { fileIds: [] };
+      where = and(
+        eq(comments.galleryId, gallery.id),
+        eq(comments.scope, scope),
+        eq(comments.clientEmail, email),
+        ...(query.listId ? [eq(comments.listId, query.listId)] : []),
+      );
+    }
+    const rows = await db.query.comments.findMany({ where });
+    return { fileIds: [...new Set(rows.map((c) => c.fileId).filter(Boolean))] };
+  }, {
+    query: t.Object({
+      scope: t.Optional(t.Union([t.Literal('set'), t.Literal('list'), t.Literal('favorites')])),
+      listId: t.Optional(t.String()),
+    }),
+  })
+
   // DELETE /api/gallery/:slug/comments/:commentId — client removes their own
   // private note (public set-level comments are removed by the admin only).
   .delete('/api/gallery/:slug/comments/:commentId', async ({ params, gallerySession, set }) => {
@@ -153,7 +199,8 @@ export const commentRoutes = new Elysia()
     const existing = await db.query.comments.findFirst({
       where: and(eq(comments.id, params.commentId), eq(comments.galleryId, gallery.id)),
     });
-    if (!existing || existing.clientEmail !== email || existing.scope === 'set') {
+    // Authors may delete their own comment/note (any scope).
+    if (!existing || existing.clientEmail !== email) {
       set.status = 404; return { error: 'comment_not_found' };
     }
     await db.delete(comments).where(eq(comments.id, existing.id));
