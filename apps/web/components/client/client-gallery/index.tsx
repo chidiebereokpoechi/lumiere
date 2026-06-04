@@ -19,7 +19,15 @@ import { toast } from "@/lib/toast";
 import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
-import { ChevronLeft, Download, Heart, Zip } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+import {
+  Check,
+  ChevronLeft,
+  Download,
+  Heart,
+  ImageIcon,
+  Zip,
+} from "@/components/ui/icons";
 import { AlbumsLanding, type AlbumItem } from "./albums-landing";
 import { GalleryCover } from "./gallery-cover";
 import { GalleryTab } from "./gallery-tab";
@@ -516,6 +524,12 @@ export function ClientGallery({
       ),
     [files, selected],
   );
+  // Whether the current collection / selection is entirely save-to-Photos
+  // eligible (images + videos, no audio/docs) — drives the top media action.
+  const isMedia = (f: ClientFile) => f.type === "image" || f.type === "video";
+  const collectionAllMedia = files.length > 0 && files.every(isMedia);
+  const selectionAllMedia =
+    selected.size > 0 && selectedImages.length === selected.size;
 
   // Save photos/videos to the camera roll via the Web Share sheet. Fetches each
   // as a File, then shares. Falls back to the ZIP download when sharing files
@@ -676,7 +690,9 @@ export function ClientGallery({
     }
     let alive = true;
     const qs = `scope=${commentScope}${commentListId ? `&listId=${commentListId}` : ""}`;
-    apiClient<{ fileIds: string[] }>(`/api/gallery/${gallery.slug}/comment-flags?${qs}`)
+    apiClient<{ fileIds: string[] }>(
+      `/api/gallery/${gallery.slug}/comment-flags?${qs}`,
+    )
       .then((r) => {
         if (alive) setCommentedIds(new Set(r.fileIds));
       })
@@ -685,7 +701,15 @@ export function ClientGallery({
       alive = false;
     };
     // Refetch when the lightbox/expand modal closes (a comment may have changed).
-  }, [gallery.slug, gallery.allowComments, commentScope, commentListId, email, openId, commentsFileId]);
+  }, [
+    gallery.slug,
+    gallery.allowComments,
+    commentScope,
+    commentListId,
+    email,
+    openId,
+    commentsFileId,
+  ]);
 
   const gridMode = gallery.layout === "grid";
   const emptyText =
@@ -713,7 +737,7 @@ export function ClientGallery({
                 type="button"
                 onClick={goLanding}
                 aria-label="Back to collections"
-                className="h-9 w-9 -ml-1 inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
+                className="inline-flex items-center justify-center text-ink-muted hover:text-ink-strong"
               >
                 <ChevronLeft size={24} />
               </button>
@@ -737,36 +761,93 @@ export function ClientGallery({
             </div>
           )}
           {allFiles.length > 0 && (
-            <div className="flex items-center gap-4 shrink-0">
-              {(canFavorite || canDownload) &&
-                !(collectionsMode && atLanding) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!selectionMode) enterSelection();
-                      else if (allSelected) deselectAll();
-                      else selectAll();
-                    }}
-                    className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong whitespace-nowrap"
-                  >
-                    {!selectionMode
-                      ? "Select"
-                      : allSelected
-                        ? "Deselect all"
-                        : "Select all"}
-                  </button>
-                )}
-              {canDownload && (
-                <button
-                  type="button"
-                  onClick={() => setDownloadOpen(true)}
-                  aria-label="Download"
-                  title="Download"
-                  className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong"
-                >
-                  <Zip size={24} />
-                </button>
-              )}
+            <div className="flex items-center gap-2 shrink-0">
+              {(() => {
+                const onClick = () => {
+                  if (!selectionMode) enterSelection();
+                  else if (allSelected) deselectAll();
+                  else selectAll();
+                };
+                const label = !selectionMode
+                  ? "Select"
+                  : allSelected
+                    ? "Deselect all"
+                    : "Select all";
+                // Album mode (inside any collection): a real button. Tabs mode:
+                // the compact text affordance (when favorites/downloads enable it).
+                if (collectionsMode && !atLanding) {
+                  return (
+                    <Button
+                      variant="secondary"
+                      onClick={onClick}
+                      className="px-3.5 tracking-wider"
+                    >
+                      <Check size={16} />
+                      {label}
+                    </Button>
+                  );
+                }
+                if ((canFavorite || canDownload) && !collectionsMode) {
+                  return (
+                    <button
+                      type="button"
+                      onClick={onClick}
+                      className="text-sm font-bold tracking-wider text-ink-muted hover:text-ink-strong whitespace-nowrap"
+                    >
+                      {label}
+                    </button>
+                  );
+                }
+                return null;
+              })()}
+              {canDownload &&
+                (() => {
+                  // Inside a collection (or a selection) the action targets that
+                  // collection/selection directly: Save to Photos on touch when
+                  // it's all media (no camera roll on desktop, so desktop keeps
+                  // the download), else a direct ZIP download. The Zip *picker*
+                  // icon only appears at the landing/tabs top level.
+                  const inCollection = collectionsMode && !atLanding;
+                  const direct = selectionMode || inCollection;
+                  const allMedia = selectionMode
+                    ? selectionAllMedia
+                    : collectionAllMedia;
+                  if (direct && coarse && allMedia) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          sharePhotos(selectionMode ? selectedImages : files)
+                        }
+                        disabled={savingPhotos}
+                        aria-label="Save to Photos"
+                        title="Save to Photos"
+                        className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                      >
+                        <ImageIcon size={24} />
+                      </button>
+                    );
+                  }
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectionMode) downloadSelected();
+                        else if (inCollection)
+                          triggerDownload(
+                            `ids=${files.map((f) => f.id).join(",")}`,
+                          );
+                        else setDownloadOpen(true);
+                      }}
+                      disabled={selectionMode && selected.size === 0}
+                      aria-label="Download"
+                      title="Download"
+                      className="inline-flex items-center gap-2 text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                    >
+                      {direct ? <Download size={24} /> : <Zip size={24} />}
+                    </button>
+                  );
+                })()}
             </div>
           )}
         </div>
