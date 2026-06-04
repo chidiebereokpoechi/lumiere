@@ -36,6 +36,9 @@ export function useDragSelect({
       if (e.shiftKey) return; // let the click handler do range-select
       const anchor = items.findIndex((f) => f.id === id);
       if (anchor === -1) return;
+      // Clear any stale suppression: a touch drag often emits no trailing click
+      // to reset it, which would otherwise eat this tap's click.
+      suppressClickRef.current = false;
       dragRef.current = {
         x: e.clientX,
         y: e.clientY,
@@ -47,7 +50,8 @@ export function useDragSelect({
         const d = dragRef.current;
         if (!d) return;
         if (!d.moved) {
-          if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 6) return;
+          // Higher threshold so finger jitter on a tap isn't read as a drag.
+          if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 12) return;
           d.moved = true;
           setDragSelecting(true);
         }
