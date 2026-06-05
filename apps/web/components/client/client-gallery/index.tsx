@@ -786,12 +786,15 @@ export function ClientGallery({
                 <ChevronLeft size={24} />
               </button>
               <div className="flex-1 min-w-0">
-                <p
+                <button
+                  type="button"
+                  onClick={goLanding}
+                  aria-label="Back to collections"
                   style={{ viewTransitionName: "gallery-title" }}
-                  className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong"
+                  className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong hover:text-ink-muted transition-colors"
                 >
                   {gallery.title}
-                </p>
+                </button>
                 {(gallery.subtitle || gallery.eventDate) && (
                   <p className="truncate text-sm text-ink-muted">
                     {gallery.subtitle && <span>{gallery.subtitle}</span>}
@@ -807,12 +810,15 @@ export function ClientGallery({
           ) : (
             // Desktop: centered title only; back sits in the main row below.
             <div className="px-4 pt-4 text-center">
-              <p
+              <button
+                type="button"
+                onClick={goLanding}
+                aria-label="Back to collections"
                 style={{ viewTransitionName: "gallery-title" }}
-                className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong"
+                className="inline-block max-w-full truncate align-bottom text-sm font-[700] tracking-wider text-ink-strong hover:text-ink-muted transition-colors"
               >
                 {gallery.title}
-              </p>
+              </button>
             </div>
           ))}
         {!(collectionsMode && atLanding) && (

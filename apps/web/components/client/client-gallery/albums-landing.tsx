@@ -79,7 +79,10 @@ export function AlbumsLanding({
   return (
     <div className="flex flex-col px-2 sm:px-4 gap-6 sm:gap-10">
       <header className="pt-8 sm:pt-12 text-center">
-        <h1 className="text-3xl sm:text-5xl font-[700]! tracking-wider text-ink-strong">
+        <h1
+          style={{ viewTransitionName: "gallery-title" }}
+          className="inline-block max-w-full text-3xl sm:text-5xl font-[700]! tracking-wider text-ink-strong"
+        >
           {gallery.title}
         </h1>
         {(date || gallery.clientName) && (
