@@ -48,6 +48,7 @@ export {
   VscShield as Watermark,
   VscLayout as Grid,
   VscGear as Gear,
+  VscOrganization as Users,
   VscListUnordered as ListIcon,
   VscLoading as SpinnerIcon,
   VscRemove as Grip,

@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Grid, Chart, Watermark, Gear, Collapse } from "@/components/ui/icons";
+import {
+  Grid,
+  Chart,
+  Watermark,
+  Gear,
+  Users,
+  Collapse,
+} from "@/components/ui/icons";
 
 interface NavItem {
   href: string;
@@ -24,6 +31,11 @@ const NAV: NavItem[] = [
     href: "/admin/watermarks",
     label: "Watermarks",
     icon: <Watermark size={24} />,
+  },
+  {
+    href: "/admin/users",
+    label: "Users",
+    icon: <Users size={24} />,
   },
   {
     href: "/admin/settings",
