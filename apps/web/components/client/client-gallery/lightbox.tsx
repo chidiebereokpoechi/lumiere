@@ -126,104 +126,59 @@ export function Lightbox({
 
       {/* Media */}
       <div
-        className="relative flex-1 min-h-0 flex items-center justify-center px-2 sm:px-4 touch-pan-y"
+        className={`relative flex-1 min-h-0 flex items-center justify-center touch-pan-y ${
+          file.type === "audio" ? "" : "px-2 sm:px-4"
+        }`}
         onClick={onClose}
         // Swipe is allowed unless the open media is actively playing (so a
         // playing video/audio keeps its own gestures); paused media swipes.
         onTouchStart={mediaPlaying ? undefined : onTouchStart}
         onTouchEnd={mediaPlaying ? undefined : onTouchEnd}
       >
-        <div
-          className="max-h-full max-w-full flex items-center justify-center"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {file.type === "image" ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={file.previewUrl ?? ""}
-              alt=""
-              className="max-h-[78svh] max-w-full object-contain"
-            />
-          ) : file.type === "video" ? (
-            // eslint-disable-next-line jsx-a11y/media-has-caption
-            <video
-              src={file.streamUrl ?? ""}
-              controls
-              onPlay={() => setMediaPlaying(true)}
-              onPause={() => setMediaPlaying(false)}
-              onEnded={() => setMediaPlaying(false)}
-              className="max-h-[78svh] max-w-full"
-            />
-          ) : file.type === "audio" ? (
-            <AudioPlayer
-              key={file.id}
-              src={file.streamUrl ?? ""}
-              title={file.filename}
-              subtitle={formatBytes(file.fileSize)}
-              cover={file.thumbUrl}
-              onPlayingChange={setMediaPlaying}
-            />
-          ) : (
-            <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
-              <FileDoc size={24} className="mx-auto text-ink-muted" />
-              <p className="mt-3 text-sm font-semibold text-ink-strong truncate">
-                {file.filename}
-              </p>
-              <p className="text-xs text-ink-muted">
-                {formatBytes(file.fileSize)}
-              </p>
-            </div>
-          )}
-        </div>
-        {/* Action bar - centered along the bottom. On mobile the comments sheet
-            rises from the bottom over it, so hide it there; on desktop the
-            drawer is a right-side panel and doesn't collide, so keep it. */}
-        {!(showComments && coarse) && (
+        {file.type === "audio" ? (
+          // Full-bleed music player: fills the whole stage (thumbnail bg +
+          // waveform + transport).
+          <AudioPlayer
+            key={file.id}
+            src={file.streamUrl ?? ""}
+            title={file.filename}
+            subtitle={formatBytes(file.fileSize)}
+            cover={file.thumbUrl}
+            onPlayingChange={setMediaPlaying}
+          />
+        ) : (
           <div
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-row items-center gap-2"
+            className="max-h-full max-w-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            {canFavorite && (
-              <RailButton
-                onClick={onToggleFavorite}
-                aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-                className={cn(isFavorite && "text-heart border-heart")}
-              >
-                {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
-              </RailButton>
+            {file.type === "image" ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={file.previewUrl ?? ""}
+                alt=""
+                className="max-h-[78svh] max-w-full object-contain"
+              />
+            ) : file.type === "video" ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video
+                src={file.streamUrl ?? ""}
+                controls
+                onPlay={() => setMediaPlaying(true)}
+                onPause={() => setMediaPlaying(false)}
+                onEnded={() => setMediaPlaying(false)}
+                className="max-h-[78svh] max-w-full"
+              />
+            ) : (
+              <div className="w-[min(90vw,28rem)] rounded-lg border border-border bg-surface p-8 text-center">
+                <FileDoc size={24} className="mx-auto text-ink-muted" />
+                <p className="mt-3 text-sm font-semibold text-ink-strong truncate">
+                  {file.filename}
+                </p>
+                <p className="text-xs text-ink-muted">
+                  {formatBytes(file.fileSize)}
+                </p>
+              </div>
             )}
-            {allowComments && (
-              <RailButton
-                onClick={() => setShowComments((v) => !v)}
-                aria-label="Comments"
-                active={showComments}
-              >
-                <Comment size={24} />
-              </RailButton>
-            )}
-            <RailButton onClick={onAddToList} aria-label="Add to list">
-              <Bookmark size={24} />
-            </RailButton>
-            {/* Hybrid save: Save to Photos (share sheet) on touch media, else a
-              plain download. */}
-            {canDownload &&
-              (coarse && (file.type === "image" || file.type === "video") ? (
-                <RailButton
-                  onClick={onShare}
-                  disabled={savingPhotos}
-                  aria-label="Save to Photos"
-                >
-                  <ImageIcon size={24} />
-                </RailButton>
-              ) : (
-                <a
-                  href={file.downloadUrl}
-                  aria-label="Download"
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
-                >
-                  <Download size={24} />
-                </a>
-              ))}
           </div>
         )}
 
@@ -253,14 +208,65 @@ export function Lightbox({
         )}
       </div>
 
+      {/* Action bar — its own distinct row beneath the media (never overlaps
+          it). Hidden on mobile while the comments sheet is up. */}
+      {!(showComments && coarse) && (
+        <div
+          className="shrink-0 flex flex-row items-center justify-center gap-2 border-t border-border px-2 sm:px-4 py-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {canFavorite && (
+            <RailButton
+              onClick={onToggleFavorite}
+              aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+              className={cn(isFavorite && "text-heart border-heart")}
+            >
+              {isFavorite ? <Heart size={24} /> : <HeartOpen size={24} />}
+            </RailButton>
+          )}
+          {allowComments && (
+            <RailButton
+              onClick={() => setShowComments((v) => !v)}
+              aria-label="Comments"
+              active={showComments}
+            >
+              <Comment size={24} />
+            </RailButton>
+          )}
+          <RailButton onClick={onAddToList} aria-label="Add to list">
+            <Bookmark size={24} />
+          </RailButton>
+          {/* Hybrid save: Save to Photos (share sheet) on touch media, else a
+              plain download. */}
+          {canDownload &&
+            (coarse && (file.type === "image" || file.type === "video") ? (
+              <RailButton
+                onClick={onShare}
+                disabled={savingPhotos}
+                aria-label="Save to Photos"
+              >
+                <ImageIcon size={24} />
+              </RailButton>
+            ) : (
+              <a
+                href={file.downloadUrl}
+                aria-label="Download"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-md border bg-surface text-ink-strong border-border transition-colors hover:bg-surface-2 hover:border-border-strong"
+              >
+                <Download size={24} />
+              </a>
+            ))}
+        </div>
+      )}
+
       {/* Filename + position */}
       <div
-        className="shrink-0 text-center pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        className="shrink-0 bg-ink text-center pt-2 px-2 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-sm text-ink-muted tabular-nums truncate px-2 sm:px-4">
+        <p className="text-xs text-ink-inverse tabular-nums truncate px-2 sm:px-4">
           {file.filename}
-          {total > 1 ? `  ·  ${index + 1} / ${total}` : ""}
+          {total > 1 ? ` · ${index + 1} / ${total}` : ""}
         </p>
       </div>
 

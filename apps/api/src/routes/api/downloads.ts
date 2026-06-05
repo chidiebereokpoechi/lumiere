@@ -7,7 +7,7 @@ import { authContext } from '../../middleware/auth';
 import { gallerySessionContext } from '../../middleware/gallery-session';
 import { clientIp } from '../../middleware/client-ip';
 import { checkRateLimit } from '../../middleware/rate-limit';
-import { presignDownload, presignGet } from '../../services/storage';
+import { presignDownload, presignGet, getObjectStream } from '../../services/storage';
 import { buildZipStream, type ZipEntry } from '../../services/zip-builder';
 import { slugify } from '../../services/slug';
 import { notifyPhotographer } from '../../services/notify';
@@ -92,10 +92,23 @@ export const downloadRoutes = new Elysia({ prefix: '/api/gallery' })
     if (!file || file.galleryId !== gallery.id || !file.s3KeyOriginal) {
       set.status = 404; return { error: 'file_not_found' };
     }
+    // `?proxy=1` streams the bytes through here (same-origin) so the client can
+    // fetch + decode them — used by the audio waveform, which can't read the
+    // cross-origin presigned S3 response. Playback still uses the 302 below.
+    if (ctx.query.proxy) {
+      const stream = await getObjectStream(file.s3KeyOriginal);
+      set.headers['content-type'] = file.mimeType ?? 'application/octet-stream';
+      set.headers['cache-control'] = 'private, max-age=3600';
+      return new Response(
+        Readable.toWeb(stream) as unknown as ReadableStream,
+      );
+    }
     const url = await presignGet(file.s3KeyOriginal, 6 * 3600);
     set.status = 302;
     set.headers['location'] = url;
     return '';
+  }, {
+    query: t.Optional(t.Object({ proxy: t.Optional(t.String()) })),
   })
 
   // GET /api/gallery/:slug/files/:fileId/download — single-file download (302 to
