@@ -219,18 +219,21 @@ export function AudioPlayer({
           draggable={false}
         />
       )}
-      {/* Scrim — darken + soften so the waveform + controls stay legible. */}
+      {/* Scrim — darken + soften so the controls stay legible. */}
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
-
-      {/* Waveform spans the full background; click to scrub. */}
-      <canvas
-        ref={canvasRef}
-        onClick={scrub}
-        className="absolute inset-0 h-full w-full cursor-pointer"
-      />
 
       {/* Centered transport over it all. */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-6 text-center pointer-events-none">
+        {/* Album art above the controls (the cover also fills the background). */}
+        {cover && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover}
+            alt=""
+            draggable={false}
+            className="h-40 w-40 sm:h-52 sm:w-52 rounded-md object-cover border border-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.35)]"
+          />
+        )}
         <div className="pointer-events-none">
           <p className="text-lg font-bold tracking-wider text-white drop-shadow truncate max-w-[80vw]">
             {title}
@@ -267,6 +270,14 @@ export function AudioPlayer({
             <SkipForward size={20} />
           </Button>
         </div>
+
+        {/* Compact waveform scrubber — decoded peaks, coloured from the cover,
+            filled to the playhead. Click to seek. */}
+        <canvas
+          ref={canvasRef}
+          onClick={scrub}
+          className="pointer-events-auto h-14 w-[min(80vw,28rem)] cursor-pointer"
+        />
 
         <div className="pointer-events-none flex w-[min(80vw,28rem)] justify-between text-xs tracking-wider text-white/80 tabular-nums drop-shadow">
           <span>{fmt(cur)}</span>
