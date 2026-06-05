@@ -1073,7 +1073,11 @@ export function ClientGallery({
           allFavorited={
             selected.size > 0 && [...selected].every((id) => favorites.has(id))
           }
-          showSavePhotos={coarse && selectedImages.length > 0}
+          showSavePhotos={
+            coarse &&
+            selected.size > 0 &&
+            selectedImages.length === selected.size
+          }
           savingPhotos={savingPhotos}
           onDone={exitSelection}
           onFavorite={() => {

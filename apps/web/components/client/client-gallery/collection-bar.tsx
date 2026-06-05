@@ -1,11 +1,12 @@
 "use client";
 
 import { Check, Download, ImageIcon } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
-// Persistent bottom bar shown inside a collection (collections nav), in the same
-// language as the selection / long-press sheets. Surfaces the primary save path
-// - Save to Photos on touch when the collection is all media (the mobile-saving
-// happy path), otherwise a ZIP download - plus an entry into selection mode.
+// Persistent bottom bar inside a collection (collections nav). Mirrors the
+// lightbox action row's language: a centered row of bordered buttons. Surfaces
+// the primary save path — Save to Photos on touch when the collection is all
+// media, otherwise a ZIP download — plus an entry into selection mode.
 export function CollectionBar({
   count,
   canDownload,
@@ -24,55 +25,38 @@ export function CollectionBar({
   onDownload: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)] p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex flex-col sm:flex-row sm:flex-wrap">
+    <div className="fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-border px-2 sm:px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="flex flex-row items-center justify-center gap-2">
         {canDownload &&
           (showSavePhotos ? (
-            <Row
-              icon={<ImageIcon size={20} />}
-              label={savingPhotos ? "Preparing" : "Save to photos"}
+            <Button
               onClick={onSavePhotos}
               disabled={savingPhotos || count === 0}
-            />
+              className="tracking-wider"
+            >
+              <ImageIcon size={20} />
+              {savingPhotos ? "Preparing…" : "Save to Photos"}
+            </Button>
           ) : (
-            <Row
-              icon={<Download size={20} />}
-              label="Download"
+            <Button
               onClick={onDownload}
               disabled={count === 0}
-            />
+              className="tracking-wider"
+            >
+              <Download size={20} />
+              Download
+            </Button>
           ))}
-        <Row
-          icon={<Check size={20} />}
-          label="Select"
+        <Button
+          variant="secondary"
           onClick={onSelect}
           disabled={count === 0}
-        />
+          className="tracking-wider"
+        >
+          <Check size={20} />
+          Select
+        </Button>
       </div>
     </div>
-  );
-}
-
-function Row({
-  icon,
-  label,
-  onClick,
-  disabled,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex sm:flex-1 items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold text-ink-strong hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-    >
-      <span className="text-ink-muted">{icon}</span>
-      {label}
-    </button>
   );
 }

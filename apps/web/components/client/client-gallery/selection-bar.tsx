@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 
-// Bottom sheet shown in selection mode - same language as the long-press and
-// add-to-list sheets: a header (count + Done) over labeled action rows that act
-// on the current selection. Disabled until something is selected.
+// Bottom bar shown in selection mode. Same language as the collection bar /
+// lightbox action row: a header (count + Done) over a centered row of bordered
+// buttons acting on the current selection. Disabled until something's selected.
 export function SelectionBar({
   count,
   canDownload,
@@ -41,8 +41,8 @@ export function SelectionBar({
 }) {
   const disabled = count === 0;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-border shadow-[0_-8px_30px_rgba(0,0,0,0.15)] p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      <div className="flex items-center justify-between px-3 pt-1 pb-1">
+    <div className="fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-border px-2 sm:px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="flex items-center justify-between px-1 pb-2">
         <span className="text-sm font-extrabold tracking-wider text-ink-strong tabular-nums">
           {count > 0 ? `${count} selected` : "Select items"}
         </span>
@@ -55,70 +55,62 @@ export function SelectionBar({
         </Button>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:flex-wrap">
+      <div className="flex flex-row flex-wrap items-center justify-center gap-2">
         {canFavorite && (
-          <Row
-            icon={<Heart size={20} />}
-            label={allFavorited ? "Unfavorite" : "Favorite"}
+          <Button
+            variant="secondary"
             onClick={onFavorite}
             disabled={disabled}
-          />
+            className="tracking-wider"
+          >
+            <Heart size={20} />
+            {allFavorited ? "Unfavorite" : "Favorite"}
+          </Button>
         )}
-        <Row
-          icon={<Bookmark size={20} />}
-          label="Add to list"
+        <Button
+          variant="secondary"
           onClick={onAddToList}
           disabled={disabled}
-        />
+          className="tracking-wider"
+        >
+          <Bookmark size={20} />
+          Add to list
+        </Button>
         {onRemoveFromList && (
-          <Row
-            icon={<Close size={20} />}
-            label="Remove from list"
+          <Button
+            variant="secondary"
             onClick={onRemoveFromList}
             disabled={disabled}
-          />
+            className="tracking-wider"
+          >
+            <Close size={20} />
+            Remove
+          </Button>
         )}
-        {canDownload && showSavePhotos && (
-          <Row
-            icon={<ImageIcon size={20} />}
-            label={savingPhotos ? "Preparing" : "Save to photos"}
-            onClick={onSavePhotos}
-            disabled={disabled || savingPhotos}
-          />
-        )}
-        {canDownload && (
-          <Row
-            icon={<Download size={20} />}
-            label="Download"
-            onClick={onDownload}
-            disabled={disabled}
-          />
-        )}
+        {/* Hybrid save: Save to Photos when the selection is all media on touch,
+            else a download. */}
+        {canDownload &&
+          (showSavePhotos ? (
+            <Button
+              onClick={onSavePhotos}
+              disabled={disabled || savingPhotos}
+              className="tracking-wider"
+            >
+              <ImageIcon size={20} />
+              {savingPhotos ? "Preparing…" : "Save to Photos"}
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              onClick={onDownload}
+              disabled={disabled}
+              className="tracking-wider"
+            >
+              <Download size={20} />
+              Download
+            </Button>
+          ))}
       </div>
     </div>
-  );
-}
-
-function Row({
-  icon,
-  label,
-  onClick,
-  disabled,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex sm:flex-1 items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-semibold text-ink-strong hover:bg-surface-2 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-    >
-      <span className="text-ink-muted">{icon}</span>
-      {label}
-    </button>
   );
 }
