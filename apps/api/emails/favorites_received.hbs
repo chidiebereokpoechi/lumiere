@@ -2,18 +2,57 @@ Subject: Favorites updated — {{galleryTitle}}
 
 <!doctype html>
 <html>
-  <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; color: #1a1a1a;">
-    <h1 style="font-size: 20px; font-weight: 600; margin: 0 0 16px;">Favorites updated</h1>
-    <p style="margin: 0 0 12px; font-size: 15px; line-height: 1.5;">
-      <strong>{{galleryTitle}}</strong> has <strong>{{favoriteCount}}</strong> favorited photo{{#unless one}}s{{/unless}} right now.
-    </p>
-    {{#if galleryUrl}}
-      <p style="margin: 24px 0;">
-        <a href="{{galleryUrl}}" style="display: inline-block; padding: 10px 16px; background: #111; color: #fff; border-radius: 6px; text-decoration: none; font-size: 14px;">Review favorites</a>
-      </p>
-    {{/if}}
-    <p style="margin: 24px 0 0; font-size: 12px; color: #888;">
-      We rate-limit these so you'll only get one per gallery per hour even if the client is still tagging.
-    </p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      @font-face {
+        font-family: 'Satoshi';
+        src: url('{{baseUrl}}/fonts/satoshi-variable.woff2') format('woff2');
+        font-weight: 300 900;
+        font-style: normal;
+        font-display: swap;
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background: #f5f5f7; font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Helvetica, Arial, sans-serif; color: #000000; letter-spacing: 0.025em; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f5f5f7;">
+      <tr>
+        <td align="center" style="padding: 32px 16px;">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width: 560px; width: 100%; background: #ffffff; border: 1px solid #c9c9d0;">
+            <tr>
+              <td align="center" style="padding: 16px 24px;">
+                <img src="{{baseUrl}}/brand/lockup.png" alt="Lumière by chids." width="128" height="50" style="display: block; width: 128px; height: auto; margin: 0 auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 32px 24px;">
+                <p style="margin: 0 0 16px; font-size: 12px; color: #64748b; letter-spacing: 0.08em;">Gallery activity</p>
+                <h1 style="margin: 0 0 16px; font-size: 22px; font-weight: 400; line-height: 1.3; color: #000000;">Favorites updated</h1>
+                <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.55; color: #000000;">
+                  <strong style="font-weight: 400; color: #000000;">{{galleryTitle}}</strong> has <strong style="font-weight: 400; color: #c44127;">{{favoriteCount}}</strong> favorited photo{{#unless one}}s{{/unless}} right now.
+                </p>
+                {{#if galleryUrl}}
+                  <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0 8px;">
+                    <tr>
+                      <td style="background: #c44127;">
+                        <a href="{{galleryUrl}}" style="display: inline-block; padding: 12px 20px; color: #ffffff; text-decoration: none; font-size: 14px; letter-spacing: 0.025em;">Review favorites</a>
+                      </td>
+                    </tr>
+                  </table>
+                {{/if}}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 16px 24px; border-top: 1px solid #c9c9d0;">
+                <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #94a3b8;">
+                  We rate-limit these so you'll only get one per gallery per hour even if the client is still tagging.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>

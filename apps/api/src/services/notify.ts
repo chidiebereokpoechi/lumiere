@@ -57,6 +57,7 @@ export async function notifyPhotographer(
       galleryTitle: gallery.title,
       gallerySlug: gallery.slug,
       galleryUrl: `${env.BASE_URL}/g/${gallery.slug}`,
+      baseUrl: env.BASE_URL,
       ...data,
     },
   }, galleryId);
