@@ -206,7 +206,7 @@ function AlbumCard({ item }: { item: AlbumItem }) {
 
   return (
     <button type="button" onClick={onOpen} className="block w-full text-left">
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-md bg-surface-sunken">
+      <div className="relative aspect-4/5 md:aspect-3/2 w-full overflow-hidden rounded-md bg-surface-sunken">
         {cover && (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
