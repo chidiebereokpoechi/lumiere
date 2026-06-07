@@ -13,6 +13,7 @@ import {
   Mail,
   Zip,
 } from "@/components/ui/icons";
+import { LogoLockup } from "@/components/ui/logo";
 
 export interface AlbumItem {
   key: string;
@@ -79,6 +80,9 @@ export function AlbumsLanding({
   return (
     <div className="flex flex-col px-2 sm:px-4 gap-6 sm:gap-10">
       <header className="pt-8 sm:pt-12 text-center">
+        <div className="flex justify-center">
+          <LogoLockup className="w-28 sm:w-30" />
+        </div>
         <h1
           style={{ viewTransitionName: "gallery-title" }}
           className="inline-block max-w-full text-3xl sm:text-5xl font-[700]! tracking-wider text-ink-strong"

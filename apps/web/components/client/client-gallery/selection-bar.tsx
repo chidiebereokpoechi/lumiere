@@ -55,7 +55,7 @@ export function SelectionBar({
         </Button>
       </div>
 
-      <div className="flex flex-row flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-row flex-wrap items-center justify-center gap-2 sm:gap-4">
         {canFavorite && (
           <Button
             variant="secondary"

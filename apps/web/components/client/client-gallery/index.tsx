@@ -21,6 +21,7 @@ import { confirmDialog, promptDialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/ui/logo";
 import {
   Check,
   ChevronLeft,
@@ -1239,6 +1240,12 @@ export function ClientGallery({
           />
         </Modal>
       )}
+      {/* White-label-ish footer credit. */}
+      <footer className="flex items-center justify-center gap-2 px-2 py-8 text-xs text-ink-muted">
+        <LogoMark size={20} />
+        <span className="tracking-wider">Delivered with Lumière</span>
+      </footer>
+
       <Toaster />
     </main>
   );

@@ -26,7 +26,16 @@ export function CollectionBar({
 }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 bg-surface border-t border-border px-2 sm:px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <div className="flex flex-row items-center justify-center gap-2">
+      <div className="flex flex-row items-center justify-center gap-2 sm:gap-4">
+        <Button
+          variant="secondary"
+          onClick={onSelect}
+          disabled={count === 0}
+          className="tracking-wider"
+        >
+          <Check size={20} />
+          Select
+        </Button>
         {canDownload &&
           (showSavePhotos ? (
             <Button
@@ -47,15 +56,6 @@ export function CollectionBar({
               Download
             </Button>
           ))}
-        <Button
-          variant="secondary"
-          onClick={onSelect}
-          disabled={count === 0}
-          className="tracking-wider"
-        >
-          <Check size={20} />
-          Select
-        </Button>
       </div>
     </div>
   );
