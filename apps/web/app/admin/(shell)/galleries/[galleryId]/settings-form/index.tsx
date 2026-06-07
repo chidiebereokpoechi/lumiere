@@ -318,7 +318,7 @@ export function SettingsForm({ gallery, watermarks }: Props) {
 
       <FormError message={error} />
 
-      <div className="flex items-center justify-between gap-3 pt-2">
+      <div className="flex items-center justify-between gap-3">
         <Button type="button" variant="danger" onClick={onDelete}>
           Delete gallery
         </Button>

@@ -400,10 +400,10 @@ export function FileManager({
 
       {tiles.length > 0 && <UploadSummary tiles={tiles} />}
 
-      {/* Two-column: sets sidebar + media grid */}
-      <div className="flex gap-4 items-start">
+      {/* Two-column on desktop; stacks (sets list above the grid) on mobile. */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* Sets sidebar - sticky below the gallery header while the grid scrolls. */}
-        <aside className="w-80 shrink-0 self-start lg:sticky lg:top-[184px] lg:max-h-[calc(100dvh-200px)] lg:overflow-y-auto border border-border p-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
+        <aside className="w-full lg:w-80 lg:shrink-0 self-start lg:sticky lg:top-[184px] lg:max-h-[calc(100dvh-200px)] lg:overflow-y-auto border border-border p-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold tracking-wider text-ink-muted">
               Sets
