@@ -46,7 +46,7 @@ export function CoverControl({
   const [open, setOpen] = useState(false);
   const thumb = coverThumb(galleryId, cover);
   return (
-    <div className="mb-4">
+    <div>
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-bold tracking-wider text-ink-muted">
           Cover

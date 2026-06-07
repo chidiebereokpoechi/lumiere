@@ -108,7 +108,7 @@ export function Sidebar() {
         }`}
       >
         <div
-          className={`flex pb-4 ${collapsed ? "flex-col items-center gap-3" : "items-center justify-between px-2"}`}
+          className={`flex pb-4 ${collapsed ? "flex-col items-center gap-3" : "items-center justify-between"}`}
         >
           {collapsed ? <LogoMark size={32} /> : <Logo size={28} />}
           <button
@@ -147,7 +147,7 @@ export function Sidebar() {
             className="absolute inset-0 bg-black/40"
           />
           <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[80vw] overflow-y-auto bg-bg border-r border-border p-4 flex flex-col">
-            <div className="flex items-center justify-between px-2 pb-4">
+            <div className="flex items-center justify-between">
               <Logo size={28} />
               <button
                 type="button"
@@ -177,9 +177,7 @@ export function Sidebar() {
 }
 
 function isActive(pathname: string, href: string) {
-  return (
-    pathname === href || (href !== "/admin" && pathname.startsWith(href))
-  );
+  return pathname === href || (href !== "/admin" && pathname.startsWith(href));
 }
 
 function NavLink({

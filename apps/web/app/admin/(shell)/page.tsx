@@ -53,9 +53,9 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
   return (
     <Link
       href={`/admin/galleries/${gallery.id}`}
-      className="group flex flex-col rounded-xl bg-surface border border-border p-2 hover:bg-surface-2 hover:border-border-strong transition-colors duration-150"
+      className="group flex flex-col gap-4 rounded-xl bg-surface border border-border p-2 sm:p-4 hover:bg-surface-2 hover:border-border-strong transition-colors duration-150"
     >
-      <div className="aspect-16/10 w-full overflow-hidden rounded-md bg-surface-sunken relative">
+      <div className="aspect-3/2 w-full overflow-hidden rounded-md bg-surface-sunken relative">
         {gallery.coverFileId ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -69,7 +69,7 @@ function GalleryCard({ gallery }: { gallery: GallerySummary }) {
         <StatusPill status={status} />
       </div>
 
-      <div className="px-2 pt-4 pb-2">
+      <div className="">
         <h2 className="text-base font-bold text-ink-strong truncate">
           {gallery.title}
         </h2>
@@ -101,7 +101,7 @@ function StatusPill({ status }: { status: "active" | "archived" | "draft" }) {
         : "bg-surface-sunken text-ink-muted border-border";
   return (
     <span
-      className={`absolute top-2 left-2 rounded-md border px-2 py-1 text-xs font-extrabold tracking-wider ${cls}`}
+      className={`absolute top-4 left-4 rounded-md border px-2 py-1 text-xs font-extrabold tracking-wider ${cls}`}
     >
       {status}
     </span>
