@@ -48,11 +48,15 @@
   --ink-subtle: #94a3b8; /* slate-400 */
   --ink-inverse: #ffffff; /* on dark surfaces */
 
-  --accent: #124ebe; /* peach */
-  --accent-hover: #3770d8;
-  --accent-dark: #0c3c97; /* deeper peach - analogous to primary-dark */
-  --accent-soft: #97b9f8;
-  --accent-ink: #1f1411;
+  /* Coral / peach, sampled from the brand art (resources/lumiere*.png).
+     accent matches the "Lumière" wordmark fill (white text passes AA at 5.08:1);
+     accent-dark is a deeper coral (6.66:1) for hover + text-accent-dark on
+     light; accent-soft is the pale orb body. */
+  --accent: #c44127; /* brand wordmark coral */
+  --accent-hover: #d04a2a; /* lighter coral - smoke-test link hover */
+  --accent-dark: #a8331a; /* deep coral - button hover, accent text */
+  --accent-soft: #fdd9cd; /* pale peach (orb body) - soft blocks, selection */
+  --accent-ink: #5c1e12; /* deep warm - ink on peach surfaces */
 
   --positive: #2f8055;
   --negative: #b34a36;

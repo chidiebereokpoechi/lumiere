@@ -4,9 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, Pause, SkipBack, SkipForward } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 
-// Accent-based fallback palette (peach/blue tokens) when no thumbnail or its
-// pixels can't be read (cross-origin S3 without CORS taints the canvas).
-const ACCENT_PALETTE = ["#124ebe", "#3770d8", "#97b9f8"];
+// Accent-based fallback palette (peach tokens) when no thumbnail or its pixels
+// can't be read (cross-origin S3 without CORS taints the canvas).
+const ACCENT_PALETTE = ["#c44127", "#d04a2a", "#fdd9cd"];
 const PEAK_COUNT = 128;
 
 // Full-bleed music player for the lightbox: the thumbnail covers the whole
