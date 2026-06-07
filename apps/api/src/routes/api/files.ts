@@ -26,8 +26,20 @@ import { log } from '../../lib/logger';
 const MAX_IMAGE_BYTES = (env.NODE_ENV === 'production' ? Number(process.env.MAX_UPLOAD_SIZE_MB ?? 80) : 100) * 1024 * 1024;
 const MAX_FILE_BYTES = env.MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
 
+// Only web-renderable images we actually derive thumbs/previews for count as
+// 'image' (matches detectImageMime). Browsers send PSD/TIFF/HEIC/RAW with an
+// image/* mime (e.g. image/vnd.adobe.photoshop) but Sharp can't process them
+// and they have no preview — classify those as downloadable 'file' instead, or
+// the grid/lightbox show a broken image tile.
+const RENDERABLE_IMAGE_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
 function kindForMime(mime: string | null): FileType {
-  if (mime?.startsWith('image/')) return 'image';
+  if (mime && RENDERABLE_IMAGE_MIMES.has(mime)) return 'image';
   if (mime?.startsWith('video/')) return 'video';
   if (mime?.startsWith('audio/')) return 'audio';
   return 'file';
