@@ -66,9 +66,13 @@ function LoginForm() {
   return (
     <main className="min-h-dvh grid place-items-center bg-bg px-4 py-16">
       <div className="w-full max-w-md">
-        <p className="text-center text-xs font-bold tracking-wider text-ink-muted">
-          Lumière
-        </p>
+        {/* eslint-disable-next-line @next/next/no-img-element -- local brand
+            asset; the custom next/image loader would mangle /brand. */}
+        <img
+          src="/brand/lockup.png"
+          alt="Lumière by chids."
+          className="mx-auto w-full max-w-xs"
+        />
 
         <div className="mt-8 rounded-xl bg-surface border border-border p-10">
           <h1 className="text-2xl font-extrabold tracking-wider text-ink-strong">
