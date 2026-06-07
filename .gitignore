@@ -10,6 +10,3 @@ apps/api/dist
 .next
 .turbo
 *.tsbuildinfo
-
-# Raw brand source art (psd/blend/full-res png) - derived assets live in apps/web
-resources/
