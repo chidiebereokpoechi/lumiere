@@ -30,7 +30,7 @@ export function GalleryHeader({
   return (
     // Sticky chrome - the topnav + tab row stay pinned while the page body
     // scrolls beneath them (the window is the scroll container).
-    <div className="sticky top-0 z-20 bg-bg border-b border-border">
+    <div className="sticky top-0 z-20 bg-surface border-b border-border">
       <Topnav
         title={title}
         subtitle={`/g/${slug} · ${passwordProtected ? "password-protected" : "no password"}`}

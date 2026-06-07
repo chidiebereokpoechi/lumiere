@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiClientMutation } from "@/lib/api-client";
+import { ListIcon } from "@/components/ui/icons";
+import { openMobileNav } from "@/components/admin/sidebar";
 
 interface TopnavProps {
   title: string;
@@ -28,17 +30,27 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-start justify-between p-4 bg-bg border-b border-border">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-wider text-ink-strong">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="mt-1.5 text-sm text-ink-muted">{subtitle}</p>
-        )}
+    <header className="sticky top-0 z-30 flex flex-wrap items-start justify-between gap-3 p-4 bg-bg border-b border-border">
+      <div className="flex items-start gap-3 min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={openMobileNav}
+          aria-label="Open menu"
+          className="md:hidden inline-flex shrink-0 items-center justify-center rounded-md bg-surface border border-border p-2.5 text-ink-strong hover:bg-surface-2 transition-colors"
+        >
+          <ListIcon size={20} />
+        </button>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-wider text-ink-strong truncate">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mt-1.5 text-sm text-ink-muted truncate">{subtitle}</p>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-start gap-4">
+      <div className="flex items-start flex-wrap justify-end gap-3 basis-full sm:basis-auto">
         {action}
         <div className="relative">
           <button
@@ -48,6 +60,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
             aria-expanded={menuOpen}
             className="flex items-center gap-2.5 rounded-md bg-surface border border-border px-4 py-2.5 text-sm font-semibold text-ink-strong hover:bg-surface-2 transition-colors"
           >
+            <Avatar name={user.name || user.email} />
             <span className="hidden sm:inline">
               {user.name || user.email.split("@")[0]}
             </span>
@@ -94,7 +107,7 @@ export function Topnav({ title, subtitle, user, action }: TopnavProps) {
 function Avatar({ name }: { name: string }) {
   const initial = name.charAt(0).toUpperCase();
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-accent text-white text-sm font-extrabold">
+    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-accent text-white text-xs font-extrabold">
       {initial}
     </span>
   );

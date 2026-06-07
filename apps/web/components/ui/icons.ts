@@ -49,7 +49,7 @@ export {
   VscLayout as Grid,
   VscGear as Gear,
   VscOrganization as Users,
-  VscListUnordered as ListIcon,
+  VscMenu as ListIcon,
   VscLoading as SpinnerIcon,
   VscRemove as Grip,
   VscHeart as HeartOpen,
